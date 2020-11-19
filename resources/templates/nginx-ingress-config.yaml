@@ -1,0 +1,12 @@
+controller:
+  publishService:
+    enabled: true
+  service:
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-type: nlb
+      service.beta.kubernetes.io/aws-load-balancer-ssl-cert: ACM_CERT
+      service.beta.kubernetes.io/aws-load-balancer-backend-protocol: http
+      service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443"
+      service.beta.kubernetes.io/aws-load-balancer-connection-idle-timeout: "3600"
+    targetPorts:
+      https: http

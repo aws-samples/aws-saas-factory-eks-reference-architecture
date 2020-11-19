@@ -1,0 +1,46 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: EKS ECR Repos to host containerized services
+Resources:
+  TenantManagementService: 
+    Type: AWS::ECR::Repository
+    Properties: 
+      ImageScanningConfiguration: 
+        scanOnPush: "true"
+  TenantRegistrationService: 
+    Type: AWS::ECR::Repository
+    Properties: 
+      ImageScanningConfiguration: 
+        scanOnPush: "true"
+  UserManagementService: 
+    Type: AWS::ECR::Repository
+    Properties: 
+      ImageScanningConfiguration: 
+        scanOnPush: "true"
+  SaasAppService: 
+    Type: AWS::ECR::Repository
+    Properties: 
+      ImageScanningConfiguration: 
+        scanOnPush: "true"
+  ProductService: 
+    Type: AWS::ECR::Repository
+    Properties: 
+      ImageScanningConfiguration: 
+        scanOnPush: "true"
+  OrderService: 
+    Type: AWS::ECR::Repository
+    Properties: 
+      ImageScanningConfiguration: 
+        scanOnPush: "true"
+Outputs:
+  TenantManagementServiceRepo:
+    Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${TenantManagementService}"
+  TenantRegistrationServiceRepo:
+    Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${TenantRegistrationService}"
+  UserManagementServiceRepo:
+    Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${UserManagementService}"
+  SaasAppServiceRepo:
+    Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${SaasAppService}"
+  ProductServiceRepo:
+    Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ProductService}"
+  OrderServiceRepo:
+    Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${OrderService}"

@@ -1,0 +1,35 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-management
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-management
+  template:
+    metadata:
+      labels:
+        app: user-management
+    spec:
+      containers:
+      - name: user-management
+        image: AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/user-management-service:latest
+        ports:
+        - containerPort: 8001
+          name: "http"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-management-service
+spec:
+  selector:
+    app: user-management
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: 8001
+  type: NodePort

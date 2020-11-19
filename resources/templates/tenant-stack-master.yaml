@@ -1,0 +1,259 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: >
+  A CloudFormation stack with all bits necessary to deploy a new tenant into the EKS 
+  Reference architecture. This template has placeholders that get replaced during the 
+  deployment of the EKS Reference Architecture--specifically in the
+  update_tenant_provisioning_stack.sh
+Parameters:
+  CustomDomain:
+    Type: String
+    Description: The name of the domain under which this app runs
+  TenantName:
+    Type: String
+    Description: Name or ID of the new tenant
+  ProductServiceEcrRepoUri:
+    Type: String
+    Description: Product Service Ecr Repository Uri
+  OrderServiceEcrRepoUri:
+    Type: String
+    Description: Order Service Ecr Repository Uri
+  BranchName:
+    Description: CodeCommit branch name
+    Type: String
+    Default: master
+  RepositoryName:
+    Description: CodeComit repository name
+    Type: String
+    Default: eks-tenant-saas-app-service
+  EksClusterName:
+    Type: String
+    Description: The name of the EKS cluster created
+    Default: EKS_CLUSTER_PLACEHOLDER
+    MinLength: 1
+    MaxLength: 100
+    ConstraintDescription: You must enter the EKS cluster name
+  CodeBuildDockerImage:
+    Type: String
+    Default: aws/codebuild/docker:17.09.0
+    Description: Default AWS CodeBuild Docker optimized image
+    MinLength: 3
+    MaxLength: 100
+    ConstraintDescription: You must enter a CodeBuild Docker image
+  KubectlRoleName:
+    Type: String
+    Default: EksSaasCodeBuildRole
+    Description: IAM role used by kubectl to interact with EKS cluster
+    MinLength: 3
+    MaxLength: 100
+    ConstraintDescription: You must enter a kubectl IAM role
+  VpcId:
+    Description: VPCID
+    Type: String
+    Default: EKS_VPC_ID
+  Subnets:
+    Description: Subnets
+    Type: String
+    Default: EKS_SUBNET_ID
+  SecurityGroupIds:
+    Description: SecurityGroupIds
+    Type: String
+    Default: EKS_SECURITY_GROUP_ID
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: CodeBuild
+        Parameters:
+          - CodeBuildDockerImage
+      - Label:
+          default: IAM
+        Parameters:
+          - KubectlRoleName
+      - Label:
+          default: EKS
+        Parameters:
+          - EksClusterName
+    ParameterLabels:
+      CodeBuildDockerImage:
+        default: Docker image
+      KubectlRoleName:
+        default: kubectl IAM role
+      EksClusterName:
+        default: EKS cluster name
+Resources:
+  EcrDockerRepository:
+    Type: AWS::ECR::Repository
+    DeletionPolicy: Retain
+  CodePipelineArtifactBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+  CodePipelineServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: codepipeline-access
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Resource: "*"
+                Effect: Allow
+                Action:
+                  - codebuild:StartBuild
+                  - codebuild:BatchGetBuilds
+                  - codecommit:GetBranch
+                  - codecommit:GetCommit
+                  - codecommit:UploadArchive
+                  - codecommit:GetUploadArchiveStatus
+                  - codecommit:CancelUploadArchive
+                  - iam:PassRole
+              - Resource: !Sub arn:aws:s3:::${CodePipelineArtifactBucket}/*
+                Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:GetBucketVersioning
+    DependsOn: CodePipelineArtifactBucket
+  CodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Resource: !Sub arn:aws:iam::${AWS::AccountId}:role/${KubectlRoleName}
+                Effect: Allow
+                Action:
+                  - sts:AssumeRole
+              - Resource: '*'
+                Effect: Allow
+                Action:
+                  - eks:Describe*
+              - Resource: '*'
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+              - Resource: '*'
+                Effect: Allow
+                Action:
+                  - ecr:GetAuthorizationToken
+              - Resource: '*'
+                Effect: Allow
+                Action:
+                  - ec2:CreateNetworkInterface
+                  - ec2:DescribeDhcpOptions
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DeleteNetworkInterface
+                  - ec2:DescribeSubnets
+                  - ec2:DescribeSecurityGroups
+                  - ec2:DescribeVpcs
+                  - ec2:CreateNetworkInterfacePermission
+              - Resource: !Sub arn:aws:s3:::${CodePipelineArtifactBucket}/*
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:GetObjectVersion
+              - Resource: !Sub arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/${EcrDockerRepository}
+                Effect: Allow
+                Action:
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:PutImage
+                  - ecr:UploadLayerPart
+                  - ecr:CompleteLayerUpload
+                  - ecr:InitiateLayerUpload
+  CodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Type: LINUX_CONTAINER
+        Image: !Ref CodeBuildDockerImage
+        EnvironmentVariables:
+          - Name: TENANT_NAME
+            Value: !Ref TenantName
+          - Name: CUSTOM_DOMAIN
+            Value: !Ref CustomDomain
+          - Name: EKS_CLUSTER_NAME
+            Value: !Ref EksClusterName
+          - Name: EKS_KUBECTL_ROLE_ARN
+            Value: !Sub arn:aws:iam::${AWS::AccountId}:role/${KubectlRoleName}
+          - Name: ACCOUNT_ID
+            Value: !Sub ${AWS::AccountId}
+          - Name: PRODUCT_SERVICE_ECR_REPO_URI
+            Value: !Ref ProductServiceEcrRepoUri
+          - Name: ORDER_SERVICE_ECR_REPO_URI
+            Value: !Ref OrderServiceEcrRepoUri
+      Name: !Ref AWS::StackName
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      VpcConfig:
+        VpcId: !Ref VpcId
+        Subnets:
+        - !Ref Subnets
+        SecurityGroupIds: [!Ref SecurityGroupIds]
+  CodePipelineGitHub:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      RoleArn: !GetAtt CodePipelineServiceRole.Arn
+      ArtifactStore:
+        Type: S3
+        Location: !Ref CodePipelineArtifactBucket
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: SourceAction
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Version: 1
+                Provider: CodeCommit
+              OutputArtifacts:
+                - Name: App
+              Configuration:
+                BranchName: !Ref BranchName
+                RepositoryName: !Ref RepositoryName
+                PollForSourceChanges: false
+              RunOrder: 1
+        - Name: Build
+          Actions:
+            - Name: Build
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !Ref CodeBuildProject
+              InputArtifacts:
+                - Name: App
+              OutputArtifacts:
+                - Name: BuildOutput
+              RunOrder: 1
+    DependsOn: CodeBuildProject

@@ -1,0 +1,35 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tenant-management
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tenant-management
+  template:
+    metadata:
+      labels:
+        app: tenant-management
+    spec:
+      containers:
+      - name: tenant-management
+        image: AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/tenant-management-service:latest
+        ports:
+        - containerPort: 8002
+          name: "http"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tenant-management-service
+spec:
+  selector:
+    app: tenant-management
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: 8002
+  type: NodePort

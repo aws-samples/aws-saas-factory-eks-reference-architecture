@@ -1,0 +1,58 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: AWS EKS Reference Archicture Base Stack
+Parameters:
+  EKSRefArchBucket:
+    Type: String
+  CustomDomainName:
+    Type: String
+  CrossRegionStackMakerLambda:
+    Type: String
+Resources:
+  AppCert:
+    Type: Custom::CrossRegionStackMaker
+    Version: 1.0
+    Properties:
+      ServiceToken: !Ref CrossRegionStackMakerLambda
+      TemplateURL: !Sub https://${EKSRefArchBucket}.s3.amazonaws.com/eks-ref-acm.yaml
+      ParentStackId: !Ref AWS::StackId
+      Region: us-east-1
+      CfnParameters:
+        CustomDomainName: !Ref CustomDomainName
+  # DomainHostedZone:
+  #   Type: 'AWS::Route53::HostedZone'
+  #   Properties: 
+  #     HostedZoneConfig: 
+  #       Comment: 'Hosted zone for custom domain'
+  #     Name: !Ref CustomDomainName
+  CloudFrontOriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: "Origin Access Identity for both CloudFront Distributions"
+  TenantTable: 
+    Type: AWS::DynamoDB::Table
+    Properties: 
+      AttributeDefinitions: 
+        - AttributeName: "TENANT_ID"
+          AttributeType: "S"
+      KeySchema: 
+        - AttributeName: "TENANT_ID"
+          KeyType: "HASH"
+      ProvisionedThroughput: 
+        ReadCapacityUnits: "5"
+        WriteCapacityUnits: "5"
+      TableName: "EKSREFARCH_TENANTS"
+Outputs:
+  AppCertArn: 
+    Value: !GetAtt AppCert.CertArn
+    Export:
+      Name: !Sub '${AWS::StackName}-AppCertArn'
+  S3OAIUserId:
+    Value: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
+    Export:
+      Name: !Sub '${AWS::StackName}-S3OAIUserId'
+  S3OAIId:
+    Value: !Ref CloudFrontOriginAccessIdentity 
+    Export:
+      Name: !Sub '${AWS::StackName}-S3OAIId'

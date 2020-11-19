@@ -1,0 +1,3 @@
+# Functions
+
+This folder holds the source code for a [CloudFormation custom resource](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-custom-resources.html). This custom resource creates certificates using [AWS Certificate Manager](https://docs.aws.amazon.com/acm/latest/userguide/acm-overview.html)(ACM). Because, currently, ACM only supports creating certs in the `us-east-1` region, this custom resource invokes the [createStack API operation](https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_CreateStack.html) in only the `us-east-1` region, irrespective of where the root stack was created.

@@ -1,0 +1,169 @@
+<div class="animated fadeIn">
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="#">AWS EKS Reference Architecture</a>
+    <button
+      aria-controls="navbarSupportedContent"
+      (click)="IsCollapsed = !IsCollapsed"
+      [attr.aria-expanded]="!IsCollapsed"
+      class="navbar-toggler"
+      type="button"
+      aria-label="Toggle navigation"
+    >
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div
+      class="collapse navbar-collapse"
+      id="navbarSupportedContent"
+      [collapse]="IsCollapsed"
+      [isAnimated]="true"
+    >
+      <ul class="navbar-nav mr-auto">
+        <li class="nav-item active">
+          <a class="nav-link" href="#"
+            >Home <span class="sr-only">(current)</span></a
+          >
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/register">Sign Up!</a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <header class="bg-image d-flex align-items-center">
+    <div class="container">
+      <h1>EKS Reference Architecture</h1>
+      <h2>It's so nice it blows your mind.</h2>
+      <a href="" (click)="register()" class="btn btn-transparent">Sign up now!</a>
+    </div>
+  </header>
+
+  <section>
+    <div class="container">
+      <div class="row">
+        <div class="col-sm-4 text--center">
+          <carousel [interval]="false">
+            <slide>
+              <img
+                src="https://d2908q01vomqb2.cloudfront.net/ca3512f4dfa95a03169c5a670a4c91a19b3077b4/2018/08/23/eks-orig.jpg"
+                alt="First slide"
+                style="display: block; width: 100%"
+              />
+            </slide>
+            <slide>
+              <img
+                src="https://community-cdn-digitalocean-com.global.ssl.fastly.net/variants/UD33x1XYKUSYG3C5JSz2MPAf/035575f2985fe451d86e717d73691e533a1a00545d7230900ed786341dc3c882"
+                alt="Second slide"
+                style="display: block; width: 100%"
+              />
+            </slide>
+            <slide>
+              <img
+                src="https://picsum.photos/id/1031/900/500"
+                alt="Third slide"
+                style="display: block; width: 100%"
+              />
+            </slide>
+          </carousel>
+        </div>
+        <div class="col-sm-7 details">
+          <h3>EKS Reference Architecture is so awesome.</h3>
+          <p>
+            Lorem ipsum dolor sit amet, consectetur adipisicing elit. Facere
+            temporibus omnis illum, officia. Architecto voluptatibus commodi
+            voluptatem perspiciatis eos possimus, eius at molestias quaerat
+            magnam? Odio qui quos ipsam natus.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section--primary">
+    <div class="container">
+      <div class="col-3 features">
+        <i class="fa fa-bolt"></i>
+        <p>
+          EKS Reference Architecture so awesome. Makes you awesome - go sign up!
+        </p>
+      </div>
+      <div class="col-3 features">
+        <i class="fa fa-bank"></i>
+        <p>
+          EKS Reference Architecture so great. Makes you even greater - go sign
+          up now. Super cheap deal!
+        </p>
+      </div>
+      <div class="col-3 features">
+        <i class="fa fa-heart"></i>
+        <p>Feel lonely? Go sign up and have a friend!</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section--primary--alt">
+    <div class="container">
+      <h3>Take EKS Reference Architecture with you everywhere you go.</h3>
+      <p>
+        EKS Reference Architecture is all you need. Anywhere - ever. Lorem ipsum
+        dolor sit amet, consectetur adipisicing elit. Expedita sapiente hic
+        voluptatum quo sunt totam accusamus distinctio minus aliquid quis!
+      </p>
+    </div>
+  </section>
+
+  <section class="section--primary--light">
+    <div class="container">
+      <blockquote class="testimonial">
+        <p>
+          Love EKS Reference Architecture. So nice! So good! Could not live
+          without!
+        </p>
+        <cite> Satisfied Customer </cite>
+      </blockquote>
+    </div>
+  </section>
+
+  <section class="section--primary--alt bg-image bg-image-2">
+    <div class="container text--center">
+      <h3>Reasons to sign up this product:</h3>
+      <div class="col-5 text--left">
+        <ul>
+          <li>Its the best</li>
+          <li>Its awesome</li>
+          <li>It makes you happy</li>
+          <li>It brings world peace</li>
+          <li>Its free!</li>
+        </ul>
+      </div>
+      <div class="col-5 text--left">
+        <ul>
+          <li>Its the best</li>
+          <li>Its awesome</li>
+          <li>It makes you happy</li>
+          <li>It brings world peace</li>
+          <li>Its free!</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="text--center">
+    <div class="container">
+      <h3>Why you still reading?</h3>
+      <a href="" (click)="register()" class="btn">Sign up now!</a>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <ul>
+        <li><a href="#">SaaS Factory</a></li>
+        <li><a href="#">Contact</a></li>
+        <li><a href="#">Mainpage</a></li>
+      </ul>
+      <p>&copy; 2020 AWS SaaS Factory. All rights reserved.</p>
+    </div>
+  </footer>
+</div>

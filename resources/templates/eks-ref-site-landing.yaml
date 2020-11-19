@@ -1,0 +1,91 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: AWS EKS Reference Landing Site with CloudFront, OAI and S3 Buckets
+Parameters:
+  CustomDomainName:
+    Type: String
+  S3OAIUserId:
+    Type: String
+  S3OAIId:
+    Type: String
+  AppCertArn:
+    Type: String
+  HostedZoneId:
+    Type: String
+Resources:
+  LandingAppBucket:  
+    Type: 'AWS::S3::Bucket'
+  LandingAppSiteReadPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      Bucket: !Ref LandingAppBucket
+      PolicyDocument:
+        Statement:
+        - Action: 's3:GetObject'
+          Effect: Allow
+          Resource: !Sub 'arn:aws:s3:::${LandingAppBucket}/*'
+          Principal:
+            CanonicalUser: !Ref S3OAIUserId
+  LandingAppSite:
+    Type: 'AWS::CloudFront::Distribution'
+    Properties:
+      DistributionConfig:
+        Aliases: 
+          - !Sub  'www.${CustomDomainName}'
+        CustomErrorResponses:
+        # Needed to support angular routing
+        - ErrorCode: 403 
+          ResponseCode: 200
+          ResponsePagePath: '/index.html'
+        - ErrorCode: 404
+          ResponseCode: 200
+          ResponsePagePath: '/index.html'
+        DefaultCacheBehavior:
+          AllowedMethods:
+          - GET
+          - HEAD
+          - OPTIONS
+          CachedMethods:
+          - GET
+          - HEAD
+          - OPTIONS
+          Compress: true
+          DefaultTTL: 3600 # in seconds
+          ForwardedValues:
+            Cookies:
+              Forward: none
+            QueryString: false
+          MaxTTL: 86400 # in seconds
+          MinTTL: 60 # in seconds
+          TargetOriginId: s3origin
+          ViewerProtocolPolicy: 'allow-all'
+        DefaultRootObject: 'index.html'
+        Enabled: true
+        HttpVersion: http2
+        Origins:
+        - DomainName: !GetAtt 'LandingAppBucket.DomainName'
+          Id: s3origin
+          S3OriginConfig:
+            OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${S3OAIId}'
+        PriceClass: 'PriceClass_All'  
+        ViewerCertificate:
+          AcmCertificateArn: !Ref AppCertArn
+          MinimumProtocolVersion: 'TLSv1.2_2018'
+          SslSupportMethod: 'sni-only'
+  LandingAppSiteAlias:
+    Type: 'AWS::Route53::RecordSet'
+    Properties:
+      AliasTarget:
+        DNSName: !GetAtt 'LandingAppSite.DomainName'
+        EvaluateTargetHealth: false
+        HostedZoneId: 'Z2FDTNDATAQYW2' # This is hardcoded per the docs. Who knew? ?\_(?)_/?
+      HostedZoneId : !Ref HostedZoneId
+      Name: !Sub 'www.${CustomDomainName}'
+      Type: A
+Outputs:
+  TenantManagementUrl:
+    Description: The URL of the marketing (landing page)
+    Value: !Sub 'https://${LandingAppSite.DomainName}'
+  LandingBucket:
+    Description: The name of the bucket for uploading the Landing site to
+    Value: !Ref LandingAppBucket

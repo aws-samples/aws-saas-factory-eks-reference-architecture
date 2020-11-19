@@ -1,0 +1,13 @@
+# restrict to changes to these domains
+domainFilters:
+  - 
+# descriptive text to show who created record
+txtOwnerId: "externaldns"
+aws:
+  zoneType: public
+  region: ""
+# fetch latest image from the source
+image:
+  registry: registry.opensource.zalan.do
+  repository: teapot/external-dns
+  tag: v0.7.3

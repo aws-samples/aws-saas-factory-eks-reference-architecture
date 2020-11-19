@@ -1,0 +1,178 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: AWS EKS Reference Architecture Root Stack
+Parameters:
+  EKSRefArchBucket:
+    Description: EKS Reference Architecture assets S3 bucket
+    Type: String
+    MinLength: 1
+  DomainName:
+    Description: The domain which will host the EKS Workloads.
+    Type: String
+  #TODO Make this optional. If not provided, create one
+  HostedZoneId:
+    Description: The id of an existing hosted zone to use
+    Type: String
+Resources:
+  CrossRegionCfnRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+      Policies:
+      - PolicyName: CfnStackAssumeRole
+        PolicyDocument:
+          Version: '2012-10-17'
+          #TODO We can lock these down more
+          Statement:
+          - Effect: Allow
+            Action: 
+            - 'acm:AddTagsToCertificate' # TODO Scope to resource?
+            - 'acm:DeleteCertificate' # TODO Scope to resource
+            - 'acm:DescribeCertificate' # TODO Scope to resource?
+            - 'acm:GetCertificate' # TODO Scope to resource?
+            - 'acm:ListCertificates'
+            - 'acm:ListTagsForCertificate' # TODO Scope to resource?
+            - 'acm:RequestCertificate'
+            - 'cloudformation:CreateStack'
+            - 'cloudformation:DeleteStack'
+            - 'cloudformation:DescribeStacks'
+            - 'cloudformation:UpdateStack'
+            - 'events:*'
+            - 'lambda:AddPermission'
+            - 'lambda:RemovePermission'
+            - 'logs:CreateLogGroup'
+            - 'logs:CreateLogStream'
+            - 'logs:PutLogEvents'
+            - 's3:CreateBucket'
+            - 's3:DeleteBucket'
+            - 's3:DeleteBucket*'
+            - 's3:GetObject'
+            - 's3:PutBucket*'
+            Resource: "*"
+  CrossRegionLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: lambda_function.lambda_handler
+      MemorySize: 128
+      Role: !GetAtt CrossRegionCfnRole.Arn
+      Runtime: python3.6
+      Timeout: 900
+      Code:
+        S3Bucket: !Ref EKSRefArchBucket
+        S3Key: 'cfn-cross-region.zip'
+  Base:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://${EKSRefArchBucket}.s3.amazonaws.com/eks-ref-base.yaml
+      Parameters:
+        EKSRefArchBucket: !Ref EKSRefArchBucket
+        CustomDomainName: !Ref DomainName
+        CrossRegionStackMakerLambda: !GetAtt CrossRegionLambda.Arn
+  AppSite:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: Base
+    Properties:
+      TemplateURL: !Sub https://${EKSRefArchBucket}.s3.amazonaws.com/eks-ref-site-application.yaml
+      Parameters:
+        AppCertArn: !GetAtt Base.Outputs.AppCertArn
+        CustomDomainName: !Ref DomainName
+        HostedZoneId: !Ref HostedZoneId
+        S3OAIId: !GetAtt Base.Outputs.S3OAIId
+        S3OAIUserId: !GetAtt Base.Outputs.S3OAIUserId
+  AdminSite:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: Base
+    Properties:
+      TemplateURL: !Sub https://${EKSRefArchBucket}.s3.amazonaws.com/eks-ref-site-admin.yaml
+      Parameters:
+        AppCertArn: !GetAtt Base.Outputs.AppCertArn
+        CustomDomainName: !Ref DomainName
+        HostedZoneId: !Ref HostedZoneId
+        S3OAIId: !GetAtt Base.Outputs.S3OAIId
+        S3OAIUserId: !GetAtt Base.Outputs.S3OAIUserId
+  LandingSite:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: Base
+    Properties:
+      TemplateURL: !Sub https://${EKSRefArchBucket}.s3.amazonaws.com/eks-ref-site-landing.yaml
+      Parameters:
+        AppCertArn: !GetAtt Base.Outputs.AppCertArn
+        CustomDomainName: !Ref DomainName
+        HostedZoneId: !Ref HostedZoneId
+        S3OAIId: !GetAtt Base.Outputs.S3OAIId
+        S3OAIUserId: !GetAtt Base.Outputs.S3OAIUserId
+  ECRRepos:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://${EKSRefArchBucket}.s3.amazonaws.com/eks-ref-ecr-repos.yaml
+  TenantOnboarding:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://${EKSRefArchBucket}.s3.amazonaws.com/eks-ref-tenant-onboarding.yaml
+Outputs:
+  AppCloudFrontId:
+    Description: The ID of the cloudfront distribution hosting the tenant application
+    Value: !GetAtt AppSite.Outputs.AppCloudFrontId
+    Export:
+      Name: !Sub '${AWS::StackName}-AppCloudFrontId'
+  OnboardingMetadataTable:
+    Description: The name of the dynamo db table used to store metadata for onboarding new tenants
+    Value: !GetAtt TenantOnboarding.Outputs.OnboardingMetadataDdb
+    Export:
+      Name: !Sub '${AWS::StackName}-OnboardingMetadataTable'
+  ApplicationSiteBucket:
+    Description: The S3 Bucket that will contain the static assets for the tenant application
+    Value: !GetAtt AppSite.Outputs.AppBucket
+    Export:
+      Name: !Sub '${AWS::StackName}-EksRefArchAppBucket'
+  AdminSiteBucket:
+    Description: The S3 Bucket that will contain the static assets for the tenant administration application
+    Value: !GetAtt AdminSite.Outputs.AdminBucket
+    Export:
+      Name: !Sub '${AWS::StackName}-EksRefArchAdminAppBucket'
+  LandingSiteBucket:
+    Description: The S3 Bucket that will contain the static assets for the landing site application
+    Value: !GetAtt LandingSite.Outputs.LandingBucket
+    Export:
+      Name: !Sub '${AWS::StackName}-EksRefArchLandingAppBucket'
+  TenantManagementECR:
+    Description: The ECR where the tenant management service container should be updated
+    Value: !GetAtt ECRRepos.Outputs.TenantManagementServiceRepo
+    Export:
+      Name: !Sub '${AWS::StackName}-TenantManagementECR'
+  TenantRegistrationECR:
+    Description: The ECR where the tenant registration service container should be updated
+    Value: !GetAtt ECRRepos.Outputs.TenantRegistrationServiceRepo
+    Export:
+      Name: !Sub '${AWS::StackName}-TenantRegistrationECR'
+  UserManagementECR:
+    Description: The ECR where the user management service container should be updated
+    Value: !GetAtt ECRRepos.Outputs.UserManagementServiceRepo
+    Export:
+      Name: !Sub '${AWS::StackName}-UserManagementECR'
+  SaasAppECR:
+    Description: The ECR where the SaaS Application Services container should be updated
+    Value: !GetAtt ECRRepos.Outputs.SaasAppServiceRepo
+    Export:
+      Name: !Sub '${AWS::StackName}-SaasAppECR'
+  ProductECR:
+    Description: The ECR where the Product Service container should be updated
+    Value: !GetAtt ECRRepos.Outputs.ProductServiceRepo
+    Export:
+      Name: !Sub '${AWS::StackName}-ProductECR'
+  OrderECR:
+    Description: The ECR where the Order Service container should be updated
+    Value: !GetAtt ECRRepos.Outputs.OrderServiceRepo
+    Export:
+      Name: !Sub '${AWS::StackName}-OrderECR'
+  CodeCommitCloneUrl:
+    Description: The URL to git clone the Code Commit repo
+    Value: !GetAtt TenantOnboarding.Outputs.CodeCommitCloneUrl
+    Export:
+      Name: !Sub '${AWS::StackName}-CodeCommitCloneUrl'

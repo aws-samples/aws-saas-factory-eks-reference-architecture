@@ -1,0 +1,91 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: AWS EKS Reference Administration Site with CloudFront, OAI and S3 Buckets
+Parameters:
+  CustomDomainName:
+    Type: String
+  S3OAIUserId:
+    Type: String
+  S3OAIId:
+    Type: String
+  AppCertArn:
+    Type: String
+  HostedZoneId:
+    Type: String
+Resources:
+  AdminAppBucket:  
+    Type: 'AWS::S3::Bucket'
+  AdminAppSiteReadPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      Bucket: !Ref AdminAppBucket
+      PolicyDocument:
+        Statement:
+        - Action: 's3:GetObject'
+          Effect: Allow
+          Resource: !Sub 'arn:aws:s3:::${AdminAppBucket}/*'
+          Principal:
+            CanonicalUser: !Ref S3OAIUserId
+  AdminAppSite:
+    Type: 'AWS::CloudFront::Distribution'
+    Properties:
+      DistributionConfig:
+        Aliases: 
+          - !Sub 'admin.${CustomDomainName}'
+        CustomErrorResponses:
+        # Needed to support angular routing
+        - ErrorCode: 403 
+          ResponseCode: 200
+          ResponsePagePath: '/index.html'
+        - ErrorCode: 404
+          ResponseCode: 200
+          ResponsePagePath: '/index.html'
+        DefaultCacheBehavior:
+          AllowedMethods:
+          - GET
+          - HEAD
+          - OPTIONS
+          CachedMethods:
+          - GET
+          - HEAD
+          - OPTIONS
+          Compress: true
+          DefaultTTL: 3600 # in seconds
+          ForwardedValues:
+            Cookies:
+              Forward: none
+            QueryString: false
+          MaxTTL: 86400 # in seconds
+          MinTTL: 60 # in seconds
+          TargetOriginId: s3origin
+          ViewerProtocolPolicy: 'allow-all'
+        DefaultRootObject: 'index.html'
+        Enabled: true
+        HttpVersion: http2
+        Origins:
+        - DomainName: !GetAtt 'AdminAppBucket.DomainName'
+          Id: s3origin
+          S3OriginConfig:
+            OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${S3OAIId}'
+        PriceClass: 'PriceClass_All'  
+        ViewerCertificate:
+          AcmCertificateArn: !Ref AppCertArn
+          MinimumProtocolVersion: 'TLSv1.2_2018'
+          SslSupportMethod: 'sni-only'
+  AdminAppSiteAlias:
+    Type: 'AWS::Route53::RecordSet'
+    Properties:
+      AliasTarget:
+        DNSName: !GetAtt 'AdminAppSite.DomainName'
+        EvaluateTargetHealth: false
+        HostedZoneId: 'Z2FDTNDATAQYW2' # This is hardcoded per the docs. Who knew? ?\_(?)_/?
+      HostedZoneId : !Ref HostedZoneId
+      Name: !Sub 'admin.${CustomDomainName}'
+      Type: A
+Outputs:
+  TenantManagementUrl:
+    Description: The URL of the admin site
+    Value: !Sub 'https://${AdminAppSite.DomainName}'
+  AdminBucket:
+    Description: The name of the bucket for uploading the Tenant Management site to
+    Value: !Ref AdminAppBucket

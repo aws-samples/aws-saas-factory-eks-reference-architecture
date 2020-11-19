@@ -1,0 +1,20 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: AWS EKS Reference Wildcard and Application Certificates
+Parameters:
+  CustomDomainName:
+    Type: String
+Resources:
+  AppCert:
+    Type: 'AWS::CertificateManager::Certificate'
+    Properties:
+      DomainName: !Sub '*.${CustomDomainName}'
+      SubjectAlternativeNames:
+        - !Sub '${CustomDomainName}'
+      DomainValidationOptions:
+        - DomainName: !Ref CustomDomainName
+          ValidationDomain: !Ref CustomDomainName
+      ValidationMethod: DNS
+Outputs:
+  CertArn:
+    Value: !Ref AppCert

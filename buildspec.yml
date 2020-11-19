@@ -1,0 +1,48 @@
+---
+version: 0.2
+phases:
+  install:
+    commands:
+      - curl -sS -o aws-iam-authenticator https://amazon-eks.s3-us-west-2.amazonaws.com/1.10.3/2018-07-26/bin/linux/amd64/aws-iam-authenticator
+      - curl -sS -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.17.7/2020-07-08/bin/linux/amd64/kubectl
+      - curl --silent --location https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz | tar xz -C .
+      - chmod +x ./kubectl ./aws-iam-authenticator
+      - export PATH=$PWD/:$PATH
+      - apt-get update && apt-get -y install jq python3-pip python3-dev && pip3 install --upgrade awscli
+  pre_build:
+      commands:
+        - export KUBECONFIG=$HOME/.kube/config
+  build:
+    commands:
+
+  post_build:
+    commands:
+      - CREDENTIALS=$(aws sts assume-role --role-arn $EKS_KUBECTL_ROLE_ARN --role-session-name codebuild-kubectl --duration-seconds 900)
+      - echo "${CREDENTIALS}"
+      - export AWS_ACCESS_KEY_ID="$(echo ${CREDENTIALS} | jq -r '.Credentials.AccessKeyId')"
+      - export AWS_SECRET_ACCESS_KEY="$(echo ${CREDENTIALS} | jq -r '.Credentials.SecretAccessKey')"
+      - export AWS_SESSION_TOKEN="$(echo ${CREDENTIALS} | jq -r '.Credentials.SessionToken')"
+      - export AWS_EXPIRATION=$(echo ${CREDENTIALS} | jq -r '.Credentials.Expiration')
+      - echo "${EKS_CLUSTER_NAME}"
+      - echo "${TENANT_NAME}"
+      - aws eks update-kubeconfig --name $EKS_CLUSTER_NAME
+      - kubectl version
+      - cat $HOME/.kube/config
+      - kubectl config view
+      - aws dynamodb create-table --table-name Order-$TENANT_NAME --attribute-definitions AttributeName=OrderId,AttributeType=S --key-schema AttributeName=OrderId,KeyType=HASH --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5
+      - sed -i -e 's,TENANT_NAME,'$TENANT_NAME',g' resources/policy/order-ddb-table-policy.json
+      - sed -i -e 's,ACCOUNT_ID,'$ACCOUNT_ID',g' resources/policy/order-ddb-table-policy.json
+      - aws iam create-policy --policy-name $TENANT_NAME-ddb-policy --policy-document file://resources/policy/order-ddb-table-policy.json
+      - kubectl create ns $TENANT_NAME
+      - eksctl utils associate-iam-oidc-provider --cluster=$EKS_CLUSTER_NAME --approve
+      - eksctl create iamserviceaccount --name $TENANT_NAME-ddb-sa --namespace=$TENANT_NAME --cluster $EKS_CLUSTER_NAME --attach-policy-arn arn:aws:iam::$ACCOUNT_ID:policy/$TENANT_NAME-ddb-policy --approve
+      - sed -i -e 's,TENANT_NAME,'$TENANT_NAME',g' services/application-services/product-service/kubernetes/product-service.yaml
+      - sed -i -e 's,CUSTOM_DOMAIN,'$CUSTOM_DOMAIN',g' services/application-services/product-service/kubernetes/product-service.yaml
+      - sed -i -e 's,PRODUCT_SERVICE_ECR_REPO_URI,'$PRODUCT_SERVICE_ECR_REPO_URI',g' services/application-services/product-service/kubernetes/product-service.yaml
+      - kubectl apply -f services/application-services/product-service/kubernetes/product-service.yaml -n $TENANT_NAME
+      - sed -i -e 's,TENANT_NAME,'$TENANT_NAME',g' services/application-services/order-service/kubernetes/order-service.yaml
+      - sed -i -e 's,CUSTOM_DOMAIN,'$CUSTOM_DOMAIN',g' services/application-services/order-service/kubernetes/order-service.yaml
+      - sed -i -e 's,ORDER_SERVICE_ECR_REPO_URI,'$ORDER_SERVICE_ECR_REPO_URI',g' services/application-services/order-service/kubernetes/order-service.yaml
+      - kubectl apply -f services/application-services/order-service/kubernetes/order-service.yaml -n $TENANT_NAME
+      - sed -i -e 's,TENANT_NAME,'$TENANT_NAME',g' resources/policy/tenant-service-policy.yaml
+      - kubectl apply -f resources/policy/tenant-service-policy.yaml -n $TENANT_NAME 
