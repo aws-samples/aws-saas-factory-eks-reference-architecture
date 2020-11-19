@@ -4,10 +4,6 @@ A reference solution focuses on providing the SaaS community with a targeted set
 
 ## Scope
 
-## Goals and outcomes
-
-The goal here is that the user will take this solution, clone it in to their environment and they get a running version of a multi-tenant Amazon EKS solution. Each tenant will have their own set of micro-services. We provide a basic  UI. The idea here is that the user can plugin any UI that they have or can build on their own.
-
 ## Setup Instructions
 
 > :warning: The Cloud9 workspace should be built by an IAM user with Administrator privileges, not the root account user. Please ensure you are logged in as an IAM user, not the root account user.
