@@ -18,6 +18,8 @@ package com.amazonaws.saas.eks.controller;
 
 import java.util.List;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,10 +34,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.amazonaws.saas.eks.auth.TokenManager;
 import com.amazonaws.saas.eks.model.Product;
-import com.amazonaws.saas.eks.repository.ProductRepository;
 import com.amazonaws.saas.eks.service.ProductService;
-import com.amazonaws.saas.eks.service.ProductServiceImpl;
 
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 @RestController
@@ -45,9 +46,21 @@ public class ProductController {
 	@Autowired
 	private ProductService productService;
 
-	@GetMapping(value = "{tenantId}/product/api/products", produces = { MediaType.APPLICATION_JSON_VALUE })
-	public List<Product> getProducts(@PathVariable("tenantId") String tenantId) {
-		logger.info("Return products");
+	@Autowired
+	private TokenManager tokenManager;
+
+	@GetMapping(value = "{companyName}/product/api/products", produces = { MediaType.APPLICATION_JSON_VALUE })
+	public List<Product> getProducts(@PathVariable("companyName") String companyName, HttpServletRequest request) {
+		logger.info("In getProducts function");
+		String tenantId;
+		
+		try {
+			tenantId = tokenManager.authenticate(request);
+		} catch (Exception e) {
+			logger.error("Request could not be authenticated!");
+			return null;
+		}
+		
 		return productService.getProducts(tenantId);
 	}
 
