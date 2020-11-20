@@ -16,12 +16,10 @@
  */
 package com.amazonaws.saas.eks;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.core.annotation.Order;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
@@ -29,7 +27,7 @@ import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.saas.eks.dto.AuthConfig;
 import com.amazonaws.saas.eks.dto.Tenant;
 import com.amazonaws.saas.eks.dto.TenantDetails;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.saas.eks.util.LoggingManager;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -50,7 +48,7 @@ public class TenantRegistrationService {
 			tenant = createUser(tenant);
 			tenant = provisionSaaSAppService(tenant);
 
-			logger.info("Tenant registration success!");
+			LoggingManager.logInfo(tenant.getTenantId(), "Tenant registration success!");
 			return "\"Tenant registration success.\"";
 
 		} else {
@@ -179,5 +177,22 @@ public class TenantRegistrationService {
 	public static void main(String args[]) {
 		TenantRegistrationService service = new TenantRegistrationService();
 		service.getTenants();
+	}
+
+	public Tenant updateTenant(Tenant tenant) {
+		try {
+			DynamoDBMapper mapper = dynamoDBMapper();
+
+			DynamoDBMapperConfig dynamoDBMapperConfig = new DynamoDBMapperConfig.Builder()
+					  .withConsistentReads(DynamoDBMapperConfig.ConsistentReads.CONSISTENT)
+					  .withSaveBehavior(DynamoDBMapperConfig.SaveBehavior.UPDATE)
+					  .build();
+			mapper.save(tenant, dynamoDBMapperConfig);
+
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		}
+		return tenant;
+
 	}
 }

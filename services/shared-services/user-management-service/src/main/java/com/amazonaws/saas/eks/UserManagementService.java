@@ -32,6 +32,7 @@ import org.apache.logging.log4j.Logger;
 import com.amazonaws.saas.eks.dto.TenantDetails;
 import com.amazonaws.saas.eks.dto.User;
 import com.amazonaws.saas.eks.util.EksSaaSUtil;
+import com.amazonaws.saas.eks.util.LoggingManager;
 import com.amazonaws.services.cloudfront.AmazonCloudFront;
 import com.amazonaws.services.cloudfront.AmazonCloudFrontClientBuilder;
 import com.amazonaws.services.cloudfront.model.Aliases;
@@ -91,7 +92,7 @@ public class UserManagementService {
 	 */
 	private TenantDetails addRoute53Recordset(TenantDetails tenant) {
 		String name = tenant.getTenantId() + "." + tenant.getCustomDomain();
-		logger.info("Recordset name=>" + name);
+		LoggingManager.logInfo(tenant.getTenantId(), "Recordset name=>" + name);
 
 		AmazonRoute53 route53Client = AmazonRoute53ClientBuilder.defaultClient();
 		List<Change> changes = new ArrayList<Change>();
@@ -117,16 +118,16 @@ public class UserManagementService {
 
 		ChangeResourceRecordSetsResult result = route53Client.changeResourceRecordSets(changeResourceRecordSetsRequest);
 
-		logger.info("Add Route 53 RecordSet successful.");
+		LoggingManager.logInfo(tenant.getTenantId(), "Add Route 53 RecordSet successful.");
 
 		// Return RedirectUri and SilentRefreshRedirectUri
 		String redirectUrl = "https://" + tenant.getTenantId() + "." + tenant.getCustomDomain() + "/dashboard";
-		logger.info("redirectUrl=>" + redirectUrl);
+		LoggingManager.logInfo(tenant.getTenantId(),"redirectUrl=>" + redirectUrl);
 		tenant.setRedirectUrl(redirectUrl);
 
 		String silentRefreshRedirectUri = "https://" + tenant.getTenantId() + "." + tenant.getCustomDomain()
 				+ "/silentrefresh";
-		logger.info("SilentRefreshRedirectUri=>" + silentRefreshRedirectUri);
+		LoggingManager.logInfo(tenant.getTenantId(),"SilentRefreshRedirectUri=>" + silentRefreshRedirectUri);
 		tenant.setSilentRefreshRedirectUri(silentRefreshRedirectUri);
 
 		return tenant;
@@ -145,10 +146,9 @@ public class UserManagementService {
 
 		GetDistributionResult distroInfo = getDistributionDetails(amazonCloudFront, tenant);
 		
-		logger.info("TenantId:"+tenant.getTenantId());
-		logger.info("CustomDomain:"+tenant.getCustomDomain());
-		logger.info("AppCloudFrontId:"+tenant.getAppCloudFrontId());
-		logger.info("Distro:"+distroInfo.toString());
+		LoggingManager.logInfo(tenant.getTenantId(), "CustomDomain:"+tenant.getCustomDomain());
+		LoggingManager.logInfo(tenant.getTenantId(), "AppCloudFrontId:"+tenant.getAppCloudFrontId());
+		LoggingManager.logInfo(tenant.getTenantId(), "Distro:"+distroInfo.toString());
 
 		updateDistributionRequest.setId(tenant.getAppCloudFrontId());
 		updateDistributionRequest.setIfMatch(distroInfo.getETag());
@@ -177,7 +177,7 @@ public class UserManagementService {
 
 		UpdateDistributionResult result = amazonCloudFront.updateDistribution(updateDistributionRequest);
 
-		logger.info("Updating Cloudfront Distribution successful for domain =>" + result.getDistribution().getDomainName());
+		LoggingManager.logInfo(tenant.getTenantId(), "Updating Cloudfront Distribution successful for domain =>" + result.getDistribution().getDomainName());
 
 		// Retrieve DomainName from the result and set it to tenant details.
 		tenant.setAppCloudFrontDomainName(result.getDistribution().getDomainName());
@@ -209,7 +209,7 @@ public class UserManagementService {
 								new AttributeType().withName("custom:tenant-id").withValue(tenant.getTenantId())));
 
 		UserType cognitoUser = createUserResult.getUser();
-		logger.info("Cognito - Create User Success=>" + cognitoUser.getUsername());
+		LoggingManager.logInfo(tenant.getTenantId(), "Cognito - Create User Success=>" + cognitoUser.getUsername());
 
 		// We created the user above, but the password is marked as temporary.
 		// We need to set the password again. Initiate an auth challenge to get
@@ -294,10 +294,9 @@ public class UserManagementService {
 		tenant.setUserPoolId(userPoolId);
 		tenant.setAuthServer(authServer);
 
-		logger.info("Created user pool with id: " + userPoolId);
-		logger.info("Created Auth Server: " + authServer);
-
-		logger.info("Create User Pool Successful.");
+		LoggingManager.logInfo(tenant.getTenantId(), "Created user pool with id: " + userPoolId);
+		LoggingManager.logInfo(tenant.getTenantId(), "Created Auth Server: " + authServer);
+		LoggingManager.logInfo(tenant.getTenantId(), "Create User Pool Successful.");
 
 		return tenant;
 
@@ -317,7 +316,7 @@ public class UserManagementService {
 
 		cognitoIdentityProvider.createUserPoolDomain(createUserPoolDomainRequest);
 
-		logger.info("Create User Pool Domain Successful.");
+		LoggingManager.logInfo(tenant.getTenantId(), "Create User Pool Domain Successful.");
 
 		return tenant;
 	}
@@ -331,7 +330,7 @@ public class UserManagementService {
 		AWSCognitoIdentityProvider cognitoIdentityProvider = AWSCognitoIdentityProviderClientBuilder.defaultClient();
 
 		String url = "https://" + tenant.getTenantId() + "." + tenant.getCustomDomain();
-		logger.info("URL=>" + url);
+		LoggingManager.logInfo(tenant.getTenantId(),"URL=>" + url);
 
 		CreateUserPoolClientRequest createUserPoolClientRequest = new CreateUserPoolClientRequest();
 		createUserPoolClientRequest.setClientName(tenant.getTenantId());
@@ -378,7 +377,7 @@ public class UserManagementService {
 
 		CreateUserPoolClientResult result = cognitoIdentityProvider.createUserPoolClient(createUserPoolClientRequest);
 
-		logger.info("Create User Pool Client Successful.");
+		LoggingManager.logInfo(tenant.getTenantId(), "Create User Pool Client Successful.");
 
 		// Return ClientId back
 		tenant.setClientId(result.getUserPoolClient().getClientId());
@@ -397,7 +396,7 @@ public class UserManagementService {
 	        String table_name = "SAAS_PROVIDER_METADATA";
 	        String name = tenant.getCustomDomain();
 
-			logger.info("Received CustomDomain=>"+ tenant.getCustomDomain() + " for lookup.");
+	        LoggingManager.logInfo(tenant.getTenantId(), "Received CustomDomain=>"+ tenant.getCustomDomain() + " for lookup.");
 
 		    AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard().build();
 		    DynamoDB dynamoDB = new DynamoDB(client);
@@ -406,15 +405,15 @@ public class UserManagementService {
 	        try {
 
 	            Item item = table.getItem("DOMAIN_NAME", name);
-	            logger.info("Printing item after retrieving it....");
-	            logger.info(item.toJSONPretty());
+	            LoggingManager.logInfo(tenant.getTenantId(), "Printing item after retrieving it....");
+	            LoggingManager.logInfo(tenant.getTenantId(), item.toJSONPretty());
 
 	            tenant.setHostedZoneId((String)item.get("HOSTED_ZONE_ID"));
 	            tenant.setAppCloudFrontId((String)item.get("APP_CLOUDFRONT_ID"));
 	        }
 	        catch (Exception e) {
-	            logger.error("GetItem failed.");
-	            logger.error(e.getMessage());
+	        	LoggingManager.logError(tenant.getTenantId(),"GetItem failed.");
+	        	LoggingManager.logError(tenant.getTenantId(),e.getMessage());
 	        }
 
 			return tenant;

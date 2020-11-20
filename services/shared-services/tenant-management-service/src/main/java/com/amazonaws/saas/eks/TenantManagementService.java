@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.math.*;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -30,6 +29,7 @@ import org.apache.logging.log4j.Logger;
 import com.amazonaws.saas.eks.dto.AuthConfig;
 import com.amazonaws.saas.eks.dto.SaaSProviderMetadata;
 import com.amazonaws.saas.eks.dto.TenantDetails;
+import com.amazonaws.saas.eks.util.LoggingManager;
 import com.amazonaws.services.cloudformation.AmazonCloudFormation;
 import com.amazonaws.services.cloudformation.AmazonCloudFormationClientBuilder;
 import com.amazonaws.services.cloudformation.model.CreateStackRequest;
@@ -76,7 +76,7 @@ public class TenantManagementService {
 				.withString("PLAN", tenant.getPlan());
 
 		PutItemOutcome outcome = table.putItem(item);
-		logger.info("New tenant entry created in EKSREFARCH_TENANTS table!");
+		LoggingManager.logInfo(tenant.getTenantId(), "New tenant entry created in EKSREFARCH_TENANTS table!");
 
 		return tenant;
 	}
@@ -118,10 +118,10 @@ public class TenantManagementService {
 		String stackName = tenant.getTenantId();
 		 SaaSProviderMetadata saaSProviderMetadata = getSaaSProviderMetadata(tenant);
 
-		logger.info("StackName =>" + stackName);
-		logger.info("S3 URL =>" + saaSProviderMetadata.getS3Endpoint());
-		logger.info("ProductServiceEcrRepoUri =>" + saaSProviderMetadata.getProductServiceEcrRepoUri());
-		logger.info("OrderServiceEcrRepoUri =>" + saaSProviderMetadata.getOrderServiceEcrRepoUri());
+		LoggingManager.logInfo(tenant.getTenantId(), "StackName =>" + stackName);
+		LoggingManager.logInfo(tenant.getTenantId(), "S3 URL =>" + saaSProviderMetadata.getS3Endpoint());
+		LoggingManager.logInfo(tenant.getTenantId(), "ProductServiceEcrRepoUri =>" + saaSProviderMetadata.getProductServiceEcrRepoUri());
+		LoggingManager.logInfo(tenant.getTenantId(), "OrderServiceEcrRepoUri =>" + saaSProviderMetadata.getOrderServiceEcrRepoUri());
 
 		AmazonCloudFormation client = AmazonCloudFormationClientBuilder.defaultClient();
 
@@ -156,7 +156,7 @@ public class TenantManagementService {
 		capabilities.add("CAPABILITY_IAM");
 		createRequest.setCapabilities(capabilities);
 		client.createStack(createRequest);
-		logger.info("Creating a stack called " + createRequest.getStackName() + ".");
+		LoggingManager.logInfo(tenant.getTenantId(), "Creating a stack called " + createRequest.getStackName() + ".");
 
 		return tenant;
 	}
@@ -237,7 +237,7 @@ public class TenantManagementService {
 	public static void main(String args[]) {
 		TenantManagementService service = new TenantManagementService();
 		TenantDetails tenant = new TenantDetails();
-		tenant.setCompanyName("r123123");
+		tenant.setCompanyName("r123124");
 		tenant.setPlan("Basic");
 		service.createTenant(tenant );
 	}

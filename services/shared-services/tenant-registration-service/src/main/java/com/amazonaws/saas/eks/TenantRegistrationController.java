@@ -24,7 +24,10 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -48,14 +51,20 @@ public class TenantRegistrationController {
 		return result;
     }
   
-    @RequestMapping("/tenant")
+    @GetMapping(value = "tenants", produces = { MediaType.APPLICATION_JSON_VALUE })
     public List<Tenant> getTenants() {
  
     	TenantRegistrationService register = new TenantRegistrationService();
 		return register.getTenants();
     }
 
-    
+	@PutMapping(value = "tenant", produces = { MediaType.APPLICATION_JSON_VALUE })
+	public Tenant updateTenant(Tenant tenant) {
+    	TenantRegistrationService updateTenant = new TenantRegistrationService();
+    	
+		return updateTenant.updateTenant(tenant);
+	}
+
     @RequestMapping(path="/auth", method=RequestMethod.GET)
     public AuthConfig auth(HttpServletRequest request) {
  
