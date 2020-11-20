@@ -15,6 +15,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 import { Component, OnInit } from '@angular/core';
+import { Observable } from 'rxjs';
+import { Tenant } from './models/tenant';
+import { TenantService } from './tenant.service';
 
 @Component({
   selector: 'app-tenant-list',
@@ -24,23 +27,11 @@ import { Component, OnInit } from '@angular/core';
 })
 export class TenantListComponent implements OnInit {
 
-  constructor() { }
-  tenants: Tenant[];
+  constructor(private tenantSvc: TenantService) { }
+  tenants: Observable<any[]>;
 
   ngOnInit(): void {
-    this.tenants = [{
-      Id: '1230234100023',
-      Name: 'Tenant 1',
-      DateRegistered: new Date('9/28/2020'),
-      Status: 'Success',
-    }];
+    this.tenants = this.tenantSvc.getTenants();
   }
-
 }
 
-export interface Tenant {
-  Id: string;
-  Name: string;
-  DateRegistered: Date;
-  Status: string;
-}

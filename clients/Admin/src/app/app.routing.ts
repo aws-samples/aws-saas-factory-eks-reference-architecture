@@ -64,7 +64,7 @@ export const routes: Routes = [
       },
       {
         path: 'tenants',
-        loadChildren: () => import('./views/tenants/tenant.module').then(m => m.TenantModule)
+        loadChildren: () => import('./tenants/tenant.module').then(m => m.TenantModule)
       },
     ]
   },

@@ -70,7 +70,8 @@ import { HttpClientModule } from '@angular/common/http';
     PerfectScrollbarModule,
     BsDropdownModule.forRoot(),
     TabsModule.forRoot(),
-    ChartsModule
+    ChartsModule,
+    HttpClientModule,
   ],
   declarations: [
     AppComponent,
@@ -80,9 +81,9 @@ import { HttpClientModule } from '@angular/common/http';
     LoginComponent,
   ],
   providers: [{
-    provide: LocationStrategy,
-    useClass: HashLocationStrategy,
-  },
+      provide: LocationStrategy,
+      useClass: HashLocationStrategy,
+    },
     HttpClientModule,
   ],
   bootstrap: [ AppComponent ]
