@@ -73,7 +73,7 @@ Resources:
           MinimumProtocolVersion: 'TLSv1.2_2018'
           SslSupportMethod: 'sni-only'
   ApplicationSiteAlias:
-    Type: 'AWS::Route53::RecordSet'
+    Type: AWS::Route53::RecordSet
     Properties:
       AliasTarget:
         DNSName: !GetAtt 'ApplicationSite.DomainName'
