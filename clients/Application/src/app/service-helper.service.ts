@@ -34,7 +34,7 @@ export class ServiceHelperService {
   getTenantName() {
     const hostname = window.location.hostname;
     const parts = hostname.split('.');
-    const tenantId = parts.length === 1 ? 'saashat2' : parts[0];
+    const tenantId = parts.length === 1 ? 'saascoffee' : parts[0];
     return tenantId;
   }
 }

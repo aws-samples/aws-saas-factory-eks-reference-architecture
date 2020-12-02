@@ -1,7 +1,8 @@
 export interface User {
-  Email: string;
-  Created?: string;
-  Modified?: string;
-  Verified?: boolean;
-  Status?: string;
+  email: string;
+  created?: string;
+  modified?: string;
+  enabled?: boolean;
+  status?: string;
+  verified?: boolean;
 }

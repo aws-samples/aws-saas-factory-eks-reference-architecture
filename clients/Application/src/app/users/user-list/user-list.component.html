@@ -13,15 +13,17 @@
               <th>Modified Date</th>
               <th>Verified</th>
               <th>Status</th>
+              <th>Enabled</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let user of users | async">
-              <td>{{user.Email}}</td>
-              <td>{{user.Created | date}}</td>
-              <td>{{user.Modified | date}}</td>
-              <td>{{user.Verified}}</td>
-              <td>{{user.Status}}</td>
+              <td>{{user.email}}</td>
+              <td>{{user.created | date}}</td>
+              <td>{{user.modified | date}}</td>
+              <td>{{user.verified}}</td>
+              <td>{{user.status}}</td>
+              <td>{{user.enabled}}</td>
             </tr>
           </tbody>
         </table>
