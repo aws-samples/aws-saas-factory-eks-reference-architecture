@@ -21,9 +21,14 @@ import java.util.Random;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
+import com.amazonaws.services.dynamodbv2.document.DynamoDB;
+import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.Table;
 
 public class EksSaaSUtil {
-	
+
 	private static final Logger logger = LogManager.getLogger(EksSaaSUtil.class);
 
 	public static String randomStr() {
@@ -40,5 +45,33 @@ public class EksSaaSUtil {
 		return generatedString;
 	}
 
+	public static String getUserPoolForTenant(String companyName) {
 
+		String table_name = "EKSREFARCH_TENANTS";
+		logger.info("Received TENANTID=>" + companyName + "for lookup.");
+
+		AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard().build();
+		DynamoDB dynamoDB = new DynamoDB(client);
+		Table table = dynamoDB.getTable(table_name);
+		String authServer = "";
+		String userPoolId = "";
+		String region = "";
+
+		try {
+			Item item = table.getItem("TENANT_ID", companyName);
+			authServer = (String) item.get("AUTH_SERVER");
+			logger.info("authServer= " + authServer);
+
+			userPoolId = authServer.substring(authServer.lastIndexOf("/") + 1);
+			region = userPoolId.substring(0, userPoolId.indexOf("_"));
+			logger.info("userPoolId= " + userPoolId);
+			logger.info("region= " + region);
+
+		} catch (Exception e) {
+			logger.error("GetItem failed.");
+			logger.error(e.getMessage());
+		}
+
+		return userPoolId;
+	}
 }

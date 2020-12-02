@@ -27,6 +27,8 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,6 +38,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.amazonaws.saas.eks.dto.AuthConfig;
 import com.amazonaws.saas.eks.dto.Tenant;
 import com.amazonaws.saas.eks.dto.TenantDetails;
+import com.amazonaws.saas.eks.dto.User;
 
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 @RestController
@@ -64,6 +67,21 @@ public class TenantRegistrationController {
     	
 		return updateTenant.updateTenant(tenant);
 	}
+
+	@GetMapping(value = "{companyName}/users", produces = { MediaType.APPLICATION_JSON_VALUE })
+    public User[] getUsers(@PathVariable("companyName") String companyName) {
+    	TenantRegistrationService service = new TenantRegistrationService();
+    	
+		return service.getUsers(companyName);
+    }
+  
+	@PostMapping(value = "{companyName}/users", produces = { MediaType.APPLICATION_JSON_VALUE })
+    public User createUser(@PathVariable("companyName") String companyName, @RequestBody User user) {
+    	TenantRegistrationService service = new TenantRegistrationService();
+    	
+		return service.createUser(user, companyName);
+    }
+
 
     @RequestMapping(path="/auth", method=RequestMethod.GET)
     public AuthConfig auth(HttpServletRequest request) {

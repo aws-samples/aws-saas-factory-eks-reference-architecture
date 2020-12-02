@@ -16,12 +16,16 @@
  */
 package com.amazonaws.saas.eks;
 
+import java.util.List;
+
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.amazonaws.saas.eks.dto.TenantDetails;
@@ -33,31 +37,30 @@ public class UserManagementController {
 
     @RequestMapping("/user/register")
     public TenantDetails userRegistration(@RequestBody TenantDetails tenant) {
- 
+
     	UserManagementService userManagement = new UserManagementService();
-    	
 		return userManagement.register(tenant);
     }
     
-    @PostMapping(value="{tenantId}/user", produces = { MediaType.APPLICATION_JSON_VALUE })
-    public User createUser(@PathVariable("tenantId") String tenantId, @RequestBody User user) {
+    @PostMapping(value="{companyName}/users", produces = { MediaType.APPLICATION_JSON_VALUE })
+    public User createUser(@PathVariable("companyName") String companyName, @RequestBody User user) {
 
     	UserManagementService userManagement = new UserManagementService();
-   		return userManagement.createUser(user);
+   		return userManagement.createUser(companyName, user);
     }
 
-    @PostMapping(value="{tenantId}/user", produces = { MediaType.APPLICATION_JSON_VALUE })
+    @PutMapping(value="{companyName}/users", produces = { MediaType.APPLICATION_JSON_VALUE })
     public User updateUser(@PathVariable("tenantId") String tenantId, @RequestBody User user) {
 
     	UserManagementService userManagement = new UserManagementService();
    		return userManagement.updateUser(user);
     }
 
-    @GetMapping(value="{tenantId}/user", produces = { MediaType.APPLICATION_JSON_VALUE })
-    public User getUsers(@PathVariable("tenantId") String tenantId) {
+    @GetMapping(value="{companyName}/users", produces = { MediaType.APPLICATION_JSON_VALUE })
+    public List<User> getUsers(@PathVariable("companyName") String companyName) {
 
     	UserManagementService userManagement = new UserManagementService();
-   		return userManagement.getUsers();
+   		return userManagement.getUsers(companyName);
     }
-
+   
 }

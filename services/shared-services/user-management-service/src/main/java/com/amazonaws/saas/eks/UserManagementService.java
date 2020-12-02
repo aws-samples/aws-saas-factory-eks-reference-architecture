@@ -18,13 +18,10 @@ package com.amazonaws.saas.eks;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.math.*;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -57,20 +54,16 @@ import com.amazonaws.services.cognitoidp.model.CreateUserPoolClientResult;
 import com.amazonaws.services.cognitoidp.model.CreateUserPoolDomainRequest;
 import com.amazonaws.services.cognitoidp.model.CreateUserPoolRequest;
 import com.amazonaws.services.cognitoidp.model.CreateUserPoolResult;
+import com.amazonaws.services.cognitoidp.model.ListUsersRequest;
+import com.amazonaws.services.cognitoidp.model.ListUsersResult;
 import com.amazonaws.services.cognitoidp.model.SchemaAttributeType;
 import com.amazonaws.services.cognitoidp.model.UserType;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Item;
-import com.amazonaws.services.dynamodbv2.document.ItemCollection;
 import com.amazonaws.services.dynamodbv2.document.PutItemOutcome;
-import com.amazonaws.services.dynamodbv2.document.QueryOutcome;
 import com.amazonaws.services.dynamodbv2.document.Table;
-import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
-import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.GetItemRequest;
 import com.amazonaws.services.route53.AmazonRoute53;
 import com.amazonaws.services.route53.AmazonRoute53ClientBuilder;
 import com.amazonaws.services.route53.model.AliasTarget;
@@ -486,8 +479,10 @@ public class UserManagementService {
 	}
 
 
-	public User createUser(User user) {
+	
+	public User createUser( String companyName, User user) {
 		/*
+		 * 
 		 * AWSCognitoIdentityProvider cognitoIdentityProvider =
 		 * AWSCognitoIdentityProviderClientBuilder.defaultClient();
 		 * 
@@ -535,9 +530,12 @@ public class UserManagementService {
 		 * .adminRespondToAuthChallenge(adminRespondToAuthChallengeRequest);
 		 * 
 		 * return tenant;
+		 * 
+		 * 
 		 */
 		return null;
 		}
+	 
 
 
 	public User updateUser(User user) {
@@ -545,8 +543,50 @@ public class UserManagementService {
 	}
 
 
-	public User getUsers() {
-		return null;
+	public List<User> getUsers(String companyName) {
+		List<User> users = new ArrayList<User>();
+		AWSCognitoIdentityProvider cognitoclient = AWSCognitoIdentityProviderClientBuilder.defaultClient();
+		
+        try {
+        	String userPoolId = EksSaaSUtil.getUserPoolForTenant(companyName);
+        	ListUsersResult response = cognitoclient.listUsers(new ListUsersRequest()
+        	                .withUserPoolId(userPoolId));
+
+            for(UserType userType : response.getUsers()) {
+            	User u = new User();
+            	
+        		for (AttributeType userAttribute : userType.getAttributes()) {
+        			switch (userAttribute.getName()) {
+        			case "email":
+        				u.setEmail(userAttribute.getValue());
+        				break;
+        			case "email_verified":
+        				u.setVerified(userAttribute.getValue());
+        				break;
+        			}
+        		}
+            	
+            	u.setCreated(userType.getUserCreateDate().toString());
+            	u.setModified(userType.getUserLastModifiedDate().toString());
+            	u.setEnabled(userType.getEnabled());
+            	u.setStatus(userType.getUserStatus());    
+            	users.add(u);
+            }
+
+        } catch (Exception e){
+        	logger.error(e);
+        }
+		return users;
 	}
+	
+	public static void main(String args[]) {
+		UserManagementService service = new UserManagementService();
+		User user = new User();
+		String email = "t@t.com";
+		user.setEmail(email );
+		service.getUsers("test145co");
+		System.out.println("Done");
+	}
+
 
 }
