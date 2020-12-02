@@ -216,8 +216,8 @@ public class TenantRegistrationService {
 	
 	public User[] getUsers(String companyName) {
 		RestTemplate restTemplate = new RestTemplate();
-		String userManagementServiceUrl = "http://localhost:8001/"+companyName+"/users";
-		//String userManagementServiceUrl = "http://user-management-service/"+companyName+"/users";
+		//String userManagementServiceUrl = "http://localhost:8001/"+companyName+"/users";
+		String userManagementServiceUrl = "http://user-management-service/"+companyName+"/users";
 
 		logger.info("Calling User Management Service for retrieving tenant users");
 
