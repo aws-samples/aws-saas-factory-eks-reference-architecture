@@ -197,15 +197,31 @@ public class TenantRegistrationService {
 
 	}
 
-	public User getUsers(User user, String companyName) {
+	public User createUser(User user, String companyName) {
 		String userEmail = user.getEmail();
 		RestTemplate restTemplate = new RestTemplate();
 		//String userManagementServiceUrl = "http://localhost:8001/"+companyName+"/users?email="+userEmail;
-		String userManagementServiceUrl = "http://user-management-service/"+companyName+"/users?email="+userEmail;
+		String userManagementServiceUrl = "http://user-management-service/"+companyName+"/users";
 
 		logger.info("Calling User Management Service for retrieving tenant users");
 
-		ResponseEntity<User> response = restTemplate.getForEntity(userManagementServiceUrl, User.class);
+		ResponseEntity<User> response = restTemplate.postForEntity(userManagementServiceUrl, user, User.class);
+
+		if (response != null) {
+			logger.info("Tenant users retrieved");
+			return response.getBody();
+		}
+		return null;
+	}
+	
+	public User[] getUsers(String companyName) {
+		RestTemplate restTemplate = new RestTemplate();
+		String userManagementServiceUrl = "http://localhost:8001/"+companyName+"/users";
+		//String userManagementServiceUrl = "http://user-management-service/"+companyName+"/users";
+
+		logger.info("Calling User Management Service for retrieving tenant users");
+
+		ResponseEntity<User[]> response = restTemplate.getForEntity(userManagementServiceUrl, User[].class);
 
 		if (response != null) {
 			logger.info("Tenant users retrieved");

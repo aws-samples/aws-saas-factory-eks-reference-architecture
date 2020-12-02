@@ -480,7 +480,7 @@ public class UserManagementService {
 
 
 	
-	public User createUser(User user) {
+	public User createUser( String companyName, User user) {
 		/*
 		 * 
 		 * AWSCognitoIdentityProvider cognitoIdentityProvider =
@@ -543,7 +543,7 @@ public class UserManagementService {
 	}
 
 
-	public User getUsers(String email, String companyName) {
+	public List<User> getUsers(String companyName) {
 		List<User> users = new ArrayList<User>();
 		AWSCognitoIdentityProvider cognitoclient = AWSCognitoIdentityProviderClientBuilder.defaultClient();
 		
@@ -554,7 +554,18 @@ public class UserManagementService {
 
             for(UserType userType : response.getUsers()) {
             	User u = new User();
-            	u.setEmail(email);
+            	
+        		for (AttributeType userAttribute : userType.getAttributes()) {
+        			switch (userAttribute.getName()) {
+        			case "email":
+        				u.setEmail(userAttribute.getValue());
+        				break;
+        			case "email_verified":
+        				u.setVerified(userAttribute.getValue());
+        				break;
+        			}
+        		}
+            	
             	u.setCreated(userType.getUserCreateDate().toString());
             	u.setModified(userType.getUserLastModifiedDate().toString());
             	u.setEnabled(userType.getEnabled());
@@ -565,7 +576,7 @@ public class UserManagementService {
         } catch (Exception e){
         	logger.error(e);
         }
-		return users.get(0);
+		return users;
 	}
 	
 	public static void main(String args[]) {
@@ -573,7 +584,7 @@ public class UserManagementService {
 		User user = new User();
 		String email = "t@t.com";
 		user.setEmail(email );
-		User users = service.getUsers(email, "test145co");
+		service.getUsers("test145co");
 		System.out.println("Done");
 	}
 

@@ -16,6 +16,8 @@
  */
 package com.amazonaws.saas.eks;
 
+import java.util.List;
+
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -44,7 +46,7 @@ public class UserManagementController {
     public User createUser(@PathVariable("companyName") String companyName, @RequestBody User user) {
 
     	UserManagementService userManagement = new UserManagementService();
-   		return userManagement.createUser(user);
+   		return userManagement.createUser(companyName, user);
     }
 
     @PutMapping(value="{companyName}/users", produces = { MediaType.APPLICATION_JSON_VALUE })
@@ -55,9 +57,10 @@ public class UserManagementController {
     }
 
     @GetMapping(value="{companyName}/users", produces = { MediaType.APPLICATION_JSON_VALUE })
-    public User getUsers(@PathVariable("companyName") String companyName, @RequestParam(value = "email") String email) {
+    public List<User> getUsers(@PathVariable("companyName") String companyName) {
 
     	UserManagementService userManagement = new UserManagementService();
-   		return userManagement.getUsers(email, companyName);
+   		return userManagement.getUsers(companyName);
     }
+   
 }
