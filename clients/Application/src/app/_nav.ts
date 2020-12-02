@@ -3,15 +3,6 @@ import { INavData } from '@coreui/angular';
 export const navItems: INavData[] = [
   {
     title: true,
-    name: 'Debug'
-  },
-  {
-    name: 'Auth Info',
-    url: '/auth/info',
-    icon: 'icon-info'
-  },
-  {
-    title: true,
     name: 'SaaS Commerce'
   },
   {
