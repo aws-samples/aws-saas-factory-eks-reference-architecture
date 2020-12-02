@@ -79,7 +79,9 @@ public class UserManagementService {
 	private static final Logger logger = LogManager.getLogger(UserManagementService.class);
 
 	/**
-	 * Creates a new recordset of type A in Route53 for the new tenant's custom domain
+	 * Creates a new recordset of type A in Route53 for the new tenant's custom
+	 * domain
+	 * 
 	 * @param tenant
 	 * @return
 	 */
@@ -115,20 +117,21 @@ public class UserManagementService {
 
 		// Return RedirectUri and SilentRefreshRedirectUri
 		String redirectUrl = "https://" + tenant.getTenantId() + "." + tenant.getCustomDomain() + "/dashboard";
-		LoggingManager.logInfo(tenant.getTenantId(),"redirectUrl=>" + redirectUrl);
+		LoggingManager.logInfo(tenant.getTenantId(), "redirectUrl=>" + redirectUrl);
 		tenant.setRedirectUrl(redirectUrl);
 
 		String silentRefreshRedirectUri = "https://" + tenant.getTenantId() + "." + tenant.getCustomDomain()
 				+ "/silentrefresh";
-		LoggingManager.logInfo(tenant.getTenantId(),"SilentRefreshRedirectUri=>" + silentRefreshRedirectUri);
+		LoggingManager.logInfo(tenant.getTenantId(), "SilentRefreshRedirectUri=>" + silentRefreshRedirectUri);
 		tenant.setSilentRefreshRedirectUri(silentRefreshRedirectUri);
 
 		return tenant;
 	}
 
-
 	/**
-	 * Adds the tenant's custom domain to the Cloudfront distribution config's aliases.
+	 * Adds the tenant's custom domain to the Cloudfront distribution config's
+	 * aliases.
+	 * 
 	 * @param tenant
 	 * @return
 	 */
@@ -138,10 +141,10 @@ public class UserManagementService {
 		UpdateDistributionRequest updateDistributionRequest = new UpdateDistributionRequest();
 
 		GetDistributionResult distroInfo = getDistributionDetails(amazonCloudFront, tenant);
-		
-		LoggingManager.logInfo(tenant.getTenantId(), "CustomDomain:"+tenant.getCustomDomain());
-		LoggingManager.logInfo(tenant.getTenantId(), "AppCloudFrontId:"+tenant.getAppCloudFrontId());
-		LoggingManager.logInfo(tenant.getTenantId(), "Distro:"+distroInfo.toString());
+
+		LoggingManager.logInfo(tenant.getTenantId(), "CustomDomain:" + tenant.getCustomDomain());
+		LoggingManager.logInfo(tenant.getTenantId(), "AppCloudFrontId:" + tenant.getAppCloudFrontId());
+		LoggingManager.logInfo(tenant.getTenantId(), "Distro:" + distroInfo.toString());
 
 		updateDistributionRequest.setId(tenant.getAppCloudFrontId());
 		updateDistributionRequest.setIfMatch(distroInfo.getETag());
@@ -170,7 +173,8 @@ public class UserManagementService {
 
 		UpdateDistributionResult result = amazonCloudFront.updateDistribution(updateDistributionRequest);
 
-		LoggingManager.logInfo(tenant.getTenantId(), "Updating Cloudfront Distribution successful for domain =>" + result.getDistribution().getDomainName());
+		LoggingManager.logInfo(tenant.getTenantId(),
+				"Updating Cloudfront Distribution successful for domain =>" + result.getDistribution().getDomainName());
 
 		// Retrieve DomainName from the result and set it to tenant details.
 		tenant.setAppCloudFrontDomainName(result.getDistribution().getDomainName());
@@ -186,8 +190,9 @@ public class UserManagementService {
 	}
 
 	/**
-	 * Creates a new user in the specified user pool. Creates a temporary password initially, so an auth challenge is
-	 * initiated in the flow.
+	 * Creates a new user in the specified user pool. Creates a temporary password
+	 * initially, so an auth challenge is initiated in the flow.
+	 * 
 	 * @param tenant
 	 * @return
 	 */
@@ -237,6 +242,7 @@ public class UserManagementService {
 
 	/**
 	 * Creates a new Amazon Cognito user pool.
+	 * 
 	 * @param tenant
 	 * @return
 	 */
@@ -297,6 +303,7 @@ public class UserManagementService {
 
 	/**
 	 * Creates a new domain for the user pool
+	 * 
 	 * @param tenant
 	 * @return tenant
 	 */
@@ -316,6 +323,7 @@ public class UserManagementService {
 
 	/**
 	 * Creates the user pool client
+	 * 
 	 * @param tenant
 	 * @return tenant
 	 */
@@ -323,7 +331,7 @@ public class UserManagementService {
 		AWSCognitoIdentityProvider cognitoIdentityProvider = AWSCognitoIdentityProviderClientBuilder.defaultClient();
 
 		String url = "https://" + tenant.getTenantId() + "." + tenant.getCustomDomain();
-		LoggingManager.logInfo(tenant.getTenantId(),"URL=>" + url);
+		LoggingManager.logInfo(tenant.getTenantId(), "URL=>" + url);
 
 		CreateUserPoolClientRequest createUserPoolClientRequest = new CreateUserPoolClientRequest();
 		createUserPoolClientRequest.setClientName(tenant.getTenantId());
@@ -379,41 +387,43 @@ public class UserManagementService {
 	}
 
 	/**
-	 * Retrieve Cloudfront Distribution data from the provider metadata table using custom domain
-	 * name.
+	 * Retrieve Cloudfront Distribution data from the provider metadata table using
+	 * custom domain name.
+	 * 
 	 * @param tenant
 	 * @return
 	 */
 	private TenantDetails getDistributionConfig(TenantDetails tenant) {
-		
-	        String table_name = "SAAS_PROVIDER_METADATA";
-	        String name = tenant.getCustomDomain();
 
-	        LoggingManager.logInfo(tenant.getTenantId(), "Received CustomDomain=>"+ tenant.getCustomDomain() + " for lookup.");
+		String table_name = "SAAS_PROVIDER_METADATA";
+		String name = tenant.getCustomDomain();
 
-		    AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard().build();
-		    DynamoDB dynamoDB = new DynamoDB(client);
-	        Table table = dynamoDB.getTable(table_name);
+		LoggingManager.logInfo(tenant.getTenantId(),
+				"Received CustomDomain=>" + tenant.getCustomDomain() + " for lookup.");
 
-	        try {
+		AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard().build();
+		DynamoDB dynamoDB = new DynamoDB(client);
+		Table table = dynamoDB.getTable(table_name);
 
-	            Item item = table.getItem("DOMAIN_NAME", name);
-	            LoggingManager.logInfo(tenant.getTenantId(), "Printing item after retrieving it....");
-	            LoggingManager.logInfo(tenant.getTenantId(), item.toJSONPretty());
+		try {
 
-	            tenant.setHostedZoneId((String)item.get("HOSTED_ZONE_ID"));
-	            tenant.setAppCloudFrontId((String)item.get("APP_CLOUDFRONT_ID"));
-	        }
-	        catch (Exception e) {
-	        	LoggingManager.logError(tenant.getTenantId(),"GetItem failed.");
-	        	LoggingManager.logError(tenant.getTenantId(),e.getMessage());
-	        }
+			Item item = table.getItem("DOMAIN_NAME", name);
+			LoggingManager.logInfo(tenant.getTenantId(), "Printing item after retrieving it....");
+			LoggingManager.logInfo(tenant.getTenantId(), item.toJSONPretty());
 
-			return tenant;
+			tenant.setHostedZoneId((String) item.get("HOSTED_ZONE_ID"));
+			tenant.setAppCloudFrontId((String) item.get("APP_CLOUDFRONT_ID"));
+		} catch (Exception e) {
+			LoggingManager.logError(tenant.getTenantId(), "GetItem failed.");
+			LoggingManager.logError(tenant.getTenantId(), e.getMessage());
+		}
+
+		return tenant;
 	}
 
 	/**
 	 * Update Tenant table with user pool data
+	 * 
 	 * @param tenant
 	 * @return
 	 */
@@ -448,24 +458,21 @@ public class UserManagementService {
 		logger.info(
 				"Tenant Registration Complete! Calling CodePipeline to provision tenant application's backend EKS services");
 
-
 		return tenant;
 	}
-
 
 	private String getTenantId(String companyName) {
 		Pattern pattern = Pattern.compile("[\\s\\W]");
 		Matcher mat = pattern.matcher(companyName);
 		String tenantId = mat.replaceAll("").toLowerCase();
-    	return tenantId.substring(0, Math.min(tenantId.length(), 50));
+		return tenantId.substring(0, Math.min(tenantId.length(), 50));
 	}
 
 	private static String selectedRegion = "us-east-1";
 
-
 	public TenantDetails register(TenantDetails tenant) {
 		logger.info("User registration process begins");
-		
+
 		tenant = getDistributionConfig(tenant);
 		tenant = updateDistroConfig(tenant);
 		tenant = addRoute53Recordset(tenant);
@@ -474,119 +481,92 @@ public class UserManagementService {
 		tenant = createUserPoolClient(tenant);
 		tenant = createUser(tenant);
 		tenant = updateTenant(tenant);
-		
+
 		return tenant;
 	}
 
+	public User createUser(String companyName, User user) {
+		AWSCognitoIdentityProvider cognitoIdentityProvider = AWSCognitoIdentityProviderClientBuilder.defaultClient();
+		
+		String userPoolId = EksSaaSUtil.getUserPoolForTenant(companyName);
+		
+		AdminCreateUserResult createUserResult = cognitoIdentityProvider
+				.adminCreateUser(new AdminCreateUserRequest().withUserPoolId(userPoolId)
+						.withUsername(user.getEmail())
+						.withUserAttributes(new AttributeType().withName("email").withValue(user.getEmail()),
+								new AttributeType().withName("email_verified").withValue("true"),
+								new AttributeType().withName("custom:tenant-id").withValue(companyName)));
 
-	
-	public User createUser( String companyName, User user) {
-		/*
-		 * 
-		 * AWSCognitoIdentityProvider cognitoIdentityProvider =
-		 * AWSCognitoIdentityProviderClientBuilder.defaultClient();
-		 * 
-		 * AdminCreateUserResult createUserResult = cognitoIdentityProvider
-		 * .adminCreateUser(new
-		 * AdminCreateUserRequest().withUserPoolId(tenant.getUserPoolId())
-		 * .withUsername(tenant.getEmail()).withTemporaryPassword(tenant.getPassword())
-		 * .withUserAttributes(new
-		 * AttributeType().withName("email").withValue(tenant.getEmail()), new
-		 * AttributeType().withName("email_verified").withValue("true"), new
-		 * AttributeType().withName("custom:tenant-id").withValue(tenant.getTenantId()))
-		 * );
-		 * 
-		 * UserType cognitoUser = createUserResult.getUser();
-		 * logger.info("Cognito - Create User Success=>" + cognitoUser.getUsername());
-		 * 
-		 * // We created the user above, but the password is marked as temporary. // We
-		 * need to set the password again. Initiate an auth challenge to get // started.
-		 * 
-		 * Map<String, String> authParameters = new HashMap<String, String>();
-		 * authParameters.put("USERNAME", tenant.getEmail());
-		 * authParameters.put("PASSWORD", tenant.getPassword());
-		 * 
-		 * AdminInitiateAuthRequest adminInitiateAuthRequest = new
-		 * AdminInitiateAuthRequest()
-		 * .withAuthFlow(AuthFlowType.ADMIN_USER_PASSWORD_AUTH).withAuthParameters(
-		 * authParameters)
-		 * .withClientId(tenant.getClientId()).withUserPoolId(tenant.getUserPoolId());
-		 * 
-		 * AdminInitiateAuthResult adminInitiateAuthResult = cognitoIdentityProvider
-		 * .adminInitiateAuth(adminInitiateAuthRequest);
-		 * 
-		 * // We now have a proper challenge, set the password permanently. Map<String,
-		 * String> challengeResponses = new HashMap<String, String>();
-		 * challengeResponses.put("USERNAME", tenant.getEmail());
-		 * challengeResponses.put("NEW_PASSWORD", tenant.getPassword());
-		 * 
-		 * AdminRespondToAuthChallengeRequest adminRespondToAuthChallengeRequest = new
-		 * AdminRespondToAuthChallengeRequest()
-		 * .withChallengeName("NEW_PASSWORD_REQUIRED").withClientId(tenant.getClientId()
-		 * ) .withUserPoolId(tenant.getUserPoolId()).withChallengeResponses(
-		 * challengeResponses) .withSession(adminInitiateAuthResult.getSession());
-		 * 
-		 * AdminRespondToAuthChallengeResult result = cognitoIdentityProvider
-		 * .adminRespondToAuthChallenge(adminRespondToAuthChallengeRequest);
-		 * 
-		 * return tenant;
-		 * 
-		 * 
-		 */
-		return null;
+		
+		UserType cognitoUser = createUserResult.getUser();
+		logger.info("Cognito - Create User Success=>" + cognitoUser.getUsername());
+
+		user.setCreated(cognitoUser.getUserCreateDate().toString());
+		user.setModified(cognitoUser.getUserLastModifiedDate().toString());
+		user.setEnabled(cognitoUser.getEnabled());
+		user.setStatus(cognitoUser.getUserStatus());
+
+		for (AttributeType userAttribute : cognitoUser.getAttributes()) {
+			switch (userAttribute.getName()) {
+			case "email":
+				user.setEmail(userAttribute.getValue());
+				break;
+			case "email_verified":
+				user.setVerified(userAttribute.getValue());
+				break;
+			}
 		}
-	 
 
+		return user;
+	}
 
 	public User updateUser(User user) {
 		return null;
 	}
 
-
 	public List<User> getUsers(String companyName) {
 		List<User> users = new ArrayList<User>();
 		AWSCognitoIdentityProvider cognitoclient = AWSCognitoIdentityProviderClientBuilder.defaultClient();
-		
-        try {
-        	String userPoolId = EksSaaSUtil.getUserPoolForTenant(companyName);
-        	ListUsersResult response = cognitoclient.listUsers(new ListUsersRequest()
-        	                .withUserPoolId(userPoolId));
 
-            for(UserType userType : response.getUsers()) {
-            	User u = new User();
-            	
-        		for (AttributeType userAttribute : userType.getAttributes()) {
-        			switch (userAttribute.getName()) {
-        			case "email":
-        				u.setEmail(userAttribute.getValue());
-        				break;
-        			case "email_verified":
-        				u.setVerified(userAttribute.getValue());
-        				break;
-        			}
-        		}
-            	
-            	u.setCreated(userType.getUserCreateDate().toString());
-            	u.setModified(userType.getUserLastModifiedDate().toString());
-            	u.setEnabled(userType.getEnabled());
-            	u.setStatus(userType.getUserStatus());    
-            	users.add(u);
-            }
+		try {
+			String userPoolId = EksSaaSUtil.getUserPoolForTenant(companyName);
+			ListUsersResult response = cognitoclient.listUsers(new ListUsersRequest().withUserPoolId(userPoolId));
 
-        } catch (Exception e){
-        	logger.error(e);
-        }
+			for (UserType userType : response.getUsers()) {
+				User u = new User();
+
+				for (AttributeType userAttribute : userType.getAttributes()) {
+					switch (userAttribute.getName()) {
+					case "email":
+						u.setEmail(userAttribute.getValue());
+						break;
+					case "email_verified":
+						u.setVerified(userAttribute.getValue());
+						break;
+					}
+				}
+
+				u.setCreated(userType.getUserCreateDate().toString());
+				u.setModified(userType.getUserLastModifiedDate().toString());
+				u.setEnabled(userType.getEnabled());
+				u.setStatus(userType.getUserStatus());
+				users.add(u);
+			}
+
+		} catch (Exception e) {
+			logger.error(e);
+		}
 		return users;
 	}
-	
+
 	public static void main(String args[]) {
 		UserManagementService service = new UserManagementService();
 		User user = new User();
-		String email = "t@t.com";
-		user.setEmail(email );
-		service.getUsers("test145co");
+		String email = "ranjithkraman@gmail.com";
+		user.setEmail(email);
+		//service.getUsers("test145co");
+		service.createUser("test145co", user);
 		System.out.println("Done");
 	}
-
 
 }
