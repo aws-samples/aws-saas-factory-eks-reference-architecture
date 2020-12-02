@@ -55,7 +55,7 @@ public class ProductController {
 		String tenantId;
 		
 		try {
-			tenantId = tokenManager.authenticate(request);
+			tenantId = tokenManager.getTenantId(request);
 		} catch (Exception e) {
 			logger.error("Request could not be authenticated!");
 			return null;

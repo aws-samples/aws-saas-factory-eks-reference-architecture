@@ -27,6 +27,7 @@ import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.saas.eks.dto.AuthConfig;
 import com.amazonaws.saas.eks.dto.Tenant;
 import com.amazonaws.saas.eks.dto.TenantDetails;
+import com.amazonaws.saas.eks.dto.User;
 import com.amazonaws.saas.eks.util.LoggingManager;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
@@ -194,5 +195,22 @@ public class TenantRegistrationService {
 		}
 		return tenant;
 
+	}
+
+	public User getUsers(User user, String companyName) {
+		String userEmail = user.getEmail();
+		RestTemplate restTemplate = new RestTemplate();
+		//String userManagementServiceUrl = "http://localhost:8001/"+companyName+"/users?email="+userEmail;
+		String userManagementServiceUrl = "http://user-management-service/"+companyName+"/users?email="+userEmail;
+
+		logger.info("Calling User Management Service for retrieving tenant users");
+
+		ResponseEntity<User> response = restTemplate.getForEntity(userManagementServiceUrl, User.class);
+
+		if (response != null) {
+			logger.info("Tenant users retrieved");
+			return response.getBody();
+		}
+		return null;
 	}
 }

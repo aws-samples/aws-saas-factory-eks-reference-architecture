@@ -25,7 +25,7 @@ public class User implements Serializable {
 	private String email;
 	private String created;
 	private String modified;
-	private Boolean enabled;
+	private String enabled;
 	private String status;
 	private String verified;
 	
@@ -47,10 +47,10 @@ public class User implements Serializable {
 	public void setModified(String modified) {
 		this.modified = modified;
 	}
-	public Boolean getEnabled() {
+	public String getEnabled() {
 		return enabled;
 	}
-	public void setEnabled(Boolean enabled) {
+	public void setEnabled(String enabled) {
 		this.enabled = enabled;
 	}
 	public String getStatus() {

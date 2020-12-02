@@ -59,7 +59,7 @@ public class TokenManager {
     @Autowired
     private JwtConfig jwtConfiguration;
 
-    public String authenticate(HttpServletRequest request) throws Exception {
+    public String getTenantId(HttpServletRequest request) throws Exception {
         String idToken = request.getHeader(this.jwtConfiguration.getHttpHeader());
     	String tenantId = "";
 
@@ -82,10 +82,8 @@ public class TokenManager {
     	catch(URISyntaxException ex) { 
     	    logger.error(ex.toString());
     	}
-
-    	logger.info("Tenant Id => "+ tenantId);
     	
-    	//setUserPoolId(tenantId);
+    	logger.info("Tenant Id => "+ tenantId);
 
         if (idToken != null) {
     		String table_name = EKSREFARCH_TENANTS;
