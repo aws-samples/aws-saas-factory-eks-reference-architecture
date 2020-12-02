@@ -14,9 +14,9 @@ Parameters:
     Type: String
 Resources:
   AdminAppBucket:  
-    Type: 'AWS::S3::Bucket'
+    Type: AWS::S3::Bucket
   AdminAppSiteReadPolicy:
-    Type: 'AWS::S3::BucketPolicy'
+    Type: AWS::S3::BucketPolicy
     Properties:
       Bucket: !Ref AdminAppBucket
       PolicyDocument:
@@ -27,7 +27,7 @@ Resources:
           Principal:
             CanonicalUser: !Ref S3OAIUserId
   AdminAppSite:
-    Type: 'AWS::CloudFront::Distribution'
+    Type: AWS::CloudFront::Distribution
     Properties:
       DistributionConfig:
         Aliases: 
@@ -73,12 +73,12 @@ Resources:
           MinimumProtocolVersion: 'TLSv1.2_2018'
           SslSupportMethod: 'sni-only'
   AdminAppSiteAlias:
-    Type: 'AWS::Route53::RecordSet'
+    Type: AWS::Route53::RecordSet
     Properties:
       AliasTarget:
         DNSName: !GetAtt 'AdminAppSite.DomainName'
         EvaluateTargetHealth: false
-        HostedZoneId: 'Z2FDTNDATAQYW2' # This is hardcoded per the docs. Who knew? ?\_(?)_/?
+        HostedZoneId: 'Z2FDTNDATAQYW2' # This is hardcoded per the docs. Who knew?
       HostedZoneId : !Ref HostedZoneId
       Name: !Sub 'admin.${CustomDomainName}'
       Type: A

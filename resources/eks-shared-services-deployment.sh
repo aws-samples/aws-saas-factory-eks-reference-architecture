@@ -32,7 +32,7 @@ ACM_CERT=$(aws acm list-certificates  --query "CertificateSummaryList[?DomainNam
 sed -i -e 's,ACM_CERT,'$ACM_CERT',g' nginx-ingress-config.yaml
 
 helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-helm install  nginx-eks-saas   --values nginx-ingress-config.yaml   ingress-nginx/ingress-nginx
+helm install nginx-eks-saas --values nginx-ingress-config.yaml ingress-nginx/ingress-nginx
 
 echo "Helm external-dns installation"
 sed -i -e 's,DOMAIN_NAME,'$DOMAIN_NAME',g' external-dns-config.yaml

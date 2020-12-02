@@ -6,7 +6,7 @@ Parameters:
     Type: String
 Resources:
   AppCert:
-    Type: 'AWS::CertificateManager::Certificate'
+    Type: AWS::CertificateManager::Certificate
     Properties:
       DomainName: !Sub '*.${CustomDomainName}'
       SubjectAlternativeNames:
