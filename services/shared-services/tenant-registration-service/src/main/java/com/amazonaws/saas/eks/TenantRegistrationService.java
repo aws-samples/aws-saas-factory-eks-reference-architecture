@@ -208,7 +208,7 @@ public class TenantRegistrationService {
 		ResponseEntity<User> response = restTemplate.postForEntity(userManagementServiceUrl, user, User.class);
 
 		if (response != null) {
-			logger.info("Tenant users retrieved");
+			logger.info("Tenant users retrieved!");
 			return response.getBody();
 		}
 		return null;
