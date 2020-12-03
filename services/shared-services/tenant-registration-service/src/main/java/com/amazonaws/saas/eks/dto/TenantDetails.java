@@ -36,6 +36,8 @@ public class TenantDetails implements Serializable {
 	private String email;
 	private String password;
 	private String companyName;
+	private String plan;
+
 	
 	public String getTenantId() {
 		return tenantId;
@@ -115,6 +117,11 @@ public class TenantDetails implements Serializable {
 	public void setCompanyName(String companyName) {
 		this.companyName = companyName;
 	}
-
+	public String getPlan() {
+		return plan;
+	}
+	public void setPlan(String plan) {
+		this.plan = plan;
+	}
 	
 }
