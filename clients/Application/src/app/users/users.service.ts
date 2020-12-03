@@ -28,7 +28,7 @@ export class UsersService {
   }
 
   create(user: User): Observable<User> {
-    return of();
+    return this.http.post<User>(this.apiUrl, user);
   }
 
   update(email: string, user:User) {
