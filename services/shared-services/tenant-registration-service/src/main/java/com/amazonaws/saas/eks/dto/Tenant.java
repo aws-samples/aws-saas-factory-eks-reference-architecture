@@ -34,7 +34,7 @@ public class Tenant {
     private String authRedirectUri;
     private String authClientId;
     private Boolean authClearHashAfterLogin;
-    
+    private String plan;
     
 	@DynamoDBHashKey(attributeName="TENANT_ID")        
 	public String getTenantId() { return tenantId; }
@@ -120,6 +120,14 @@ public class Tenant {
 		this.authClearHashAfterLogin = authClearHashAfterLogin;
 	}
 	
+	@DynamoDBAttribute(attributeName="PLAN") 
+	public String getPlan() {
+		return plan;
+	}
+	public void setPlan(String plan) {
+		this.plan = plan;
+	}
+
 
 	
 }
