@@ -82,6 +82,18 @@ public class TenantRegistrationController {
 		return service.createUser(user, companyName);
     }
 
+	@PutMapping(value = "{companyName}/users/{userName}", produces = { MediaType.APPLICATION_JSON_VALUE })
+    public void updateUser(@PathVariable("companyName") String companyName, @PathVariable("userName") String userName, @RequestBody UserStatusCheck status) {
+    	TenantRegistrationService service = new TenantRegistrationService();
+    	
+    	User user = new User();
+    	user.setUserName(userName);
+    	
+    	if(status!= null && status.isEnabled()!=null) {
+    	    service.updateUser(user, companyName, status.isEnabled().toString());
+    	}
+    
+    }
 
     @RequestMapping(path="/auth", method=RequestMethod.GET)
     public AuthConfig auth(HttpServletRequest request) {
@@ -117,6 +129,19 @@ public class TenantRegistrationController {
     @RequestMapping("/amIUp")
     public String amIUp() {
         return "EKS SaaS Backend - I am up!!!";
+    }
+    
+    static class UserStatusCheck {
+    	private Boolean enabled;
+
+		public Boolean isEnabled() {
+			return enabled;
+		}
+
+		public void setEnabled(Boolean enabled) {
+			this.enabled = enabled;
+		}
+    	
     }
 
 }

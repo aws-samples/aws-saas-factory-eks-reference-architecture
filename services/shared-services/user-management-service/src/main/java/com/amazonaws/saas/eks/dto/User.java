@@ -22,6 +22,7 @@ public class User implements Serializable {
 
 	private static final long serialVersionUID = 7342184730662151512L;
 	
+	private String userName;
 	private String email;
 	private String created;
 	private String modified;
@@ -29,6 +30,12 @@ public class User implements Serializable {
 	private String status;
 	private String verified;
 	
+	public String getUserName() {
+		return userName;
+	}
+	public void setUserName(String userName) {
+		this.userName = userName;
+	}
 	public String getEmail() {
 		return email;
 	}

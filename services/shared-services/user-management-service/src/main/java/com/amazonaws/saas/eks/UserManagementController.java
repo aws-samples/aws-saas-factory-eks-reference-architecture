@@ -50,10 +50,10 @@ public class UserManagementController {
     }
 
     @PutMapping(value="{companyName}/users", produces = { MediaType.APPLICATION_JSON_VALUE })
-    public User updateUser(@PathVariable("tenantId") String tenantId, @RequestBody User user) {
+    public void updateUser(@PathVariable("companyName") String companyName, @PathVariable("status") String status, @RequestBody User user) {
 
     	UserManagementService userManagement = new UserManagementService();
-   		return userManagement.updateUser(user);
+    	userManagement.updateUser(user, companyName, status);
     }
 
     @GetMapping(value="{companyName}/users", produces = { MediaType.APPLICATION_JSON_VALUE })

@@ -41,6 +41,10 @@ import com.amazonaws.services.cognitoidp.AWSCognitoIdentityProviderClientBuilder
 import com.amazonaws.services.cognitoidp.model.AdminCreateUserConfigType;
 import com.amazonaws.services.cognitoidp.model.AdminCreateUserRequest;
 import com.amazonaws.services.cognitoidp.model.AdminCreateUserResult;
+import com.amazonaws.services.cognitoidp.model.AdminDisableUserRequest;
+import com.amazonaws.services.cognitoidp.model.AdminDisableUserResult;
+import com.amazonaws.services.cognitoidp.model.AdminEnableUserRequest;
+import com.amazonaws.services.cognitoidp.model.AdminEnableUserResult;
 import com.amazonaws.services.cognitoidp.model.AttributeType;
 import com.amazonaws.services.cognitoidp.model.CreateUserPoolClientRequest;
 import com.amazonaws.services.cognitoidp.model.CreateUserPoolClientResult;
@@ -504,8 +508,25 @@ public class UserManagementService {
 		return user;
 	}
 
-	public User updateUser(User user) {
-		return null;
+	public void updateUser(User user, String companyName, String status) {
+		
+		AWSCognitoIdentityProvider cognitoIdentityProvider = AWSCognitoIdentityProviderClientBuilder.defaultClient();
+		String userPoolId = EksSaaSUtil.getUserPoolForTenant(companyName);
+		
+		if(!Boolean.getBoolean(status)) {
+			AdminDisableUserRequest adminDisableUserRequest = new AdminDisableUserRequest();
+			adminDisableUserRequest.setUsername(user.getUserName());
+			adminDisableUserRequest.setUserPoolId(userPoolId);
+			
+			AdminDisableUserResult result = cognitoIdentityProvider.adminDisableUser(adminDisableUserRequest);
+
+		} else {
+			AdminEnableUserRequest adminEnableUserRequest = new AdminEnableUserRequest();
+			adminEnableUserRequest.setUsername(user.getUserName());
+			adminEnableUserRequest.setUserPoolId(userPoolId);
+			
+		   AdminEnableUserResult result = cognitoIdentityProvider.adminEnableUser(adminEnableUserRequest);
+		}
 	}
 
 	public List<User> getUsers(String companyName) {

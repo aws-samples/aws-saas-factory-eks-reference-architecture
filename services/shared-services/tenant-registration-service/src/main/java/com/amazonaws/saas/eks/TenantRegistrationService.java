@@ -203,12 +203,12 @@ public class TenantRegistrationService {
 		String userManagementServiceUrl = "http://localhost:8001/"+companyName+"/users?email="+userEmail;
 		//String userManagementServiceUrl = "http://user-management-service/"+companyName+"/users?email="+userEmail;
 
-		logger.info("Calling User Management Service for retrieving tenant users");
+		logger.info("Calling User Management Service to create a tenant user");
 
 		ResponseEntity<User> response = restTemplate.postForEntity(userManagementServiceUrl, user, User.class);
 
 		if (response != null) {
-			logger.info("Tenant users retrieved!");
+			logger.info("Tenant user created");
 			return response.getBody();
 		}
 		return null;
@@ -228,5 +228,19 @@ public class TenantRegistrationService {
 			return response.getBody();
 		}
 		return null;
+	}
+
+	public void updateUser(User user, String companyName, String status) {
+		String userEmail = user.getEmail();
+		RestTemplate restTemplate = new RestTemplate();
+		String userManagementServiceUrl = "http://localhost:8001/"+companyName+"/users?email="+userEmail+",status="+status ;
+		//String userManagementServiceUrl = "http://user-management-service/"+companyName+"/users?email="+userEmail+",status="+status ;
+
+		logger.info("Calling User Management Service to update a tenant user");
+
+		restTemplate.put(userManagementServiceUrl, user, User.class);
+		
+		logger.info("Tenant user updated");
+
 	}
 }
