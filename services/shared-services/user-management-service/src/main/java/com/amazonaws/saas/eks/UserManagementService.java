@@ -17,9 +17,7 @@
 package com.amazonaws.saas.eks;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -43,12 +41,7 @@ import com.amazonaws.services.cognitoidp.AWSCognitoIdentityProviderClientBuilder
 import com.amazonaws.services.cognitoidp.model.AdminCreateUserConfigType;
 import com.amazonaws.services.cognitoidp.model.AdminCreateUserRequest;
 import com.amazonaws.services.cognitoidp.model.AdminCreateUserResult;
-import com.amazonaws.services.cognitoidp.model.AdminInitiateAuthRequest;
-import com.amazonaws.services.cognitoidp.model.AdminInitiateAuthResult;
-import com.amazonaws.services.cognitoidp.model.AdminRespondToAuthChallengeRequest;
-import com.amazonaws.services.cognitoidp.model.AdminRespondToAuthChallengeResult;
 import com.amazonaws.services.cognitoidp.model.AttributeType;
-import com.amazonaws.services.cognitoidp.model.AuthFlowType;
 import com.amazonaws.services.cognitoidp.model.CreateUserPoolClientRequest;
 import com.amazonaws.services.cognitoidp.model.CreateUserPoolClientResult;
 import com.amazonaws.services.cognitoidp.model.CreateUserPoolDomainRequest;
@@ -211,34 +204,6 @@ public class UserManagementService {
 
 		UserType cognitoUser = createUserResult.getUser();
 		LoggingManager.logInfo(tenant.getTenantId(), "Cognito - Create User Success=>" + cognitoUser.getUsername());
-
-		// We created the user above, but the password is marked as temporary.
-		// We need to set the password again. Initiate an auth challenge to get
-		// started.
-
-		Map<String, String> authParameters = new HashMap<String, String>();
-		authParameters.put("USERNAME", tenant.getEmail());
-		authParameters.put("PASSWORD", tenant.getPassword());
-
-		AdminInitiateAuthRequest adminInitiateAuthRequest = new AdminInitiateAuthRequest()
-				.withAuthFlow(AuthFlowType.ADMIN_USER_PASSWORD_AUTH).withAuthParameters(authParameters)
-				.withClientId(tenant.getClientId()).withUserPoolId(tenant.getUserPoolId());
-
-		AdminInitiateAuthResult adminInitiateAuthResult = cognitoIdentityProvider
-				.adminInitiateAuth(adminInitiateAuthRequest);
-
-		// We now have a proper challenge, set the password permanently.
-		Map<String, String> challengeResponses = new HashMap<String, String>();
-		challengeResponses.put("USERNAME", tenant.getEmail());
-		challengeResponses.put("NEW_PASSWORD", tenant.getPassword());
-
-		AdminRespondToAuthChallengeRequest adminRespondToAuthChallengeRequest = new AdminRespondToAuthChallengeRequest()
-				.withChallengeName("NEW_PASSWORD_REQUIRED").withClientId(tenant.getClientId())
-				.withUserPoolId(tenant.getUserPoolId()).withChallengeResponses(challengeResponses)
-				.withSession(adminInitiateAuthResult.getSession());
-
-		AdminRespondToAuthChallengeResult result = cognitoIdentityProvider
-				.adminRespondToAuthChallenge(adminRespondToAuthChallengeRequest);
 
 		return tenant;
 	}
