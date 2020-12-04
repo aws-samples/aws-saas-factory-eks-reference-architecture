@@ -62,8 +62,11 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Item;
-import com.amazonaws.services.dynamodbv2.document.PutItemOutcome;
 import com.amazonaws.services.dynamodbv2.document.Table;
+import com.amazonaws.services.dynamodbv2.document.UpdateItemOutcome;
+import com.amazonaws.services.dynamodbv2.document.spec.UpdateItemSpec;
+import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
+import com.amazonaws.services.dynamodbv2.model.ReturnValue;
 import com.amazonaws.services.route53.AmazonRoute53;
 import com.amazonaws.services.route53.AmazonRoute53ClientBuilder;
 import com.amazonaws.services.route53.model.AliasTarget;
@@ -444,17 +447,33 @@ public class UserManagementService {
 
 		Table table = dynamoDB.getTable("EKSREFARCH_TENANTS");
 
-		Item item = new Item().withPrimaryKey("TENANT_ID", tenant.getTenantId())
-				.withString("AUTH_SERVER", tenant.getAuthServer()).withString("AUTH_CLIENT_ID", tenant.getClientId())
-				.withString("AUTH_REDIRECT_URI", tenant.getRedirectUrl())
-				.withString("AUTH_SR_REDIRECT_URI", tenant.getSilentRefreshRedirectUri())
-				.withBoolean("AUTH_USE_SR", true).withNumber("AUTH_SR_TIMEOUT", 5000)
-				.withNumber("AUTH_TIMEOUT_FACTOR", 0.25).withBoolean("AUTH_SESSION_CHECKS_ENABLED", true)
-				.withBoolean("AUTH_SHOW_DEBUG_INFO", true).withBoolean("AUTH_CLEAR_HASH_AFTER_LOGIN", false);
+		UpdateItemSpec updateItemSpec = new UpdateItemSpec().withPrimaryKey("TENANT_ID", tenant.getTenantId())
+				.withUpdateExpression(
+						"set AUTH_SERVER = :p1, AUTH_CLIENT_ID=:p2, AUTH_REDIRECT_URI=:p3, AUTH_SR_REDIRECT_URI=:p4, AUTH_USE_SR=:p5, AUTH_SR_TIMEOUT=:p6, AUTH_TIMEOUT_FACTOR=:p7, AUTH_SESSION_CHECKS_ENABLED=:p8, AUTH_SHOW_DEBUG_INFO=:p9, AUTH_CLEAR_HASH_AFTER_LOGIN=:p10")
+				.withValueMap(new ValueMap()
+						.withString(":p1", tenant.getAuthServer())
+						.withString(":p2", tenant.getClientId())
+						.withString(":p3", tenant.getRedirectUrl())
+						.withString(":p4", tenant.getSilentRefreshRedirectUri())
+						.withBoolean(":p5", true)
+						.withNumber(":p6", 5000)
+						.withNumber(":p7", 0.25)
+						.withBoolean(":p8", true)
+						.withBoolean(":p9", true)
+						.withBoolean(":p10", false))
+				.withReturnValues(ReturnValue.UPDATED_NEW);
 
-		PutItemOutcome outcome = table.putItem(item);
-		logger.info("New tenant entry created in EKSREFARCH_TENANTS table!");
+            try {
+                logger.info("Updating the item...");
+                UpdateItemOutcome outcome = table.updateItem(updateItemSpec);
+                logger.info("UpdateItem succeeded: " + outcome.getItem().toJSONPretty());
 
+            }
+            catch (Exception e) {
+                logger.error("Unable to update item: ");
+                logger.error(e.getMessage());
+            }
+            
 		logger.info(
 				"Tenant Registration Complete! Calling CodePipeline to provision tenant application's backend EKS services");
 
@@ -564,8 +583,16 @@ public class UserManagementService {
 		User user = new User();
 		String email = "ranjithkraman@gmail.com";
 		user.setEmail(email);
+		TenantDetails tenant = new TenantDetails();
+		tenant.setCompanyName("saasbeer1");
+		tenant.setAuthServer("asdfasf");
+		tenant.setClientId("sadfasdf");
+		tenant.setRedirectUrl("asdfasdf");
+		tenant.setSilentRefreshRedirectUri("sfasdf");
+		
 		//service.getUsers("test145co");
-		service.createUser("test145co", user);
+		//service.createUser("test145co", user);
+		service.updateTenant(tenant );
 		System.out.println("Done");
 	}
 
