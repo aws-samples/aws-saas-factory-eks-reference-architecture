@@ -1,14 +1,11 @@
 <app-header
   [navbarBrandRouterLink]="['/dashboard']"
   [fixed]="true"
-  [navbarBrandFull]="{src: 'assets/img/brand/logo.svg', width: 89, height: 25, alt: 'AWS EKS Ref Arch Logo'}"
-  [navbarBrandMinimized]="{src: 'assets/img/brand/sygnet.svg', width: 30, height: 30, alt: 'AWS EKS Ref Arch Logo'}"
+  [navbarBrandText]="'SaaS Commerce'"
   [sidebarToggler]="'lg'"
   [asideMenuToggler]="false">
+  <ul class="nav navbar-nav ml-auto"><img height="30px" src="assets/img/brand/saascommerce.png"></ul>
   <ul class="nav navbar-nav ml-auto">
-    <!-- <li class="nav-item d-md-down-none">
-      <a class="nav-link" href="#"><i class="cui-cart icons font-2xl d-block"></i><span class="badge badge-pill badge-danger">5</span></a>
-    </li> -->
     <li class="nav-item dropdown" dropdown placement="bottom right">
       <a class="nav-link" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false" dropdownToggle (click)="false">
         <i class="icon-user icons font-xl image-avatar nav-link"></i>
