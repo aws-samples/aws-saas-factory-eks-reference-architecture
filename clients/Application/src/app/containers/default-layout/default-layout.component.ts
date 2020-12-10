@@ -45,6 +45,7 @@ export class DefaultLayoutComponent implements OnInit {
   login() {
     this.oidcSecurityService.authorize();
   }
+
   logout() {
     this.oidcSecurityService.logoffAndRevokeTokens();
     this.router.navigate(['/logoff']);

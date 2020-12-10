@@ -22,12 +22,11 @@ import { DefaultLayoutComponent } from './containers';
 
 import { P404Component } from './views/error/404.component';
 import { P500Component } from './views/error/500.component';
-import { LoginComponent } from './views/login/login.component';
 
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: 'login',
+    redirectTo: 'dashboard',
     pathMatch: 'full',
   },
   {
@@ -45,19 +44,16 @@ export const routes: Routes = [
     }
   },
   {
-    path: 'login',
-    component: LoginComponent,
-    data: {
-      title: 'Login Page'
-    }
-  },
-  {
     path: '',
     component: DefaultLayoutComponent,
     data: {
       title: 'Home'
     },
     children: [
+      {
+        path: 'auth',
+        loadChildren: () => import('./views/auth/auth.module').then(m => m.AuthModule)
+      },
       {
         path: 'dashboard',
         loadChildren: () => import('./views/dashboard/dashboard.module').then(m => m.DashboardModule)

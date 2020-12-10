@@ -27,13 +27,13 @@ Resources:
         ReadCapacityUnits: "5"
         WriteCapacityUnits: "5"
       TableName: "Product"
-  CodeCommitRepo:
-    Type: AWS::CodeCommit::Repository
-    Properties: 
-      RepositoryDescription: The CodeCommit repo which holds the artifacts for provisioning a new tenant
-      RepositoryName: eks-tenant-saas-app-service
+  # CodeCommitRepo:
+  #   Type: AWS::CodeCommit::Repository
+  #   Properties: 
+  #     RepositoryDescription: The CodeCommit repo which holds the artifacts for provisioning a new tenant
+  #     RepositoryName: eks-tenant-saas-app-service
 Outputs:
   OnboardingMetadataDdb: 
     Value: !Ref OnboardingMetadata
-  CodeCommitCloneUrl: 
-    Value: !GetAtt CodeCommitRepo.CloneUrlHttp
+  # CodeCommitCloneUrl: 
+  #   Value: !GetAtt CodeCommitRepo.CloneUrlHttp

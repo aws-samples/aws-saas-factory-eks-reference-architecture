@@ -6,6 +6,11 @@ Parameters:
     Description: EKS Reference Architecture assets S3 bucket
     Type: String
     MinLength: 1
+  AdminEmailAddress:
+    Description: Email address of admin user to receive temporary password notification
+    Type: String
+    AllowedPattern: ^[^\s@]+@[^\s@]+\.[^\s@]+$
+    ConstraintDescription: Must be a valid email address.
   DomainName:
     Description: The domain which will host the EKS Workloads.
     Type: String
@@ -91,6 +96,7 @@ Resources:
     Properties:
       TemplateURL: !Sub https://${EKSRefArchBucket}.s3.amazonaws.com/eks-ref-site-admin.yaml
       Parameters:
+        AdminEmailAddress: !Ref AdminEmailAddress
         AppCertArn: !GetAtt Base.Outputs.AppCertArn
         CustomDomainName: !Ref DomainName
         HostedZoneId: !Ref HostedZoneId
@@ -136,6 +142,16 @@ Outputs:
     Value: !GetAtt AdminSite.Outputs.AdminBucket
     Export:
       Name: !Sub '${AWS::StackName}-EksRefArchAdminAppBucket'
+  AdminOAuthClientId:
+    Description: The OAuth AppClientID to configure the Admin Client with
+    Value: !GetAtt AdminSite.Outputs.AdminOAuthClientId
+    Export:
+      Name: !Sub '${AWS::StackName}-AdminOAuthClientId'
+  AdminOAuthProviderUrl:
+    Description: The URL of the authorization server for the admin client
+    Value: !GetAtt AdminSite.Outputs.AdminOAuthProviderUrl
+    Export:
+      Name: !Sub '${AWS::StackName}-AdminOAuthProviderUrl'
   LandingSiteBucket:
     Description: The S3 Bucket that will contain the static assets for the landing site application
     Value: !GetAtt LandingSite.Outputs.LandingBucket
@@ -171,8 +187,8 @@ Outputs:
     Value: !GetAtt ECRRepos.Outputs.OrderServiceRepo
     Export:
       Name: !Sub '${AWS::StackName}-OrderECR'
-  CodeCommitCloneUrl:
-    Description: The URL to git clone the Code Commit repo
-    Value: !GetAtt TenantOnboarding.Outputs.CodeCommitCloneUrl
-    Export:
-      Name: !Sub '${AWS::StackName}-CodeCommitCloneUrl'
+  # CodeCommitCloneUrl:
+  #   Description: The URL to git clone the Code Commit repo
+  #   Value: !GetAtt TenantOnboarding.Outputs.CodeCommitCloneUrl
+  #   Export:
+  #     Name: !Sub '${AWS::StackName}-CodeCommitCloneUrl'
