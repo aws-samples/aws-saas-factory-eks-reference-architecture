@@ -1,11 +1,18 @@
 #!/usr/bin/env bash
 #set -x
-: "${STACK_NAME:=$1}"
-: "${DOMAINNAME:=$2}"
-: "${HOSTEDZONEID:=$3}"
+: "${ADMIN_EMAIL:=$1}"
+: "${STACK_NAME:=$2}"
+: "${DOMAINNAME:=$3}"
+: "${HOSTEDZONEID:=$4}"
 
-USAGE_PROMPT="Use: $0 <STACKNAME> <DOMAINNAME> <HOSTEDZONEID>\n
-Example: $0 test-stack mydomain.com Z01111111111111111111"
+USAGE_PROMPT="Use: $0 <ADMINEMAIL> <STACKNAME> <DOMAINNAME> <HOSTEDZONEID>\n
+Example: $0 user@email.com test-stack mydomain.com Z01111111111111111111"
+
+if [[ -z ${ADMIN_EMAIL} ]]; then
+  echo "Admin Email was not provided."
+  echo -e $USAGE_PROMPT
+  exit 2
+fi
 
 if [[ -z ${STACK_NAME} ]]; then
   echo "Stack Name was not provided."
@@ -78,7 +85,8 @@ echo "Deploying eks-ref-arch stack"
 CREATE_STACK_CMD="aws cloudformation deploy --stack-name ${STACK_NAME} \
 --template-file ./resources/templates/root-stack.yaml \
 --capabilities CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM \
---parameter-overrides EKSRefArchBucket=$BUCKET_NAME \
+--parameter-overrides AdminEmailAddress=$ADMIN_EMAIL \
+                      EKSRefArchBucket=$BUCKET_NAME \
                       DomainName=${DOMAINNAME} \
                       HostedZoneId=${HOSTEDZONEID}"
 cd "${EKS_REF_ROOT_DIR}"
