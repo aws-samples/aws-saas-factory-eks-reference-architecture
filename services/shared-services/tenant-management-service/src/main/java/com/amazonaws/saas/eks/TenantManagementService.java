@@ -71,9 +71,13 @@ public class TenantManagementService {
 		DynamoDB dynamoDB = new DynamoDB(client);
 
 		Table table = dynamoDB.getTable(EKSREFARCH_TENANTS);
+		String plan = tenant.getPlan();
 
+		if(plan == null || plan == "") {
+			plan = "";
+		}
 		Item item = new Item().withPrimaryKey(TENANT_ID, tenant.getTenantId())
-				.withString("PLAN", tenant.getPlan());
+				.withString("PLAN", plan);
 
 		PutItemOutcome outcome = table.putItem(item);
 		LoggingManager.logInfo(tenant.getTenantId(), "New tenant entry created in EKSREFARCH_TENANTS table!");
