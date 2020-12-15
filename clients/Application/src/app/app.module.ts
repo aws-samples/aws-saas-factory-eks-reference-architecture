@@ -59,11 +59,12 @@ import { BsDropdownModule } from 'ngx-bootstrap/dropdown';
 import { TabsModule } from 'ngx-bootstrap/tabs';
 import { ChartsModule } from 'ng2-charts';
 import { HttpClient } from '@angular/common/http';
-import { configureAuth, configureAuth2 } from './views/auth/auth-config';
+import { configureAuth } from './views/auth/auth-config';
 import { UnauthorizedComponent } from './views/error/unauthorized.component';
 import { httpInterceptorProviders } from './interceptors';
 import { CollapseModule } from 'ngx-bootstrap/collapse';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { AuthConfigurationService } from './views/auth/auth-configuration.service';
 
 @NgModule({
   imports: [
@@ -103,8 +104,8 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
     OidcConfigService,
     {
         provide: APP_INITIALIZER,
-        useFactory: configureAuth2,
-        deps: [OidcConfigService, HttpClient],
+        useFactory: configureAuth,
+        deps: [AuthConfigurationService],
         multi: true,
     },
     httpInterceptorProviders,

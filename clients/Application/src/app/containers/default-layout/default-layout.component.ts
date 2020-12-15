@@ -19,6 +19,7 @@ import { Router } from '@angular/router';
 import { OidcSecurityService } from 'angular-auth-oidc-client';
 import { Observable } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
+import { AuthConfigurationService } from '../../views/auth/auth-configuration.service';
 import { navItems } from '../../_nav';
 
 @Component({
@@ -31,6 +32,7 @@ export class DefaultLayoutComponent implements OnInit {
   isAuthenticated$: Observable<Boolean>;
   username$: Observable<string>;
   constructor(public oidcSecurityService: OidcSecurityService,
+              private authService: AuthConfigurationService,
               private router: Router) {}
 
 
@@ -47,8 +49,13 @@ export class DefaultLayoutComponent implements OnInit {
   }
 
   logout() {
-    this.oidcSecurityService.logoffAndRevokeTokens();
-    this.router.navigate(['/logoff']);
+    this.authService.LogOutOfCognito().subscribe(val => {
+      this.router.navigate(['/logoff']);
+    }, err => e => console.error(e));
+  }
+
+  getUrl() {
+    return 'https://saascoffeekincorqobl.auth.us-east-1.amazoncognito.com/login?client_id=3lg8fvk18bborobgiicahpi01q&response_type=code&redirect_uri=https://saascoffee.eks-ref-arch.com/login'
   }
 
   toggleMinimize(e) {

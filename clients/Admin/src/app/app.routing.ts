@@ -22,6 +22,7 @@ import { DefaultLayoutComponent } from './containers';
 
 import { P404Component } from './views/error/404.component';
 import { P500Component } from './views/error/500.component';
+import { UnauthorizedComponent } from './views/error/unauthorized.component';
 
 export const routes: Routes = [
   {
@@ -62,7 +63,15 @@ export const routes: Routes = [
         path: 'tenants',
         loadChildren: () => import('./tenants/tenant.module').then(m => m.TenantModule)
       },
+      {
+        path: 'users',
+        loadChildren: () => import('./users/users.module').then(m => m.UsersModule)
+      }
     ]
+  },
+  {
+    path: 'unauthorized',
+    component: UnauthorizedComponent,
   },
   { path: '**', component: P404Component }
 ];

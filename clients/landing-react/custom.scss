@@ -1,9 +1,0 @@
-/* make the customizations */
-$theme-colors: (
-        "info": tomato,
-        "danger": teal
-);
-
-/* import bootstrap to set changes */
-@import "./node_modules/bootstrap/scss/bootstrap";
-@import "./node_modules/font-awesome/scss/font-awesome"

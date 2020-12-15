@@ -14,50 +14,47 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+
 import { NgModule } from '@angular/core';
 import { Routes, RouterModule } from '@angular/router';
 import { CognitoGuard } from '../cognito.guard';
-import { CreateComponent } from './create.component';
-import { TenantDetailComponent } from './tenant-detail.component';
-import { TenantListComponent } from './tenant-list.component';
-
+import { UserCreateComponent } from './user-create/user-create.component';
+import { UserDetailComponent } from './user-detail/user-detail.component';
+import { UserListComponent } from './user-list/user-list.component';
 
 const routes: Routes = [
-{
-  path: '',
-  data: {
-    title: 'Tenant Management'
+  {
+    path: '',
+    redirectTo: 'list',
   },
-  children: [
-    {
-      path: '',
-      component: TenantListComponent,
-      data: {
-        title: 'Tenant List'
-      },
-      canActivate: [CognitoGuard],
+  {
+    path: 'list',
+    data: {
+      title: 'All Users',
     },
-    {
-      path: 'create',
-      component: CreateComponent,
-      data: {
-        title: 'Create New Tenant'
-      },
-      canActivate: [CognitoGuard],
+    component: UserListComponent,
+    canActivate: [CognitoGuard],
+  },
+  {
+    path: 'create',
+    data: {
+      title: 'Create User',
     },
-    {
-      path: ':id',
-      component: TenantDetailComponent,
-      data: {
-        title: 'Tenant Detail'
-      },
-      canActivate: [CognitoGuard],
+    component: UserCreateComponent,
+    canActivate: [CognitoGuard],
+  },
+  {
+    path: 'detail/:userId',
+    data: {
+      title: 'View User Detail',
     },
-  ]
-}];
+    component: UserDetailComponent,
+    canActivate: [CognitoGuard],
+  },
+];
 
 @NgModule({
   imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule]
+  exports: [RouterModule],
 })
-export class TenantRoutingModule { }
+export class UsersRoutingModule {}

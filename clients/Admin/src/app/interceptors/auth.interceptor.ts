@@ -14,43 +14,38 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import React from 'react';
-import './App.scss';
-import { BrowserRouter as Router, Switch, Route, Link } from 'react-router-dom';
-import Register from './register/Register';
-import LandingPage from './landing/LandingPage';
-
-import { library } from '@fortawesome/fontawesome-svg-core';
-import { fab } from '@fortawesome/free-brands-svg-icons';
+import { Injectable } from '@angular/core';
 import {
-  faCheckSquare,
-  faCoffee,
-  faAsterisk,
-  faEnvelope,
-  faUser,
-  faBuilding,
-} from '@fortawesome/free-solid-svg-icons';
+  HttpRequest,
+  HttpHandler,
+  HttpEvent,
+  HttpInterceptor
+} from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { OidcSecurityService } from 'angular-auth-oidc-client';
 
-library.add(fab, faCheckSquare, faCoffee, faAsterisk, faEnvelope, faUser, faBuilding);
+@Injectable()
+export class AuthInterceptor implements HttpInterceptor {
+  private secureRoutes = ['http://my.route.io/secureapi'];
 
-function App() {
-  return (
-    <>
-      <Router>
-        <div>
-          <Switch>
-            <Route path="/register">
-              <Register />
-            </Route>
-            <Route path="/">
-              <LandingPage></LandingPage>
-            </Route>
-          </Switch>
-        </div>
-      </Router>
-      );
-    </>
-  );
+  constructor(private oidcSecurityService: OidcSecurityService) {}
+
+  intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+      // Ensure we send the token only to routes which are secured
+      // if (!this.secureRoutes.find((x) => req.url.startsWith(x))) {
+      //     return next.handle(req);
+      // }
+
+      const token = this.oidcSecurityService.getToken();
+
+      if (!token) {
+          return next.handle(req);
+      }
+
+      req = req.clone({
+          headers: req.headers.set('Authorization', 'Bearer ' + token),
+      });
+
+      return next.handle(req);
+  }
 }
-
-export default App;

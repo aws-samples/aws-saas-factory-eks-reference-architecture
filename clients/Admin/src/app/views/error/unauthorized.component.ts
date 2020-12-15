@@ -14,43 +14,24 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
- @import "custom";
+import { Component, OnInit } from '@angular/core';
+import { OidcSecurityService } from 'angular-auth-oidc-client';
 
-.App {
-  text-align: center;
-}
+@Component({
+  selector: 'app-unauthorized',
+  templateUrl: './unauthorized.component.html',
+  styleUrls: [ './unauthorized.component.scss'  ]
+})
+export class UnauthorizedComponent implements OnInit {
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
+  constructor(private oidcSecurityService: OidcSecurityService) { }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
+  ngOnInit(): void {
   }
-}
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
-
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+  login() {
+    this.oidcSecurityService.authorize();
+    return false;
   }
-  to {
-    transform: rotate(360deg);
-  }
+
 }

@@ -57,29 +57,31 @@ import { TabsModule } from 'ngx-bootstrap/tabs';
 import { ChartsModule } from 'ng2-charts';
 import { HttpClientModule } from '@angular/common/http';
 import { configureAuth } from './views/auth/configure-auth';
+import { UnauthorizedComponent } from './views/error/unauthorized.component';
 
 @NgModule({
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
-    AppRoutingModule,
     AppAsideModule,
     AppBreadcrumbModule.forRoot(),
     AppFooterModule,
     AppHeaderModule,
+    AppRoutingModule,
     AppSidebarModule,
-    PerfectScrollbarModule,
+    AuthModule.forRoot(),
+    BrowserAnimationsModule,
+    BrowserModule,
     BsDropdownModule.forRoot(),
-    TabsModule.forRoot(),
     ChartsModule,
     HttpClientModule,
-    AuthModule.forRoot(),
+    PerfectScrollbarModule,
+    TabsModule.forRoot(),
   ],
   declarations: [
     AppComponent,
     ...APP_CONTAINERS,
     P404Component,
     P500Component,
+    UnauthorizedComponent,
   ],
   providers: [
     OidcConfigService,
