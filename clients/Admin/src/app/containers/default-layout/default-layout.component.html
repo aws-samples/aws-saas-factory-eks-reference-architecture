@@ -1,10 +1,10 @@
 <app-header
   [navbarBrandRouterLink]="['/dashboard']"
   [fixed]="true"
-  [navbarBrandText]="'SaaS Admin'"
+  [navbarBrandFull]="{src: 'assets/img/brand/logo.svg', width: 89, height: 45, alt: 'EKS-Ref-Arch Logo'}"
+  [navbarBrandMinimized]="{src: 'assets/img/brand/sygnet.svg', width: 30, height: 30, alt: 'EKS-Ref-Arch Logo'}"
   [sidebarToggler]="'lg'"
   [asideMenuToggler]="false">
-  <ul class="nav navbar-nav ml-auto"><img height="30px" src="assets/img/brand/adminapp.png"></ul>
   <ul class="nav navbar-nav ml-auto">
     <li class="nav-item dropdown" dropdown placement="bottom right">
       <a class="nav-link" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false" dropdownToggle (click)="false">
