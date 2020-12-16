@@ -58,6 +58,7 @@ import { ChartsModule } from 'ng2-charts';
 import { HttpClientModule } from '@angular/common/http';
 import { configureAuth } from './views/auth/configure-auth';
 import { UnauthorizedComponent } from './views/error/unauthorized.component';
+import { httpInterceptorProviders } from './interceptors';
 
 @NgModule({
   imports: [
@@ -96,6 +97,7 @@ import { UnauthorizedComponent } from './views/error/unauthorized.component';
       useClass: HashLocationStrategy,
     },
     HttpClientModule,
+    httpInterceptorProviders,
   ],
   bootstrap: [ AppComponent ]
 })
