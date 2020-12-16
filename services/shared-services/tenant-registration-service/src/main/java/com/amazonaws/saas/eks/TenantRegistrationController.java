@@ -61,7 +61,7 @@ public class TenantRegistrationController {
 		return register.getTenants();
     }
 
-	@PutMapping(value = "tenant", produces = { MediaType.APPLICATION_JSON_VALUE })
+	@PutMapping(value = "tenants", produces = { MediaType.APPLICATION_JSON_VALUE })
 	public Tenant updateTenant(Tenant tenant) {
     	TenantRegistrationService updateTenant = new TenantRegistrationService();
     	
