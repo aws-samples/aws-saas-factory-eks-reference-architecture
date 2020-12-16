@@ -40,8 +40,8 @@ public class RegistrationSecurityConfig extends WebSecurityConfigurerAdapter {
 		http.csrf().disable()
 				.authorizeRequests()
 				.antMatchers("/auth/**").permitAll()
+				.antMatchers("/register/**").permitAll()
 				.antMatchers("/**/tenants/**").authenticated()
-				//.anyRequest().authenticated()
 				.and()
 				.addFilterBefore(awsCognitoJwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 		http.cors();
