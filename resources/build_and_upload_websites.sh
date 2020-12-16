@@ -22,7 +22,7 @@ nvm install 12.16
 nvm use 12.16
 npm install @angular/cli@9.1.0
 
-sh ./resources/build_and_upload_admin_site.sh $ADMIN_SITE_BUCKET $DOMAINNAME
+sh ./resources/build_and_upload_admin_site.sh ${STACK_NAME} $ADMIN_SITE_BUCKET $DOMAINNAME
 sh ./resources/build_and_upload_app_site.sh $APP_SITE_BUCKET $DOMAINNAME
 sh ./resources/build_and_upload_landing_site.sh $LANDING_SITE_BUCKET $DOMAINNAME
 
