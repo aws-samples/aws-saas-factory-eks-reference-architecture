@@ -137,8 +137,8 @@ public class TenantRegistrationService {
 	 */
 	public AuthConfig auth(String tenantId) {
 		RestTemplate restTemplate = new RestTemplate();
-		 String tenantManagementServiceUrl = "http://localhost:8002/tenant/auth/{tenantId}";
-		//String tenantManagementServiceUrl = "http://tenant-management-service/tenant/auth/{tenantId}";
+		//String tenantManagementServiceUrl = "http://localhost:8002/tenant/auth/{tenantId}";
+		String tenantManagementServiceUrl = "http://tenant-management-service/tenant/auth/{tenantId}";
 
 		ResponseEntity<AuthConfig> response = restTemplate.getForEntity(tenantManagementServiceUrl, AuthConfig.class,
 				tenantId);
