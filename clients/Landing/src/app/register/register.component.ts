@@ -37,33 +37,17 @@ export class RegisterComponent implements OnInit {
     this.form = this.fb.group({
       name: [null, [Validators.required]],
       email: [null, [Validators.email, Validators.required]],
-      password: [null, [Validators.required]],
-      confirmPassword: [null, [Validators.required]],
       companyName: [null, [Validators.required]],
       plan: [null, [Validators.required]],
-    }, {validator: this.pwdConfirming('password', 'confirmPassword')});
-  }
-
-  pwdConfirming(key: string, confirmationKey: string) {
-    return (group: FormGroup) => {
-        const input = group.controls[key];
-        const confirmationInput = group.controls[confirmationKey];
-        return confirmationInput.setErrors(
-            input.value !== confirmationInput.value ? {notEquivalent: true} : null
-        );
-    };
+    });
   }
 
   onSubmit() {
     const API_URL = `${environment.apiUrl}/register`;
     const domain = environment.domain;
-    const {
-      confirmPassword,
-      ...rest
-    } = this.form.value;
 
     const user = {
-      ...rest,
+      ...this.form.value,
       customDomain: domain
     };
 

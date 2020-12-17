@@ -75,55 +75,6 @@
                   <div class="input-group">
                     <div class="input-group-prepend">
                       <span class="input-group-text"
-                        ><i class="fa fa-asterisk"></i
-                      ></span>
-                    </div>
-                    <input
-                      type="password"
-                      id="password"
-                      name="password"
-                      class="form-control"
-                      formControlName="password"
-                      placeholder="Password"
-                      [ngClass]="displayFieldCss('password')"
-                      required
-                    />
-                  </div>
-                </div>
-                <div class="form-group">
-                  <div class="input-group">
-                    <div class="input-group-prepend">
-                      <span class="input-group-text"
-                        ><i class="fa fa-asterisk"></i
-                      ></span>
-                    </div>
-                    <input
-                      type="password"
-                      id="confirm-password"
-                      name="confirm-password"
-                      class="form-control"
-                      formControlName="confirmPassword"
-                      placeholder="Confirm Password"
-                      [ngClass]="displayFieldCss('confirmPassword')"
-                      required
-                    />
-                  </div>
-                  <div
-                    *ngIf="isFieldInvalid('confirmPassword')"
-                    class="alert alert-danger"
-                  >
-                    <div *ngIf="hasRequiredError('confirmPassword')">
-                      Confirm password is required.
-                    </div>
-                    <div *ngIf="hasError('confirmPassword', 'notEquivalent')">
-                      Passwords don't match
-                    </div>
-                  </div>
-                </div>
-                <div class="form-group">
-                  <div class="input-group">
-                    <div class="input-group-prepend">
-                      <span class="input-group-text"
                         ><i class="fa fa-building"></i
                       ></span>
                     </div>
