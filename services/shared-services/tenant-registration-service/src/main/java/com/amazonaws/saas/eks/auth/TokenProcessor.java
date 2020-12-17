@@ -70,6 +70,19 @@ public class TokenProcessor {
             origin = "http://a5co.aws-dev-shop.com";
     	}
     	
+    	try {
+    		logger.info("Host name => "+ origin);
+            URI uri = new URI(origin);
+            String domain = uri.getHost();
+            String[] parts = domain.split("\\.");
+            origin = parts[1]+ parts[2];
+            logger.info("Tenant Id => "+ origin);
+    	}
+    	catch(URISyntaxException ex) { 
+    	    logger.error(ex.toString());
+    	}
+
+    	
         if (idToken != null) {
     		String table_name = SAAS_PROVIDER_METADATA;
     		String userPoolId = "";
