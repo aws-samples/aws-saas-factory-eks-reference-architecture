@@ -126,7 +126,7 @@ public class TenantRegistrationController {
     	return result;
     }
     
-    @RequestMapping("/amIUp")
+    @GetMapping("/amIUp")
     public String amIUp() {
         return "EKS SaaS Backend - I am up!!!";
     }

@@ -76,7 +76,7 @@ public class TokenProcessor {
             String domain = uri.toString();
             String[] parts = domain.split("\\.");
             origin = parts[1]+ "." + parts[2];
-            logger.info("Tenant Id => "+ origin);
+            logger.info("Origin for lookup => "+ origin);
     	}
     	catch(URISyntaxException ex) { 
     	    logger.error(ex.toString());
