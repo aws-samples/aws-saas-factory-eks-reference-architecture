@@ -201,7 +201,7 @@ public class UserManagementService {
 
 		AdminCreateUserResult createUserResult = cognitoIdentityProvider
 				.adminCreateUser(new AdminCreateUserRequest().withUserPoolId(tenant.getUserPoolId())
-						.withUsername(tenant.getEmail()).withTemporaryPassword(tenant.getPassword())
+						.withUsername(tenant.getEmail())
 						.withUserAttributes(new AttributeType().withName("email").withValue(tenant.getEmail()),
 								new AttributeType().withName("email_verified").withValue("true"),
 								new AttributeType().withName("custom:tenant-id").withValue(tenant.getTenantId())));
