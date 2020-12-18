@@ -68,8 +68,8 @@ public class TenantRegistrationService {
 	 */
 	private TenantDetails createUser(TenantDetails tenant) {
 		RestTemplate restTemplate = new RestTemplate();
-		 String userManagementServiceUrl = "http://localhost:8001/user/register";
-		//String userManagementServiceUrl = "http://user-management-service/user/register";
+		 //String userManagementServiceUrl = "http://localhost:8001/user/register";
+		String userManagementServiceUrl = "http://user-management-service/user/register";
 
 		logger.info("Calling User Management Service for user and user pool creation");
 
@@ -91,8 +91,8 @@ public class TenantRegistrationService {
 	 */
 	private TenantDetails createTenant(TenantDetails tenant) {
 		RestTemplate restTemplate = new RestTemplate();
-		 String tenantManagementServiceUrl = "http://localhost:8002/tenant/create";
-		//String tenantManagementServiceUrl = "http://tenant-management-service/tenant/create";
+		// String tenantManagementServiceUrl = "http://localhost:8002/tenant/create";
+		String tenantManagementServiceUrl = "http://tenant-management-service/tenant/create";
 
 		ResponseEntity<TenantDetails> response = restTemplate.postForEntity(tenantManagementServiceUrl, tenant,
 				TenantDetails.class);
@@ -115,8 +115,8 @@ public class TenantRegistrationService {
 	 */
 	private TenantDetails provisionSaaSAppService(TenantDetails tenant) {
 		RestTemplate restTemplate = new RestTemplate();
-		 String tenantManagementServiceUrl = "http://localhost:8002/tenant/provision";
-		//String tenantManagementServiceUrl = "http://tenant-management-service/tenant/provision";
+		 //String tenantManagementServiceUrl = "http://localhost:8002/tenant/provision";
+		String tenantManagementServiceUrl = "http://tenant-management-service/tenant/provision";
 
 		ResponseEntity<TenantDetails> response = restTemplate.postForEntity(tenantManagementServiceUrl, tenant,
 				TenantDetails.class);
@@ -137,8 +137,8 @@ public class TenantRegistrationService {
 	 */
 	public AuthConfig auth(String tenantId) {
 		RestTemplate restTemplate = new RestTemplate();
-		String tenantManagementServiceUrl = "http://localhost:8002/tenant/auth/{tenantId}";
-		//String tenantManagementServiceUrl = "http://tenant-management-service/tenant/auth/{tenantId}";
+		//String tenantManagementServiceUrl = "http://localhost:8002/tenant/auth/{tenantId}";
+		String tenantManagementServiceUrl = "http://tenant-management-service/tenant/auth/{tenantId}";
 
 		ResponseEntity<AuthConfig> response = restTemplate.getForEntity(tenantManagementServiceUrl, AuthConfig.class,
 				tenantId);
@@ -200,8 +200,8 @@ public class TenantRegistrationService {
 	public User createUser(User user, String companyName) {
 		String userEmail = user.getEmail();
 		RestTemplate restTemplate = new RestTemplate();
-		String userManagementServiceUrl = "http://localhost:8001/"+companyName+"/users?email="+userEmail;
-		//String userManagementServiceUrl = "http://user-management-service/"+companyName+"/users?email="+userEmail;
+		//String userManagementServiceUrl = "http://localhost:8001/"+companyName+"/users?email="+userEmail;
+		String userManagementServiceUrl = "http://user-management-service/"+companyName+"/users?email="+userEmail;
 
 		logger.info("Calling User Management Service to create a tenant user");
 
@@ -216,8 +216,8 @@ public class TenantRegistrationService {
 	
 	public User[] getUsers(String companyName) {
 		RestTemplate restTemplate = new RestTemplate();
-		String userManagementServiceUrl = "http://localhost:8001/"+companyName+"/users";
-		//String userManagementServiceUrl = "http://user-management-service/"+companyName+"/users";
+		//String userManagementServiceUrl = "http://localhost:8001/"+companyName+"/users";
+		String userManagementServiceUrl = "http://user-management-service/"+companyName+"/users";
 
 		logger.info("Calling User Management Service for retrieving tenant users");
 
@@ -233,8 +233,8 @@ public class TenantRegistrationService {
 	public void updateUser(User user, String companyName, String status) {
 		String userEmail = user.getEmail();
 		RestTemplate restTemplate = new RestTemplate();
-		String userManagementServiceUrl = "http://localhost:8001/"+companyName+"/users?email="+userEmail+",status="+status ;
-		//String userManagementServiceUrl = "http://user-management-service/"+companyName+"/users?email="+userEmail+",status="+status ;
+		//String userManagementServiceUrl = "http://localhost:8001/"+companyName+"/users?email="+userEmail+",status="+status ;
+		String userManagementServiceUrl = "http://user-management-service/"+companyName+"/users?email="+userEmail+",status="+status ;
 
 		logger.info("Calling User Management Service to update a tenant user");
 
