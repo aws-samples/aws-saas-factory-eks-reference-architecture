@@ -37,8 +37,9 @@ public class TenantDetails implements Serializable {
 	private String password;
 	private String companyName;
 	private String plan;
+	private String region;
+	private String cognitoDomain;
 
-	
 	public String getTenantId() {
 		return tenantId;
 	}
@@ -122,6 +123,18 @@ public class TenantDetails implements Serializable {
 	}
 	public void setPlan(String plan) {
 		this.plan = plan;
+	}
+	public String getRegion() {
+		return region;
+	}
+	public void setRegion(String region) {
+		this.region = region;
+	}
+	public String getCognitoDomain() {
+		return cognitoDomain;
+	}
+	public void setCognitoDomain(String cognitoDomain) {
+		this.cognitoDomain = cognitoDomain;
 	}
 	
 }

@@ -49,6 +49,7 @@ import com.amazonaws.services.cognitoidp.model.AttributeType;
 import com.amazonaws.services.cognitoidp.model.CreateUserPoolClientRequest;
 import com.amazonaws.services.cognitoidp.model.CreateUserPoolClientResult;
 import com.amazonaws.services.cognitoidp.model.CreateUserPoolDomainRequest;
+import com.amazonaws.services.cognitoidp.model.CreateUserPoolDomainResult;
 import com.amazonaws.services.cognitoidp.model.CreateUserPoolRequest;
 import com.amazonaws.services.cognitoidp.model.CreateUserPoolResult;
 import com.amazonaws.services.cognitoidp.model.ListUsersRequest;
@@ -284,10 +285,12 @@ public class UserManagementService {
 
 		CreateUserPoolDomainRequest createUserPoolDomainRequest = new CreateUserPoolDomainRequest();
 		createUserPoolDomainRequest.setUserPoolId(tenant.getUserPoolId());
-		createUserPoolDomainRequest.setDomain(tenant.getTenantId() + EksSaaSUtil.randomStr());
+
+		String domain = tenant.getTenantId() + EksSaaSUtil.randomStr();
+		createUserPoolDomainRequest.setDomain(domain);
+		tenant.setCognitoDomain("https://" + domain + ".auth." + selectedRegion + ".amazoncognito.com");
 
 		cognitoIdentityProvider.createUserPoolDomain(createUserPoolDomainRequest);
-
 		LoggingManager.logInfo(tenant.getTenantId(), "Create User Pool Domain Successful.");
 
 		return tenant;
@@ -320,6 +323,7 @@ public class UserManagementService {
 		allowedOAuthScopes.add("phone");
 		allowedOAuthScopes.add("email");
 		allowedOAuthScopes.add("openid");
+		allowedOAuthScopes.add("profile");
 		createUserPoolClientRequest.setAllowedOAuthScopes(allowedOAuthScopes);
 
 		List<String> callbackURLs = new ArrayList<String>();
@@ -418,7 +422,7 @@ public class UserManagementService {
 
 		UpdateItemSpec updateItemSpec = new UpdateItemSpec().withPrimaryKey("TENANT_ID", tenant.getTenantId())
 				.withUpdateExpression(
-						"set AUTH_SERVER = :p1, AUTH_CLIENT_ID=:p2, AUTH_REDIRECT_URI=:p3, AUTH_SR_REDIRECT_URI=:p4, AUTH_USE_SR=:p5, AUTH_SR_TIMEOUT=:p6, AUTH_TIMEOUT_FACTOR=:p7, AUTH_SESSION_CHECKS_ENABLED=:p8, AUTH_SHOW_DEBUG_INFO=:p9, AUTH_CLEAR_HASH_AFTER_LOGIN=:p10")
+						"set AUTH_SERVER = :p1, AUTH_CLIENT_ID=:p2, AUTH_REDIRECT_URI=:p3, AUTH_SR_REDIRECT_URI=:p4, AUTH_USE_SR=:p5, AUTH_SR_TIMEOUT=:p6, AUTH_TIMEOUT_FACTOR=:p7, AUTH_SESSION_CHECKS_ENABLED=:p8, AUTH_SHOW_DEBUG_INFO=:p9, AUTH_CLEAR_HASH_AFTER_LOGIN=:p10, COGNITO_DOMAIN=:p11")
 				.withValueMap(new ValueMap()
 						.withString(":p1", tenant.getAuthServer())
 						.withString(":p2", tenant.getClientId())
@@ -429,7 +433,8 @@ public class UserManagementService {
 						.withNumber(":p7", 0.25)
 						.withBoolean(":p8", true)
 						.withBoolean(":p9", true)
-						.withBoolean(":p10", false))
+						.withBoolean(":p10", false)
+						.withString(":p11", tenant.getCognitoDomain()))
 				.withReturnValues(ReturnValue.UPDATED_NEW);
 
             try {
