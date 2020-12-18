@@ -38,6 +38,7 @@ public class AuthConfig implements Serializable {
 	private Boolean showDebugInformation;
 	private Boolean clearHashAfterLogin;
 	private String nonceStateSeparator;
+	private String cognitoDomain;
 	
 	public String getIssuer() {
 		return issuer;
@@ -122,6 +123,12 @@ public class AuthConfig implements Serializable {
 	}
 	public void setNonceStateSeparator(String nonceStateSeparator) {
 		this.nonceStateSeparator = nonceStateSeparator;
+	}
+	public String getCognitoDomain() {
+		return cognitoDomain;
+	}
+	public void setCognitoDomain(String cognitoDomain) {
+		this.cognitoDomain = cognitoDomain;
 	}
 	
 

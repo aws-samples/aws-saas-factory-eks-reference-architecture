@@ -218,7 +218,7 @@ public class TenantManagementService {
 			auth.setResponseType("code");
 			auth.setRedirectUri((String) item.get("AUTH_REDIRECT_URI"));
 			auth.setSilentRefreshRedirectUri((String) item.get("AUTH_REDIRECT_URI") + "/silentrefresh.html");
-			auth.setScope("phone email openid");
+			auth.setScope("phone email openid profile");
 			auth.setUseSilentRefresh((Boolean) item.get("AUTH_USE_SR"));
 			auth.setSilentRefreshTimeout((BigDecimal) item.get("AUTH_SR_TIMEOUT"));
 			auth.setTimeoutFactor(0.25);
@@ -226,7 +226,8 @@ public class TenantManagementService {
 			auth.setShowDebugInformation((Boolean) item.get("AUTH_SHOW_DEBUG_INFO"));
 			auth.setClearHashAfterLogin((Boolean) item.get("AUTH_CLEAR_HASH_AFTER_LOGIN"));
 			auth.setNonceStateSeparator("semicolon");
-
+			auth.setCognitoDomain((String) item.get("COGNITO_DOMAIN"));
+			
 			logger.info("Printing AuthConfig after retrieving it....");
 			logger.info(item.toJSONPretty());
 
