@@ -73,9 +73,9 @@ public class TokenProcessor {
     	try {
     		logger.info("Host name => "+ origin);
             URI uri = new URI(origin);
-            String domain = uri.getHost();
+            String domain = uri.toString();
             String[] parts = domain.split("\\.");
-            origin = parts[1]+ parts[2];
+            origin = parts[1]+ "." + parts[2];
             logger.info("Tenant Id => "+ origin);
     	}
     	catch(URISyntaxException ex) { 
