@@ -207,7 +207,7 @@ public class UserManagementService {
 								new AttributeType().withName("custom:tenant-id").withValue(tenant.getTenantId())));
 
 		UserType cognitoUser = createUserResult.getUser();
-		LoggingManager.logInfo(tenant.getTenantId(), "Cognito - Create User Success=>" + cognitoUser.getUsername());
+		LoggingManager.logInfo(tenant.getTenantId(), "Cognito - Create User Successful=>" + cognitoUser.getUsername());
 
 		return tenant;
 	}
