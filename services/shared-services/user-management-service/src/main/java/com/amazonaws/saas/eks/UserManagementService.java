@@ -568,10 +568,81 @@ public class UserManagementService {
 		}
 		return users;
 	}
+	
+	
+	public User createSaaSProviderUser(String email, String userPoolId) {
+		User user = new User();
+		AWSCognitoIdentityProvider cognitoIdentityProvider = AWSCognitoIdentityProviderClientBuilder.defaultClient();
+				
+		AdminCreateUserResult createUserResult = cognitoIdentityProvider
+				.adminCreateUser(new AdminCreateUserRequest().withUserPoolId(userPoolId)
+						.withUsername(email)
+						.withUserAttributes(new AttributeType().withName("email").withValue(email),
+								new AttributeType().withName("email_verified").withValue("true")));
+
+		
+		UserType cognitoUser = createUserResult.getUser();
+		logger.info("Cognito - Create User Success=>" + cognitoUser.getUsername());
+
+		user.setEmail(email);
+		user.setCreated(cognitoUser.getUserCreateDate().toString());
+		user.setModified(cognitoUser.getUserLastModifiedDate().toString());
+		user.setEnabled(cognitoUser.getEnabled());
+		user.setStatus(cognitoUser.getUserStatus());
+
+		for (AttributeType userAttribute : cognitoUser.getAttributes()) {
+			switch (userAttribute.getName()) {
+			case "email":
+				user.setEmail(userAttribute.getValue());
+				break;
+			case "email_verified":
+				user.setVerified(userAttribute.getValue());
+				break;
+			}
+		}
+
+		return user;
+	}
+
+	public List<User> getSaaSProviderUsers(String userPoolId) {
+		List<User> users = new ArrayList<User>();
+		AWSCognitoIdentityProvider cognitoclient = AWSCognitoIdentityProviderClientBuilder.defaultClient();
+
+		try {
+			ListUsersResult response = cognitoclient.listUsers(new ListUsersRequest().withUserPoolId(userPoolId));
+
+			for (UserType userType : response.getUsers()) {
+				User u = new User();
+
+				for (AttributeType userAttribute : userType.getAttributes()) {
+					switch (userAttribute.getName()) {
+					case "email":
+						u.setEmail(userAttribute.getValue());
+						break;
+					case "email_verified":
+						u.setVerified(userAttribute.getValue());
+						break;
+					}
+				}
+
+				u.setCreated(userType.getUserCreateDate().toString());
+				u.setModified(userType.getUserLastModifiedDate().toString());
+				u.setEnabled(userType.getEnabled());
+				u.setStatus(userType.getUserStatus());
+				users.add(u);
+			}
+
+		} catch (Exception e) {
+			logger.error(e);
+		}
+		return users;
+	}
+
+	
 
 	public static void main(String args[]) {
 		UserManagementService service = new UserManagementService();
-		User user = new User();
+		/*User user = new User();
 		String email = "ranjithkraman@gmail.com";
 		user.setEmail(email);
 		TenantDetails tenant = new TenantDetails();
@@ -580,10 +651,12 @@ public class UserManagementService {
 		tenant.setClientId("sadfasdf");
 		tenant.setRedirectUrl("asdfasdf");
 		tenant.setSilentRefreshRedirectUri("sfasdf");
-		
+		*/
 		//service.getUsers("test145co");
 		//service.createUser("test145co", user);
-		service.updateTenant(tenant );
+		//service.updateTenant(tenant );
+		//List<User> users = service.getSaaSProviderUsers("us-east-1_0AIpIsE2X");
+		User user = service.createSaaSProviderUser("r@r.com", "us-east-1_0AIpIsE2X");
 		System.out.println("Done");
 	}
 

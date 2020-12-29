@@ -62,5 +62,19 @@ public class UserManagementController {
     	UserManagementService userManagement = new UserManagementService();
    		return userManagement.getUsers(companyName);
     }
+    
+    @PostMapping(value="users", produces = { MediaType.APPLICATION_JSON_VALUE })
+    public User createSaaSProviderUser(@RequestParam("email") String email, @RequestParam("userPoolId") String userPoolId) {
+
+    	UserManagementService userManagement = new UserManagementService();
+   		return userManagement.createSaaSProviderUser(email, userPoolId);
+    }
+
+    @GetMapping(value="users", produces = { MediaType.APPLICATION_JSON_VALUE })
+    public List<User> getSaaSProviderUsers(@RequestParam("userPoolId") String userPoolId) {
+
+    	UserManagementService userManagement = new UserManagementService();
+   		return userManagement.getSaaSProviderUsers(userPoolId);
+    }
    
 }

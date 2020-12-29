@@ -16,15 +16,21 @@
  */
 package com.amazonaws.saas.eks.util;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Random;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
+import com.amazonaws.services.dynamodbv2.document.DynamoDB;
+import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.Table;
 
 public class EksSaaSUtil {
-	
 	private static final Logger logger = LogManager.getLogger(EksSaaSUtil.class);
+	private static final String SAAS_PROVIDER_METADATA = "SAAS_PROVIDER_METADATA";
 
 	public static String randomStr() {
 
@@ -40,5 +46,41 @@ public class EksSaaSUtil {
 		return generatedString;
 	}
 
+	public static String getTenantUserPool(String origin) {
+		logger.info("Origin name => " + origin);
+		String userPoolId = null;
+
+		if (origin != null) {
+			try {
+				logger.info("Host name => " + origin);
+				URI uri = new URI(origin);
+				String domain = uri.toString();
+				String[] parts = domain.split("\\.");
+				origin = parts[1] + "." + parts[2];
+				logger.info("Origin for lookup => " + origin);
+			} catch (URISyntaxException ex) {
+				logger.error(ex.toString());
+				return null;
+			}
+
+			AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard().build();
+			DynamoDB dynamoDB = new DynamoDB(client);
+			Table table = dynamoDB.getTable(SAAS_PROVIDER_METADATA);
+
+			try {
+				Item item = table.getItem("DOMAIN_NAME", origin);
+				userPoolId = (String) item.get("PROVIDER_USER_POOL_ID");
+
+				logger.info(item.toJSONPretty());
+			} catch (Exception e) {
+				logger.error("GetItem failed.");
+				logger.error(e.getMessage());
+			}
+			logger.info("userPoolId= " + userPoolId);
+
+		}
+
+		return userPoolId;
+	}
 
 }

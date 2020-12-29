@@ -28,6 +28,7 @@ import com.amazonaws.saas.eks.dto.AuthConfig;
 import com.amazonaws.saas.eks.dto.Tenant;
 import com.amazonaws.saas.eks.dto.TenantDetails;
 import com.amazonaws.saas.eks.dto.User;
+import com.amazonaws.saas.eks.util.EksSaaSUtil;
 import com.amazonaws.saas.eks.util.LoggingManager;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
@@ -68,7 +69,7 @@ public class TenantRegistrationService {
 	 */
 	private TenantDetails createUser(TenantDetails tenant) {
 		RestTemplate restTemplate = new RestTemplate();
-		// String userManagementServiceUrl = "http://localhost:8001/user/register";
+		 //String userManagementServiceUrl = "http://localhost:8001/user/register";
 		String userManagementServiceUrl = "http://user-management-service/user/register";
 
 		logger.info("Calling User Management Service for user and user pool creation");
@@ -91,7 +92,7 @@ public class TenantRegistrationService {
 	 */
 	private TenantDetails createTenant(TenantDetails tenant) {
 		RestTemplate restTemplate = new RestTemplate();
-		// String tenantManagementServiceUrl = "http://localhost:8002/tenant/create";
+		 //String tenantManagementServiceUrl = "http://localhost:8002/tenant/create";
 		String tenantManagementServiceUrl = "http://tenant-management-service/tenant/create";
 
 		ResponseEntity<TenantDetails> response = restTemplate.postForEntity(tenantManagementServiceUrl, tenant,
@@ -115,7 +116,7 @@ public class TenantRegistrationService {
 	 */
 	private TenantDetails provisionSaaSAppService(TenantDetails tenant) {
 		RestTemplate restTemplate = new RestTemplate();
-		// String tenantManagementServiceUrl = "http://localhost:8002/tenant/provision";
+		//String tenantManagementServiceUrl = "http://localhost:8002/tenant/provision";
 		String tenantManagementServiceUrl = "http://tenant-management-service/tenant/provision";
 
 		ResponseEntity<TenantDetails> response = restTemplate.postForEntity(tenantManagementServiceUrl, tenant,
@@ -199,10 +200,13 @@ public class TenantRegistrationService {
 
 	}
 
-	public User createUser(String email) {
+	public User createSaaSProviderUser(String email, String origin) {
 		RestTemplate restTemplate = new RestTemplate();
-		//String userManagementServiceUrl = "http://localhost:8001/users?email="+email;
-		String userManagementServiceUrl = "http://user-management-service/users?email="+email;
+		
+		String userPoolId = EksSaaSUtil.getTenantUserPool(origin);
+		
+		//String userManagementServiceUrl = "http://localhost:8001/users?email="+email+"&userPoolId="+userPoolId;
+		String userManagementServiceUrl = "http://user-management-service/users?email="+email+"&userPoolId="+userPoolId;
 
 		logger.info("Calling User Management Service to create a new SaaS provider user");
 
@@ -214,6 +218,26 @@ public class TenantRegistrationService {
 		}
 		return null;
 	}
+
+	public User[] getSaaSProviderUsers(String origin) {
+		RestTemplate restTemplate = new RestTemplate();
+
+		String userPoolId = EksSaaSUtil.getTenantUserPool(origin);
+
+		//String userManagementServiceUrl = "http://localhost:8001/users?userPoolId="+userPoolId;
+		String userManagementServiceUrl = "http://user-management-service/users?userPoolId="+userPoolId;
+
+		logger.info("Calling User Management Service for retrieving tenant users");
+
+		ResponseEntity<User[]> response = restTemplate.getForEntity(userManagementServiceUrl, User[].class);
+
+		if (response != null) {
+			logger.info("Tenant users retrieved");
+			return response.getBody();
+		}
+		return null;
+	}
+
 	
 	public List<Tenant> getTenants() {
 		DynamoDBMapper mapper = dynamoDBMapper();
@@ -235,12 +259,6 @@ public class TenantRegistrationService {
 		return (AmazonDynamoDBClient) AmazonDynamoDBClientBuilder.standard()
 				.withCredentials(new DefaultAWSCredentialsProviderChain())
 				.build();
-	}
-
-	
-	public static void main(String args[]) {
-		TenantRegistrationService service = new TenantRegistrationService();
-		service.getTenants();
 	}
 
 	public Tenant updateTenant(Tenant tenant) {

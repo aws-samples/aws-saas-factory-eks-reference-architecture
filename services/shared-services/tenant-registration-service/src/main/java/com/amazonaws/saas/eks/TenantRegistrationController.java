@@ -53,18 +53,27 @@ public class TenantRegistrationController {
 
 		return result;
     }
-    
-	@PostMapping(value = "users", produces = { MediaType.APPLICATION_JSON_VALUE })
-    public User createUser(@RequestBody ProviderUserEmail email) {
-    	TenantRegistrationService service = new TenantRegistrationService();
     	
+	@PostMapping(value = "users", produces = { MediaType.APPLICATION_JSON_VALUE })
+    public User createUser(@RequestBody ProviderUserEmail email, HttpServletRequest request) {
+    	TenantRegistrationService service = new TenantRegistrationService();
+        String origin = request.getHeader("origin");
+
     	if(email!= null) {
-    		return service.createUser(email.toString());
+    		return service.createSaaSProviderUser(email.getEmail(), origin);
     	}
 
 		return null;
     }
-  
+
+	@GetMapping(value = "users", produces = { MediaType.APPLICATION_JSON_VALUE })
+    public User[] getUsers(HttpServletRequest request) {
+    	TenantRegistrationService service = new TenantRegistrationService();
+        String origin = request.getHeader("origin");
+
+    	return service.getSaaSProviderUsers(origin);
+    }
+	
     @GetMapping(value = "tenants", produces = { MediaType.APPLICATION_JSON_VALUE })
     public List<Tenant> getTenants() {
  
