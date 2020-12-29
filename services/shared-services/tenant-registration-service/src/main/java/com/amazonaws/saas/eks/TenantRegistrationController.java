@@ -53,6 +53,17 @@ public class TenantRegistrationController {
 
 		return result;
     }
+    
+	@PostMapping(value = "users", produces = { MediaType.APPLICATION_JSON_VALUE })
+    public User createUser(@RequestBody ProviderUserEmail email) {
+    	TenantRegistrationService service = new TenantRegistrationService();
+    	
+    	if(email!= null) {
+    		return service.createUser(email.toString());
+    	}
+
+		return null;
+    }
   
     @GetMapping(value = "tenants", produces = { MediaType.APPLICATION_JSON_VALUE })
     public List<Tenant> getTenants() {
@@ -140,6 +151,19 @@ public class TenantRegistrationController {
 
 		public void setEnabled(Boolean enabled) {
 			this.enabled = enabled;
+		}
+    	
+    }
+    
+    static class ProviderUserEmail {
+    	private String email;
+
+		public String getEmail() {
+			return email;
+		}
+
+		public void setEmail(String email) {
+			this.email = email;
 		}
     	
     }

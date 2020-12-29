@@ -68,7 +68,7 @@ public class TenantRegistrationService {
 	 */
 	private TenantDetails createUser(TenantDetails tenant) {
 		RestTemplate restTemplate = new RestTemplate();
-		 //String userManagementServiceUrl = "http://localhost:8001/user/register";
+		// String userManagementServiceUrl = "http://localhost:8001/user/register";
 		String userManagementServiceUrl = "http://user-management-service/user/register";
 
 		logger.info("Calling User Management Service for user and user pool creation");
@@ -115,7 +115,7 @@ public class TenantRegistrationService {
 	 */
 	private TenantDetails provisionSaaSAppService(TenantDetails tenant) {
 		RestTemplate restTemplate = new RestTemplate();
-		 //String tenantManagementServiceUrl = "http://localhost:8002/tenant/provision";
+		// String tenantManagementServiceUrl = "http://localhost:8002/tenant/provision";
 		String tenantManagementServiceUrl = "http://tenant-management-service/tenant/provision";
 
 		ResponseEntity<TenantDetails> response = restTemplate.postForEntity(tenantManagementServiceUrl, tenant,
@@ -150,51 +150,6 @@ public class TenantRegistrationService {
 
 		logger.info(response.getBody().toString());
 		return response.getBody();
-	}
-
-	public List<Tenant> getTenants() {
-		DynamoDBMapper mapper = dynamoDBMapper();
-		PaginatedScanList<Tenant> tenants = mapper.scan(Tenant.class, new DynamoDBScanExpression());
-
-		return tenants;
-	}
-	
-	public DynamoDBMapper dynamoDBMapper() {
-		DynamoDBMapperConfig dbMapperConfig = new DynamoDBMapperConfig.Builder()
-				.withTableNameOverride(TableNameOverride.withTableNameReplacement(EKSREFARCH_TENANTS))
-				.build();
-		
-		AmazonDynamoDBClient dynamoClient = getAmazonDynamoDBLocalClient();
-		return new DynamoDBMapper(dynamoClient, dbMapperConfig);
-	}
-
-	private AmazonDynamoDBClient getAmazonDynamoDBLocalClient() {
-		return (AmazonDynamoDBClient) AmazonDynamoDBClientBuilder.standard()
-				.withCredentials(new DefaultAWSCredentialsProviderChain())
-				.build();
-	}
-
-	
-	public static void main(String args[]) {
-		TenantRegistrationService service = new TenantRegistrationService();
-		service.getTenants();
-	}
-
-	public Tenant updateTenant(Tenant tenant) {
-		try {
-			DynamoDBMapper mapper = dynamoDBMapper();
-
-			DynamoDBMapperConfig dynamoDBMapperConfig = new DynamoDBMapperConfig.Builder()
-					  .withConsistentReads(DynamoDBMapperConfig.ConsistentReads.CONSISTENT)
-					  .withSaveBehavior(DynamoDBMapperConfig.SaveBehavior.UPDATE)
-					  .build();
-			mapper.save(tenant, dynamoDBMapperConfig);
-
-		} catch (Exception e) {
-			logger.error(e.getMessage());
-		}
-		return tenant;
-
 	}
 
 	public User createUser(User user, String companyName) {
@@ -241,6 +196,67 @@ public class TenantRegistrationService {
 		restTemplate.put(userManagementServiceUrl, user, User.class);
 		
 		logger.info("Tenant user updated");
+
+	}
+
+	public User createUser(String email) {
+		RestTemplate restTemplate = new RestTemplate();
+		//String userManagementServiceUrl = "http://localhost:8001/users?email="+email;
+		String userManagementServiceUrl = "http://user-management-service/users?email="+email;
+
+		logger.info("Calling User Management Service to create a new SaaS provider user");
+
+		ResponseEntity<User> response = restTemplate.postForEntity(userManagementServiceUrl, null, User.class);
+
+		if (response != null) {
+			logger.info("SaaS Provider user created");
+			return response.getBody();
+		}
+		return null;
+	}
+	
+	public List<Tenant> getTenants() {
+		DynamoDBMapper mapper = dynamoDBMapper();
+		PaginatedScanList<Tenant> tenants = mapper.scan(Tenant.class, new DynamoDBScanExpression());
+
+		return tenants;
+	}
+	
+	public DynamoDBMapper dynamoDBMapper() {
+		DynamoDBMapperConfig dbMapperConfig = new DynamoDBMapperConfig.Builder()
+				.withTableNameOverride(TableNameOverride.withTableNameReplacement(EKSREFARCH_TENANTS))
+				.build();
+		
+		AmazonDynamoDBClient dynamoClient = getAmazonDynamoDBLocalClient();
+		return new DynamoDBMapper(dynamoClient, dbMapperConfig);
+	}
+
+	private AmazonDynamoDBClient getAmazonDynamoDBLocalClient() {
+		return (AmazonDynamoDBClient) AmazonDynamoDBClientBuilder.standard()
+				.withCredentials(new DefaultAWSCredentialsProviderChain())
+				.build();
+	}
+
+	
+	public static void main(String args[]) {
+		TenantRegistrationService service = new TenantRegistrationService();
+		service.getTenants();
+	}
+
+	public Tenant updateTenant(Tenant tenant) {
+		try {
+			DynamoDBMapper mapper = dynamoDBMapper();
+
+			DynamoDBMapperConfig dynamoDBMapperConfig = new DynamoDBMapperConfig.Builder()
+					  .withConsistentReads(DynamoDBMapperConfig.ConsistentReads.CONSISTENT)
+					  .withSaveBehavior(DynamoDBMapperConfig.SaveBehavior.UPDATE)
+					  .build();
+			mapper.save(tenant, dynamoDBMapperConfig);
+
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		}
+		return tenant;
 
 	}
 }

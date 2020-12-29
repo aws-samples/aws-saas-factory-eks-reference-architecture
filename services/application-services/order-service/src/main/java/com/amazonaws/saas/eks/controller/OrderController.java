@@ -18,24 +18,23 @@ package com.amazonaws.saas.eks.controller;
 
 import java.util.List;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.amazonaws.saas.eks.auth.TokenManager;
 import com.amazonaws.saas.eks.model.Order;
-import com.amazonaws.saas.eks.repository.OrderRepository;
 import com.amazonaws.saas.eks.service.OrderService;
-import com.amazonaws.saas.eks.service.OrderServiceImpl;
 
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 @RestController
@@ -45,26 +44,66 @@ public class OrderController {
 	@Autowired
     private OrderService orderService;
 
-    
-    @GetMapping(value="{tenantId}/order/api/orders", produces = { MediaType.APPLICATION_JSON_VALUE })
-    public List<Order> getOrders(@PathVariable("tenantId") String tenantId) {
-    	logger.info("Return orders");
+	@Autowired
+	private TokenManager tokenManager;
 
-        return orderService.getOrders(tenantId);
+    
+    @GetMapping(value="{companyName}/order/api/orders", produces = { MediaType.APPLICATION_JSON_VALUE })
+    public List<Order> getOrders(HttpServletRequest request) {
+    	logger.info("Return orders");
+   		String tenantId;
+		
+		try {
+			tenantId = tokenManager.getTenantId(request);
+		} catch (Exception e) {
+			logger.error("Invalid tenant. Value either missing, empty or null");
+			return null;
+		}
+		
+		if(tenantId!=null && !tenantId.isEmpty()) {
+			return orderService.getOrders(tenantId);
+		}
+		
+		return null;
     }
 
-    @GetMapping(value = "{tenantId}/order/api/order/{orderId}", produces = { MediaType.APPLICATION_JSON_VALUE })
-	public Order getOrderById(@PathVariable("tenantId") String tenantId, @PathVariable("orderId") String orderId) {
+    @GetMapping(value = "{companyName}/order/api/order/{orderId}", produces = { MediaType.APPLICATION_JSON_VALUE })
+	public Order getOrderById(@PathVariable("orderId") String orderId, HttpServletRequest request) {
+  		String tenantId;
+		
+		try {
+			tenantId = tokenManager.getTenantId(request);
+		} catch (Exception e) {
+			logger.error("Invalid tenant. Value either missing, empty or null");
+			return null;
+		}
+		
+		if(tenantId!=null && !tenantId.isEmpty()) {
+			return orderService.getOrderById(orderId, tenantId);
 
-		return orderService.getOrderById(orderId, tenantId);
+		}
+		return null;
 	}
         
-    @PostMapping(value="{tenantId}/order/api/order", produces = { MediaType.APPLICATION_JSON_VALUE })
-    public Order saveOrder(@PathVariable("tenantId") String tenantId, @RequestBody Order order) {
-        return orderService.save(order, tenantId);
+    @PostMapping(value="{companyName}/order/api/order", produces = { MediaType.APPLICATION_JSON_VALUE })
+    public Order saveOrder(@RequestBody Order order, HttpServletRequest request) {
+    	String tenantId;
+		
+		try {
+			tenantId = tokenManager.getTenantId(request);
+		} catch (Exception e) {
+			logger.error("Invalid tenant. Value either missing, empty or null");
+			return null;
+		}
+		
+		if(tenantId!=null && !tenantId.isEmpty()) {
+	        return orderService.save(order, tenantId);
+		}
+		
+		return null;
     }
 
-    @RequestMapping("{tenantId}/order/health/order")
+    @RequestMapping("{companyName}/order/health/order")
     public String health() {
         return "\"Order service is up!\"";
     }

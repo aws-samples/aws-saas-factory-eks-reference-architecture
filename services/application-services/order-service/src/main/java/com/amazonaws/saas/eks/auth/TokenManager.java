@@ -52,9 +52,11 @@ import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 
 @Component
 public class TokenManager {
-	private static final Logger logger = LogManager.getLogger(TokenManager.class);
 	private static final String CUSTOM_TENANT_ID = "custom:tenant-id";
+
 	private static final String EKSREFARCH_TENANTS = "EKSREFARCH_TENANTS";
+
+	private static final Logger logger = LogManager.getLogger(TokenManager.class);
 
     @Autowired
     private JwtConfig jwtConfiguration;
@@ -77,15 +79,17 @@ public class TokenManager {
             String domain = uri.getHost();
             String[] parts = domain.split("\\.");
             companyName = parts[0];
-        	logger.info("Company Name => "+ companyName);
+            logger.info("Tenant Id => "+ companyName);
     	}
     	catch(URISyntaxException ex) { 
     	    logger.error(ex.toString());
     	}
     	
+    	logger.info("Company Name => "+ companyName);
+
         if (idToken != null) {
     		String table_name = EKSREFARCH_TENANTS;
-    		logger.info("Received CompanyName=>" + companyName + " for lookup.");
+    		logger.info("Received CompanyName=>" + companyName + "for lookup.");
 
     		AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard().build();
     		DynamoDB dynamoDB = new DynamoDB(client);
