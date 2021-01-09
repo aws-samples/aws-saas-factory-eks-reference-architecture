@@ -26,7 +26,6 @@ TENANT_REG_ECR=$(aws cloudformation list-exports --query "Exports[?Name=='${STAC
 USER_MGMT_ECR=$(aws cloudformation list-exports --query "Exports[?Name=='${STACK_NAME}-UserManagementECR'].Value" --output text)
 
 echo "Install Nginx controller"
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-0.32.0/deploy/static/provider/aws/deploy.yaml
 cd resources/templates
 ACM_CERT=$(aws acm list-certificates  --query "CertificateSummaryList[?DomainName=='*.$DOMAIN_NAME'].CertificateArn" --output text)
 sed -i -e 's,ACM_CERT,'$ACM_CERT',g' nginx-ingress-config.yaml

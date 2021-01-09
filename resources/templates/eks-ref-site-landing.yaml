@@ -15,6 +15,7 @@ Parameters:
 Resources:
   LandingAppBucket:  
     Type: 'AWS::S3::Bucket'
+    DeletionPolicy : Retain
   LandingAppSiteReadPolicy:
     Type: 'AWS::S3::BucketPolicy'
     Properties:

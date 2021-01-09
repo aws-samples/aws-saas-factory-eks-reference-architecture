@@ -20,6 +20,7 @@ Parameters:
 Resources:
   AdminAppBucket:  
     Type: AWS::S3::Bucket
+    DeletionPolicy : Retain
   AdminAppSiteReadPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
