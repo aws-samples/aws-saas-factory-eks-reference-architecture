@@ -1,4 +1,6 @@
 #!/bin/bash
+. ~/.bash_profile
+
 if [ "X$AWS_REGION" = "X" ]; then
   echo -e "AWS_REGION not set, check your aws profile or set AWS_DEFAULT_REGION"
   exit 2

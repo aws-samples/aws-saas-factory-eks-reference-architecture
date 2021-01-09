@@ -187,8 +187,8 @@ Outputs:
     Value: !GetAtt ECRRepos.Outputs.OrderServiceRepo
     Export:
       Name: !Sub '${AWS::StackName}-OrderECR'
-  # CodeCommitCloneUrl:
-  #   Description: The URL to git clone the Code Commit repo
-  #   Value: !GetAtt TenantOnboarding.Outputs.CodeCommitCloneUrl
-  #   Export:
-  #     Name: !Sub '${AWS::StackName}-CodeCommitCloneUrl'
+  CodeCommitCloneUrl:
+    Description: The URL to git clone the Code Commit repo
+    Value: !GetAtt TenantOnboarding.Outputs.CodeCommitCloneUrl
+    Export:
+      Name: !Sub '${AWS::StackName}-CodeCommitCloneUrl'

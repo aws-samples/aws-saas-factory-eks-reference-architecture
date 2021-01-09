@@ -38,10 +38,10 @@ A reference solution focuses on providing the SaaS community with a targeted set
     * Take the defaults, and click `Next: Review` to review.
     * Enter `eks-ref-arch-admin` for the Name, and click `Create role`.
 4. Remove managed credentials and attach EC2 Instance Role to Cloud9 Instance
-    * Click the gear in the upper right-hand corner of the IDE which opens settings. Click the `AWS Settings` on the left and under `Credentials` slide the button to the left for `AWS Managed Temporary Credentials. The button should be red when done with an x to the right indicating it's off.
-    * Click the round Button with the letter A in the upper right-hand corner of the IDE and click `Manage EC2 Instance`. This will take you the EC2 portion of the AWS Console
-    * Right-click the EC2 instance and in the fly-out menu, click `Instance Settings` -> `Modify IAM Role`
-    * Choose the Role you created in step 2 above. It should be titled "eks-ref-arch-admin" and click `Save`.
+    * Click the gear in the upper right-hand corner of the IDE which opens settings. Click the `AWS Settings` on the left and under `Credentials` slide the button to the left for `AWS Managed Temporary Credentials. The button should be greyed out when done with an x to the right indicating it's off.
+    * Click the round Button with an alphabet in the upper right-hand corner of the IDE and click `Manage EC2 Instance`. This will take you the EC2 portion of the AWS Console
+    * Right-click the EC2 instance and in the fly-out menu, click `Security` -> `Modify IAM Role`
+    * Choose the Role you created in step 3 above. It should be titled "eks-ref-arch-admin" and click `Save`.
 5. Clone the repo and run the setup script
     * Return to the Cloud9 IDE
     * In the upper left part of the main screen, click the round green button with a `+` on it and click `New Terminal`
@@ -72,10 +72,12 @@ A reference solution focuses on providing the SaaS community with a targeted set
 
     ```bash
     chmod +x deploy.sh
-    ./deploy.sh <STACK_NAME> <DOMAIN_NAME> <HOSTED_ZONE_ID>
+    ./deploy.sh <ADMIN_EMAIL> <STACK_NAME> <DOMAIN_NAME> <HOSTED_ZONE_ID>
     ```
 
-    Where Stack Name is whatever name you want to give to the CloudFormation stack which gets deployed. Domain Name is the actual domain that you're bringing to this scenario, e.g. my-eks-domain.com. Lastly Hosted Zone ID is the ID of the Route53 hosted zone for this domain (you created or recorded in step 1 of this guide)
+    Where Admin Email is the email address of the SaaS Admin. Stack Name is whatever name you want to give to the CloudFormation stack which gets deployed. Domain Name is the actual domain that you're bringing to this scenario, e.g. my-eks-domain.com. Lastly Hosted Zone ID is the ID of the Route53 hosted zone for this domain (you created or recorded in step 1 of this guide)
+
+    Important: During the Stack provisioning a Nested Stack is created for provisioning a Certificate to be used by the application. Open ACM service and you will find the status of the certificate is in "Pending Validation". Expand the Certificate and look for the two domains that was created. Look for the button "Create record in Route 53" and click. This will update the DNS configuration by adding a new entry in Route 53. Within a few minutes, the certificate status will change to "Issued". At this point you will see the Cloudformation AppCert nested stack will continue with its provisioning.
 
     This [script](./deploy.sh) creates a unique S3 Bucket and uploads our CloudFormation artifacts to that bucket. It then kicks off a CloudFormation stack with all the supporting pieces for our EKS Reference Architecture, including our CloudFront distributions for both the administration and tenant websites, as well as a wildcard certificate to provision those sites and corresponding bucket policies. It also creates the DynamoDB Tables used by our shared microservices for Tenant and User management and registration.
 
