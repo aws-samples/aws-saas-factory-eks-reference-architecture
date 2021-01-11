@@ -64,7 +64,7 @@ public class TenantManagementController {
 	 * @param tenantId
 	 * @return 
 	 */
-	@RequestMapping(path="/auth", method=RequestMethod.GET)
+	@RequestMapping(path="/auth-info", method=RequestMethod.GET)
     public AuthConfig auth(HttpServletRequest request) {
  
     	String tenantId = "";
