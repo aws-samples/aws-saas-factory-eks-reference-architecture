@@ -18,6 +18,8 @@ package com.amazonaws.saas.eks;
 
 import java.util.List;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,7 +27,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.amazonaws.saas.eks.dto.TenantDetails;
@@ -35,6 +36,11 @@ import com.amazonaws.saas.eks.dto.User;
 @RestController
 public class UserManagementController {
 
+    /**
+     * Method to register a new tenant user by creating a Cognito user pool. This is called from the Tenant Registration Service
+     * @param tenant
+     * @return
+     */
     @RequestMapping("/user/register")
     public TenantDetails userRegistration(@RequestBody TenantDetails tenant) {
 
@@ -42,39 +48,100 @@ public class UserManagementController {
 		return userManagement.register(tenant);
     }
     
-    @PostMapping(value="{companyName}/users", produces = { MediaType.APPLICATION_JSON_VALUE })
-    public User createUser(@PathVariable("companyName") String companyName, @RequestBody User user) {
+	/**
+	 * Method to retrieve all users of a tenant.
+	 * @param companyName
+	 * @return
+	 */
+	@GetMapping(value = "{companyName}/users", produces = { MediaType.APPLICATION_JSON_VALUE })
+    public List<User> getUsers(@PathVariable("companyName") String companyName) {
+    	UserManagementService userManagement = new UserManagementService();
+    	
+		return userManagement.getUsers(companyName);
+    }
 
+	/**
+	 * Method to create a new user for a tenant.
+	 * @param companyName
+	 * @return
+	 */
+	@PostMapping(value = "{companyName}/users", produces = { MediaType.APPLICATION_JSON_VALUE })
+    public User createUser(@PathVariable("companyName") String companyName, @RequestBody User user) {
+		
     	UserManagementService userManagement = new UserManagementService();
    		return userManagement.createUser(companyName, user);
     }
-
-    @PutMapping(value="{companyName}/users", produces = { MediaType.APPLICATION_JSON_VALUE })
-    public void updateUser(@PathVariable("companyName") String companyName, @PathVariable("status") String status, @RequestBody User user) {
-
-    	UserManagementService userManagement = new UserManagementService();
-    	userManagement.updateUser(user, companyName, status);
+	
+	/**
+	 * Method to update a tenant user's data.
+	 * @param companyName
+	 * @return
+	 */
+	@PutMapping(value = "{companyName}/users/{userName}", produces = { MediaType.APPLICATION_JSON_VALUE })
+    public void updateUser(@PathVariable("companyName") String companyName, @PathVariable("userName") String userName, @RequestBody UserStatusCheck status) {
+		UserManagementService service = new UserManagementService();
+    	
+    	User user = new User();
+    	user.setUserName(userName);
+    	
+    	if(status!= null && status.isEnabled()!=null) {
+    	    service.updateUser(user, companyName, status.isEnabled().toString());
+    	}    
     }
 
-    @GetMapping(value="{companyName}/users", produces = { MediaType.APPLICATION_JSON_VALUE })
-    public List<User> getUsers(@PathVariable("companyName") String companyName) {
+	/**
+	 * Method to create a new SaaS provider's user. This will be accessed from the admin site.
+	 * @param companyName
+	 * @return
+	 */	
+	@PostMapping(value = "users", produces = { MediaType.APPLICATION_JSON_VALUE })
+	public User createUser(@RequestBody ProviderUserEmail email, HttpServletRequest request) {
+		UserManagementService service = new UserManagementService();
+	    String origin = request.getHeader("origin");
+	
+		if(email!= null) {
+			return service.createSaaSProviderUser(email.getEmail(), origin);
+		}
+	
+		return null;
+	}
 
-    	UserManagementService userManagement = new UserManagementService();
-   		return userManagement.getUsers(companyName);
+	/**
+	 * Method that will retrieve all the users of the SaaS provider. This will be accessed from the admin site.
+	 * @param companyName
+	 * @return
+	 */		
+	@GetMapping(value = "users", produces = { MediaType.APPLICATION_JSON_VALUE })
+    public List<User> getUsers(HttpServletRequest request) {
+		UserManagementService service = new UserManagementService();
+        String origin = request.getHeader("origin");
+
+    	return service.getSaaSProviderUsers(origin);
     }
-    
-    @PostMapping(value="users", produces = { MediaType.APPLICATION_JSON_VALUE })
-    public User createSaaSProviderUser(@RequestParam("email") String email, @RequestParam("userPoolId") String userPoolId) {
 
-    	UserManagementService userManagement = new UserManagementService();
-   		return userManagement.createSaaSProviderUser(email, userPoolId);
+    static class UserStatusCheck {
+    	private Boolean enabled;
+
+		public Boolean isEnabled() {
+			return enabled;
+		}
+
+		public void setEnabled(Boolean enabled) {
+			this.enabled = enabled;
+		}
+    	
     }
 
-    @GetMapping(value="users", produces = { MediaType.APPLICATION_JSON_VALUE })
-    public List<User> getSaaSProviderUsers(@RequestParam("userPoolId") String userPoolId) {
+    static class ProviderUserEmail {
+    	private String email;
 
-    	UserManagementService userManagement = new UserManagementService();
-   		return userManagement.getSaaSProviderUsers(userPoolId);
+		public String getEmail() {
+			return email;
+		}
+
+		public void setEmail(String email) {
+			this.email = email;
+		}
+    	
     }
-   
 }

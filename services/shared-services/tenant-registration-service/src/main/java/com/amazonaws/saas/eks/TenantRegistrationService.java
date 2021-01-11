@@ -24,11 +24,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.saas.eks.dto.AuthConfig;
 import com.amazonaws.saas.eks.dto.Tenant;
 import com.amazonaws.saas.eks.dto.TenantDetails;
-import com.amazonaws.saas.eks.dto.User;
-import com.amazonaws.saas.eks.util.EksSaaSUtil;
 import com.amazonaws.saas.eks.util.LoggingManager;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
@@ -48,7 +45,7 @@ public class TenantRegistrationService {
 		if (tenant != null) {
 			tenant = createTenant(tenant);
 			tenant = createUser(tenant);
-			tenant = provisionSaaSAppService(tenant);
+			tenant = createTenantServices(tenant);
 
 			LoggingManager.logInfo(tenant.getTenantId(), "Tenant registration success!");
 			return "\"Tenant registration success.\"";
@@ -114,7 +111,7 @@ public class TenantRegistrationService {
 	 * @param tenant
 	 * @return tenant
 	 */
-	private TenantDetails provisionSaaSAppService(TenantDetails tenant) {
+	private TenantDetails createTenantServices(TenantDetails tenant) {
 		RestTemplate restTemplate = new RestTemplate();
 		//String tenantManagementServiceUrl = "http://localhost:8002/tenant/provision";
 		String tenantManagementServiceUrl = "http://tenant-management-service/tenant/provision";
@@ -130,115 +127,11 @@ public class TenantRegistrationService {
 		return response.getBody();
 	}
 
+
 	/**
-	 * Method to retrieve the Tenant User pool configuration data.
-	 * 
-	 * @param tenantId
-	 * @return 
+	 * Retrieve tenants as a List
+	 * @return
 	 */
-	public AuthConfig auth(String tenantId) {
-		RestTemplate restTemplate = new RestTemplate();
-		//String tenantManagementServiceUrl = "http://localhost:8002/tenant/auth/{tenantId}";
-		String tenantManagementServiceUrl = "http://tenant-management-service/tenant/auth/{tenantId}";
-
-		ResponseEntity<AuthConfig> response = restTemplate.getForEntity(tenantManagementServiceUrl, AuthConfig.class,
-				tenantId);
-
-		if (response != null)
-			logger.info("Received auth config details=>" + response.getBody().toString());
-		else
-			logger.error("Failure during auth config fetch");
-
-		logger.info(response.getBody().toString());
-		return response.getBody();
-	}
-
-	public User createUser(User user, String companyName) {
-		String userEmail = user.getEmail();
-		RestTemplate restTemplate = new RestTemplate();
-		//String userManagementServiceUrl = "http://localhost:8001/"+companyName+"/users?email="+userEmail;
-		String userManagementServiceUrl = "http://user-management-service/"+companyName+"/users?email="+userEmail;
-
-		logger.info("Calling User Management Service to create a tenant user");
-
-		ResponseEntity<User> response = restTemplate.postForEntity(userManagementServiceUrl, user, User.class);
-
-		if (response != null) {
-			logger.info("Tenant user created");
-			return response.getBody();
-		}
-		return null;
-	}
-	
-	public User[] getUsers(String companyName) {
-		RestTemplate restTemplate = new RestTemplate();
-		//String userManagementServiceUrl = "http://localhost:8001/"+companyName+"/users";
-		String userManagementServiceUrl = "http://user-management-service/"+companyName+"/users";
-
-		logger.info("Calling User Management Service for retrieving tenant users");
-
-		ResponseEntity<User[]> response = restTemplate.getForEntity(userManagementServiceUrl, User[].class);
-
-		if (response != null) {
-			logger.info("Tenant users retrieved");
-			return response.getBody();
-		}
-		return null;
-	}
-
-	public void updateUser(User user, String companyName, String status) {
-		String userEmail = user.getEmail();
-		RestTemplate restTemplate = new RestTemplate();
-		//String userManagementServiceUrl = "http://localhost:8001/"+companyName+"/users?email="+userEmail+",status="+status ;
-		String userManagementServiceUrl = "http://user-management-service/"+companyName+"/users?email="+userEmail+",status="+status ;
-
-		logger.info("Calling User Management Service to update a tenant user");
-
-		restTemplate.put(userManagementServiceUrl, user, User.class);
-		
-		logger.info("Tenant user updated");
-
-	}
-
-	public User createSaaSProviderUser(String email, String origin) {
-		RestTemplate restTemplate = new RestTemplate();
-		
-		String userPoolId = EksSaaSUtil.getTenantUserPool(origin);
-		
-		//String userManagementServiceUrl = "http://localhost:8001/users?email="+email+"&userPoolId="+userPoolId;
-		String userManagementServiceUrl = "http://user-management-service/users?email="+email+"&userPoolId="+userPoolId;
-
-		logger.info("Calling User Management Service to create a new SaaS provider user");
-
-		ResponseEntity<User> response = restTemplate.postForEntity(userManagementServiceUrl, null, User.class);
-
-		if (response != null) {
-			logger.info("SaaS Provider user created");
-			return response.getBody();
-		}
-		return null;
-	}
-
-	public User[] getSaaSProviderUsers(String origin) {
-		RestTemplate restTemplate = new RestTemplate();
-
-		String userPoolId = EksSaaSUtil.getTenantUserPool(origin);
-
-		//String userManagementServiceUrl = "http://localhost:8001/users?userPoolId="+userPoolId;
-		String userManagementServiceUrl = "http://user-management-service/users?userPoolId="+userPoolId;
-
-		logger.info("Calling User Management Service for retrieving tenant users");
-
-		ResponseEntity<User[]> response = restTemplate.getForEntity(userManagementServiceUrl, User[].class);
-
-		if (response != null) {
-			logger.info("Tenant users retrieved");
-			return response.getBody();
-		}
-		return null;
-	}
-
-	
 	public List<Tenant> getTenants() {
 		DynamoDBMapper mapper = dynamoDBMapper();
 		PaginatedScanList<Tenant> tenants = mapper.scan(Tenant.class, new DynamoDBScanExpression());
@@ -246,21 +139,10 @@ public class TenantRegistrationService {
 		return tenants;
 	}
 	
-	public DynamoDBMapper dynamoDBMapper() {
-		DynamoDBMapperConfig dbMapperConfig = new DynamoDBMapperConfig.Builder()
-				.withTableNameOverride(TableNameOverride.withTableNameReplacement(EKSREFARCH_TENANTS))
-				.build();
-		
-		AmazonDynamoDBClient dynamoClient = getAmazonDynamoDBLocalClient();
-		return new DynamoDBMapper(dynamoClient, dbMapperConfig);
-	}
-
-	private AmazonDynamoDBClient getAmazonDynamoDBLocalClient() {
-		return (AmazonDynamoDBClient) AmazonDynamoDBClientBuilder.standard()
-				.withCredentials(new DefaultAWSCredentialsProviderChain())
-				.build();
-	}
-
+	/**
+	 * Update Tenant data
+	 * @return
+	 */
 	public Tenant updateTenant(Tenant tenant) {
 		try {
 			DynamoDBMapper mapper = dynamoDBMapper();
@@ -277,4 +159,25 @@ public class TenantRegistrationService {
 		return tenant;
 
 	}
+	
+	/**
+	 * Method used to Update tenant data in to Tenant Dynamo table
+	 * @return
+	 */
+	public DynamoDBMapper dynamoDBMapper() {
+		DynamoDBMapperConfig dbMapperConfig = new DynamoDBMapperConfig.Builder()
+				.withTableNameOverride(TableNameOverride.withTableNameReplacement(EKSREFARCH_TENANTS))
+				.build();
+		
+		AmazonDynamoDBClient dynamoClient = getAmazonDynamoDBLocalClient();
+		return new DynamoDBMapper(dynamoClient, dbMapperConfig);
+	}
+
+	private AmazonDynamoDBClient getAmazonDynamoDBLocalClient() {
+		return (AmazonDynamoDBClient) AmazonDynamoDBClientBuilder.standard()
+				.withCredentials(new DefaultAWSCredentialsProviderChain())
+				.build();
+	}
+
+
 }

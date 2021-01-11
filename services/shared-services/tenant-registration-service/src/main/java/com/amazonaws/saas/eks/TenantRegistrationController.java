@@ -16,35 +16,28 @@
  */
 package com.amazonaws.saas.eks;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.amazonaws.saas.eks.dto.AuthConfig;
 import com.amazonaws.saas.eks.dto.Tenant;
 import com.amazonaws.saas.eks.dto.TenantDetails;
-import com.amazonaws.saas.eks.dto.User;
 
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 @RestController
 public class TenantRegistrationController {
-	private static final Logger logger = LogManager.getLogger(TenantRegistrationController.class);
 
+    /**
+     * This method will on board new tenants in to application
+     * @param tenant
+     * @return
+     */
     @RequestMapping("/register")
     public String registerTenant(@RequestBody TenantDetails tenant) {
  
@@ -53,27 +46,11 @@ public class TenantRegistrationController {
 
 		return result;
     }
-    	
-	@PostMapping(value = "users", produces = { MediaType.APPLICATION_JSON_VALUE })
-    public User createUser(@RequestBody ProviderUserEmail email, HttpServletRequest request) {
-    	TenantRegistrationService service = new TenantRegistrationService();
-        String origin = request.getHeader("origin");
-
-    	if(email!= null) {
-    		return service.createSaaSProviderUser(email.getEmail(), origin);
-    	}
-
-		return null;
-    }
-
-	@GetMapping(value = "users", produces = { MediaType.APPLICATION_JSON_VALUE })
-    public User[] getUsers(HttpServletRequest request) {
-    	TenantRegistrationService service = new TenantRegistrationService();
-        String origin = request.getHeader("origin");
-
-    	return service.getSaaSProviderUsers(origin);
-    }
 	
+    /**
+     * Method to return all tenants. This method is accessed from the Admin site.
+     * @return
+     */
     @GetMapping(value = "tenants", produces = { MediaType.APPLICATION_JSON_VALUE })
     public List<Tenant> getTenants() {
  
@@ -81,100 +58,25 @@ public class TenantRegistrationController {
 		return register.getTenants();
     }
 
+	/**
+	 * Method to update a single tenant's data. This method is accessed from the Admin site.
+	 * @param tenant
+	 * @return
+	 */
 	@PutMapping(value = "tenants", produces = { MediaType.APPLICATION_JSON_VALUE })
 	public Tenant updateTenant(Tenant tenant) {
     	TenantRegistrationService updateTenant = new TenantRegistrationService();
     	
 		return updateTenant.updateTenant(tenant);
 	}
-
-	@GetMapping(value = "{companyName}/users", produces = { MediaType.APPLICATION_JSON_VALUE })
-    public User[] getUsers(@PathVariable("companyName") String companyName) {
-    	TenantRegistrationService service = new TenantRegistrationService();
-    	
-		return service.getUsers(companyName);
-    }
-  
-	@PostMapping(value = "{companyName}/users", produces = { MediaType.APPLICATION_JSON_VALUE })
-    public User createUser(@PathVariable("companyName") String companyName, @RequestBody User user) {
-    	TenantRegistrationService service = new TenantRegistrationService();
-    	
-		return service.createUser(user, companyName);
-    }
-
-	@PutMapping(value = "{companyName}/users/{userName}", produces = { MediaType.APPLICATION_JSON_VALUE })
-    public void updateUser(@PathVariable("companyName") String companyName, @PathVariable("userName") String userName, @RequestBody UserStatusCheck status) {
-    	TenantRegistrationService service = new TenantRegistrationService();
-    	
-    	User user = new User();
-    	user.setUserName(userName);
-    	
-    	if(status!= null && status.isEnabled()!=null) {
-    	    service.updateUser(user, companyName, status.isEnabled().toString());
-    	}
-    
-    }
-
-    @RequestMapping(path="/auth", method=RequestMethod.GET)
-    public AuthConfig auth(HttpServletRequest request) {
- 
-    	String tenantId = "";
-    	AuthConfig result = null;
-    	
-    	String origin = request.getHeader("origin");
-    	logger.info("Origin name => "+ origin);
-        
-    	if (origin == null || origin.equals("http://localhost:4200")) {
-            //TODO this is test code and should be deleted unless we create a test tenant with every install
-            origin = "http://testcompany4.foo.com";
-    	}
-
-    	try {
-    		logger.info("Host name => "+ origin);
-            URI uri = new URI(origin);
-            String domain = uri.getHost();
-            String[] parts = domain.split("\\.");
-            tenantId = parts[0];
-            logger.info("Tenant Id => "+ tenantId);
-
-        	TenantRegistrationService register = new TenantRegistrationService();
-            result = register.auth(tenantId);
-    	}
-    	catch(URISyntaxException ex) { 
-    		logger.error(ex.toString());
-    	}
-    	return result;
-    }
-    
+   
+    /**
+     * Backend services Heartbeat method
+     * @return
+     */
     @GetMapping("/amIUp")
     public String amIUp() {
         return "EKS SaaS Backend - I am up!!!";
-    }
-    
-    static class UserStatusCheck {
-    	private Boolean enabled;
-
-		public Boolean isEnabled() {
-			return enabled;
-		}
-
-		public void setEnabled(Boolean enabled) {
-			this.enabled = enabled;
-		}
-    	
-    }
-    
-    static class ProviderUserEmail {
-    	private String email;
-
-		public String getEmail() {
-			return email;
-		}
-
-		public void setEmail(String email) {
-			this.email = email;
-		}
-    	
     }
 
 }

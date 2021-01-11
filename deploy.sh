@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+. ~/.bash_profile
+
 #set -x
 : "${ADMIN_EMAIL:=$1}"
 : "${STACK_NAME:=$2}"

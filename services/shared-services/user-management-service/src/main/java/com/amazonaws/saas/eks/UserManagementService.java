@@ -570,7 +570,9 @@ public class UserManagementService {
 	}
 	
 	
-	public User createSaaSProviderUser(String email, String userPoolId) {
+	public User createSaaSProviderUser(String email, String origin) {
+		String userPoolId = EksSaaSUtil.getTenantUserPool(origin);
+
 		User user = new User();
 		AWSCognitoIdentityProvider cognitoIdentityProvider = AWSCognitoIdentityProviderClientBuilder.defaultClient();
 				
@@ -604,8 +606,11 @@ public class UserManagementService {
 		return user;
 	}
 
-	public List<User> getSaaSProviderUsers(String userPoolId) {
+	public List<User> getSaaSProviderUsers(String origin) {
 		List<User> users = new ArrayList<User>();
+		
+		String userPoolId = EksSaaSUtil.getTenantUserPool(origin);
+
 		AWSCognitoIdentityProvider cognitoclient = AWSCognitoIdentityProviderClientBuilder.defaultClient();
 
 		try {

@@ -117,7 +117,7 @@ public class TenantManagementService {
 	 * @param tenant
 	 * @return
 	 */
-	protected TenantDetails provisionTenantSaaSApplication(TenantDetails tenant) {
+	protected TenantDetails createTenantServices(TenantDetails tenant) {
 
 		String stackName = tenant.getTenantId();
 		 SaaSProviderMetadata saaSProviderMetadata = getSaaSProviderMetadata(tenant);

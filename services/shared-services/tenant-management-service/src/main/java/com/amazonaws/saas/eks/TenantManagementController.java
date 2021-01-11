@@ -16,7 +16,13 @@
  */
 package com.amazonaws.saas.eks;
 
-import org.springframework.web.bind.annotation.PathVariable;
+import java.net.URI;
+import java.net.URISyntaxException;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -28,23 +34,65 @@ import com.amazonaws.saas.eks.dto.TenantDetails;
 
 @RestController
 public class TenantManagementController {
+	private static final Logger logger = LogManager.getLogger(TenantManagementController.class);
 
+    /**
+     * Method to create a new tenant in the system. This is called from the Tenant Registration Service
+     * @param tenant
+     * @return
+     */
     @RequestMapping("/tenant/create")
     public TenantDetails createTenant(@RequestBody TenantDetails tenant) {
     	TenantManagementService mgmt = new TenantManagementService();
     	return mgmt.createTenant(tenant);
     }
  
+	/**
+	 * Method to provision tenant's SaaS application backend services. This is called from the Tenant Registration Service.
+	 * @param tenant
+	 * @return
+	 */
 	@RequestMapping("/tenant/provision")
-    public TenantDetails provisionTenantSaaSApplication(@RequestBody TenantDetails tenant) {
+    public TenantDetails createTenantServices(@RequestBody TenantDetails tenant) {
     	TenantManagementService mgmt = new TenantManagementService();
-    	return mgmt.provisionTenantSaaSApplication(tenant);
+    	return mgmt.createTenantServices(tenant);
     }
+	
+	/**
+	 * Method to retrieve the Tenant user's configuration data. This is used during login from the tenant's SaaS application.
+	 * 
+	 * @param tenantId
+	 * @return 
+	 */
+	@RequestMapping(path="/auth", method=RequestMethod.GET)
+    public AuthConfig auth(HttpServletRequest request) {
+ 
+    	String tenantId = "";
+    	AuthConfig result = null;
+    	
+    	String origin = request.getHeader("origin");
+    	logger.info("Origin name => "+ origin);
+        
+    	if (origin == null || origin.equals("http://localhost:4200")) {
+            //TODO this is test code and should be deleted unless we create a test tenant with every install
+            origin = "http://testcompany4.foo.com";
+    	}
 
-	@RequestMapping(path="/tenant/auth/{tenantId}", method=RequestMethod.GET)
-    public AuthConfig auth(@PathVariable("tenantId") String tenantId) {
-    	TenantManagementService mgmt = new TenantManagementService();
-    	return mgmt.auth(tenantId);
+    	try {
+    		logger.info("Host name => "+ origin);
+            URI uri = new URI(origin);
+            String domain = uri.getHost();
+            String[] parts = domain.split("\\.");
+            tenantId = parts[0];
+            logger.info("Tenant Id => "+ tenantId);
+
+        	TenantManagementService mgmt = new TenantManagementService();
+            result = mgmt.auth(tenantId);
+    	}
+    	catch(URISyntaxException ex) { 
+    		logger.error(ex.toString());
+    	}
+    	return result;
     }
 
 }
