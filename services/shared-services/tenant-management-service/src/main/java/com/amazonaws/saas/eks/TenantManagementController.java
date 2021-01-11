@@ -18,17 +18,22 @@ package com.amazonaws.saas.eks;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.amazonaws.saas.eks.dto.AuthConfig;
+import com.amazonaws.saas.eks.dto.Tenant;
 import com.amazonaws.saas.eks.dto.TenantDetails;
 
 
@@ -47,16 +52,28 @@ public class TenantManagementController {
     	return mgmt.createTenant(tenant);
     }
  
+    /**
+     * Method to return all tenants. This method is accessed from the Admin site.
+     * @return
+     */
+    @GetMapping(value = "tenants", produces = { MediaType.APPLICATION_JSON_VALUE })
+    public List<Tenant> getTenants() {
+ 
+    	TenantManagementService register = new TenantManagementService();
+		return register.getTenants();
+    }
+
 	/**
-	 * Method to provision tenant's SaaS application backend services. This is called from the Tenant Registration Service.
+	 * Method to update a single tenant's data. This method is accessed from the Admin site.
 	 * @param tenant
 	 * @return
 	 */
-	@RequestMapping("/tenant/provision")
-    public TenantDetails createTenantServices(@RequestBody TenantDetails tenant) {
-    	TenantManagementService mgmt = new TenantManagementService();
-    	return mgmt.createTenantServices(tenant);
-    }
+	@PutMapping(value = "tenants", produces = { MediaType.APPLICATION_JSON_VALUE })
+	public Tenant updateTenant(Tenant tenant) {
+		TenantManagementService updateTenant = new TenantManagementService();
+    	
+		return updateTenant.updateTenant(tenant);
+	}
 	
 	/**
 	 * Method to retrieve the Tenant user's configuration data. This is used during login from the tenant's SaaS application.

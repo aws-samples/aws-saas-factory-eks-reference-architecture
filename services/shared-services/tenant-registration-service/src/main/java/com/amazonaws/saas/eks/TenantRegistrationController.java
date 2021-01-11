@@ -16,17 +16,12 @@
  */
 package com.amazonaws.saas.eks;
 
-import java.util.List;
-
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.amazonaws.saas.eks.dto.Tenant;
 import com.amazonaws.saas.eks.dto.TenantDetails;
 
 @CrossOrigin(origins = "*", allowedHeaders = "*")
@@ -47,28 +42,6 @@ public class TenantRegistrationController {
 		return result;
     }
 	
-    /**
-     * Method to return all tenants. This method is accessed from the Admin site.
-     * @return
-     */
-    @GetMapping(value = "tenants", produces = { MediaType.APPLICATION_JSON_VALUE })
-    public List<Tenant> getTenants() {
- 
-    	TenantRegistrationService register = new TenantRegistrationService();
-		return register.getTenants();
-    }
-
-	/**
-	 * Method to update a single tenant's data. This method is accessed from the Admin site.
-	 * @param tenant
-	 * @return
-	 */
-	@PutMapping(value = "tenants", produces = { MediaType.APPLICATION_JSON_VALUE })
-	public Tenant updateTenant(Tenant tenant) {
-    	TenantRegistrationService updateTenant = new TenantRegistrationService();
-    	
-		return updateTenant.updateTenant(tenant);
-	}
    
     /**
      * Backend services Heartbeat method

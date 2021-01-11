@@ -26,28 +26,14 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.amazonaws.saas.eks.dto.TenantDetails;
 import com.amazonaws.saas.eks.dto.User;
 
 
 @RestController
 public class UserManagementController {
 
-    /**
-     * Method to register a new tenant user by creating a Cognito user pool. This is called from the Tenant Registration Service
-     * @param tenant
-     * @return
-     */
-    @RequestMapping("/user/register")
-    public TenantDetails userRegistration(@RequestBody TenantDetails tenant) {
-
-    	UserManagementService userManagement = new UserManagementService();
-		return userManagement.register(tenant);
-    }
-    
 	/**
 	 * Method to retrieve all users of a tenant.
 	 * @param companyName

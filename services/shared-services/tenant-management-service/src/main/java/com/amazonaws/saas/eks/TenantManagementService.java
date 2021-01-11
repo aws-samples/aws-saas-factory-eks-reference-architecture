@@ -18,7 +18,6 @@
 package com.amazonaws.saas.eks;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -26,16 +25,19 @@ import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.saas.eks.dto.AuthConfig;
-import com.amazonaws.saas.eks.dto.SaaSProviderMetadata;
+import com.amazonaws.saas.eks.dto.Tenant;
 import com.amazonaws.saas.eks.dto.TenantDetails;
 import com.amazonaws.saas.eks.util.LoggingManager;
-import com.amazonaws.services.cloudformation.AmazonCloudFormation;
-import com.amazonaws.services.cloudformation.AmazonCloudFormationClientBuilder;
-import com.amazonaws.services.cloudformation.model.CreateStackRequest;
-import com.amazonaws.services.cloudformation.model.Parameter;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
+import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedScanList;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.TableNameOverride;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.PutItemOutcome;
@@ -43,7 +45,6 @@ import com.amazonaws.services.dynamodbv2.document.Table;
 
 public class TenantManagementService {
 
-	private static final String SAAS_PROVIDER_METADATA = "SAAS_PROVIDER_METADATA";
 	private static final String TENANT_ID = "TENANT_ID";
 	private static final String EKSREFARCH_TENANTS = "EKSREFARCH_TENANTS";
 	private static final Logger logger = LogManager.getLogger(TenantManagementService.class);
@@ -85,6 +86,39 @@ public class TenantManagementService {
 		return tenant;
 	}
 
+
+
+	/**
+	 * Retrieve tenants as a List
+	 * @return
+	 */
+	public List<Tenant> getTenants() {
+		DynamoDBMapper mapper = dynamoDBMapper();
+		PaginatedScanList<Tenant> tenants = mapper.scan(Tenant.class, new DynamoDBScanExpression());
+
+		return tenants;
+	}
+	
+	/**
+	 * Update Tenant data
+	 * @return
+	 */
+	public Tenant updateTenant(Tenant tenant) {
+		try {
+			DynamoDBMapper mapper = dynamoDBMapper();
+
+			DynamoDBMapperConfig dynamoDBMapperConfig = new DynamoDBMapperConfig.Builder()
+					  .withConsistentReads(DynamoDBMapperConfig.ConsistentReads.CONSISTENT)
+					  .withSaveBehavior(DynamoDBMapperConfig.SaveBehavior.UPDATE)
+					  .build();
+			mapper.save(tenant, dynamoDBMapperConfig);
+
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		}
+		return tenant;
+
+	}
 	private String getTenantId(String companyName) {
 		Pattern pattern = Pattern.compile("[\\s\\W]");
 		Matcher mat = pattern.matcher(companyName);
@@ -108,90 +142,6 @@ public class TenantManagementService {
 				"Tenant Registration Complete! Calling CodePipeline to provision tenant application's backend EKS services");
 
 		return tenant;
-	}
-
-	/**
-	 * Invokes the Code pipeline process that deploys the SaaS application's backend
-	 * services in to the tenant's namespace.
-	 * 
-	 * @param tenant
-	 * @return
-	 */
-	protected TenantDetails createTenantServices(TenantDetails tenant) {
-
-		String stackName = tenant.getTenantId();
-		 SaaSProviderMetadata saaSProviderMetadata = getSaaSProviderMetadata(tenant);
-
-		LoggingManager.logInfo(tenant.getTenantId(), "StackName =>" + stackName);
-		LoggingManager.logInfo(tenant.getTenantId(), "S3 URL =>" + saaSProviderMetadata.getS3Endpoint());
-		LoggingManager.logInfo(tenant.getTenantId(), "ProductServiceEcrRepoUri =>" + saaSProviderMetadata.getProductServiceEcrRepoUri());
-		LoggingManager.logInfo(tenant.getTenantId(), "OrderServiceEcrRepoUri =>" + saaSProviderMetadata.getOrderServiceEcrRepoUri());
-
-		AmazonCloudFormation client = AmazonCloudFormationClientBuilder.defaultClient();
-
-		CreateStackRequest createRequest = new CreateStackRequest();
-		createRequest.setStackName(stackName);
-		createRequest.setTemplateURL(saaSProviderMetadata.getS3Endpoint());
-
-		List<Parameter> parameters = new ArrayList<Parameter>();
-		Parameter param = new Parameter();
-		param.setParameterKey("TenantName");
-		param.setParameterValue(tenant.getTenantId());
-		parameters.add(param);
-
-		Parameter customDomainParam = new Parameter();
-		customDomainParam.setParameterKey("CustomDomain");
-		customDomainParam.setParameterValue(tenant.getCustomDomain());
-		parameters.add(customDomainParam);
-
-		Parameter productServiceEcrRepoUriParam = new Parameter();
-		productServiceEcrRepoUriParam.setParameterKey("ProductServiceEcrRepoUri");
-		productServiceEcrRepoUriParam.setParameterValue(saaSProviderMetadata.getProductServiceEcrRepoUri());
-		parameters.add(productServiceEcrRepoUriParam);
-
-		Parameter orderServiceEcrRepoUriParam = new Parameter();
-		orderServiceEcrRepoUriParam.setParameterKey("OrderServiceEcrRepoUri");
-		orderServiceEcrRepoUriParam.setParameterValue(saaSProviderMetadata.getOrderServiceEcrRepoUri());
-		parameters.add(orderServiceEcrRepoUriParam);
-
-		createRequest.setParameters(parameters);
-
-		List<String> capabilities = new ArrayList<String>();
-		capabilities.add("CAPABILITY_IAM");
-		createRequest.setCapabilities(capabilities);
-		client.createStack(createRequest);
-		LoggingManager.logInfo(tenant.getTenantId(), "Creating a stack called " + createRequest.getStackName() + ".");
-
-		return tenant;
-	}
-
-	private SaaSProviderMetadata getSaaSProviderMetadata(TenantDetails tenant) {
-
-		String table_name = SAAS_PROVIDER_METADATA;
-		String name = tenant.getCustomDomain();
-		SaaSProviderMetadata metadata = new SaaSProviderMetadata();
-		
-		logger.info("Received CustomDomain=>" + tenant.getCustomDomain() + "for lookup.");
-
-		AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard().build();
-		DynamoDB dynamoDB = new DynamoDB(client);
-		Table table = dynamoDB.getTable(table_name);
-
-		try {
-
-			Item item = table.getItem("DOMAIN_NAME", name);
-			metadata.setS3Endpoint((String) item.get("S3_ENDPOINT"));
-			metadata.setProductServiceEcrRepoUri((String) item.get("PRODUCT_SERVICE_ECR"));
-			metadata.setOrderServiceEcrRepoUri((String) item.get("ORDER_SERVICE_ECR"));
-			
-			logger.info("Printing item! ");
-			logger.info(item.toJSONPretty());
-		} catch (Exception e) {
-			logger.error("GetItem failed.");
-			logger.error(e.getMessage());
-		}
-
-		return metadata;
 	}
 
 	/**
@@ -238,6 +188,28 @@ public class TenantManagementService {
 
 		return auth;
 	}
+	
+
+	
+	/**
+	 * Method used to Update tenant data in to Tenant Dynamo table
+	 * @return
+	 */
+	public DynamoDBMapper dynamoDBMapper() {
+		DynamoDBMapperConfig dbMapperConfig = new DynamoDBMapperConfig.Builder()
+				.withTableNameOverride(TableNameOverride.withTableNameReplacement(EKSREFARCH_TENANTS))
+				.build();
+		
+		AmazonDynamoDBClient dynamoClient = getAmazonDynamoDBLocalClient();
+		return new DynamoDBMapper(dynamoClient, dbMapperConfig);
+	}
+
+	private AmazonDynamoDBClient getAmazonDynamoDBLocalClient() {
+		return (AmazonDynamoDBClient) AmazonDynamoDBClientBuilder.standard()
+				.withCredentials(new DefaultAWSCredentialsProviderChain())
+				.build();
+	}
+
 	
 	public static void main(String args[]) {
 		TenantManagementService service = new TenantManagementService();

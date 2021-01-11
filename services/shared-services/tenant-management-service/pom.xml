@@ -43,10 +43,6 @@
 			<groupId>com.amazonaws</groupId>
 			<artifactId>aws-java-sdk-dynamodb</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>com.amazonaws</groupId>
-			<artifactId>aws-java-sdk-cloudformation</artifactId>
-		</dependency>
 	</dependencies>
 
 	<build>
