@@ -14,7 +14,7 @@ export class AuthConfigurationService {
   params: ConfigParams;
 
   constructor(private oidcConfigService: OidcConfigService, private http: HttpClient) {
-    const url = `${environment.apiUrl}/auth`;
+    const url = `${environment.apiUrl}/auth-info`;
     this.params$ = this.http.get<ConfigParams>(url);
     this.params$.subscribe(val => this.params = val, err => console.error(err));
   }
