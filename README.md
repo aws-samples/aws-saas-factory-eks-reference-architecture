@@ -1,8 +1,8 @@
 # EKS SaaS - Reference Solution
 
-A reference solution focuses on providing the SaaS community with a targeted set of hand-picked, end-to-end solutions that illustrate a full working SaaS application. The idea here is to identify a few high-demand SaaS architecture models (serverless, containers, etc.) and offer these as starting points for those developers that need more holistic solutions that connect the dots of a SaaS architecture realized on AWS services. These solutions are less about providing real world, production-ready applications. Instead, they focus more on what’s happening behind the scenes. In some cases, we may opt to offer a reference solution in more than one stack (Java, .NET, etc.).
+The code provide here is intended to provide a sample implementation of a SaaS EKS solution. The goal is to provide SaaS developers and architects with working code that will illustrate how multi-tenant SaaS applications can be design and delivered on AWS.  The solution covers a broad range of multi-tenant considerations, including tenant isolation, identity, data partitioning, and deployment. It provides developers with a prescriptive approach the the fundamentals of building SaaS solution with EKS. The focus here is more on giving developers a view into the working elements of the solution without going to the extent of making a full, production-ready solution. Instead, we're hoping this can jump start your process and address some of the common challenges that teams must address when delivering a SaaS solution with EKS.
 
-## Scope
+## Setting up the environment
 
 ## Setup Instructions
 
