@@ -54,6 +54,7 @@ export class AuthConfigurationService {
                 maxIdTokenIatOffsetAllowedInSeconds: 10,
                 historyCleanupOff: true,
                 autoUserinfo: false,
+                cognitoDomain: customConfig.cognitoDomain || 'https://saascoffeekincorqobl.auth.us-east-1.amazoncognito.com',
             };
         }),
         switchMap((config) => this.oidcConfigService.withConfig(config))
@@ -65,7 +66,7 @@ export class AuthConfigurationService {
     const stsServer = this.params.issuer;
     const clientId = this.params.clientId;
     const logoutUrl = this.params.redirectUri;
-    // window.location = ('https://saascoffeekincorqobl.auth.us-east-1.amazoncognito.com');
+    window.location.href = `${this.params.cognitoDomain}/login?client_id=${this.params.clientId}&response_type=code&redirect_uri=${this.params.redirectUri}`;
     return;
   }
 }
