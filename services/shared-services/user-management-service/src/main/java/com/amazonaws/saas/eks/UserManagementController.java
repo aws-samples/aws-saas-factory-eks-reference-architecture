@@ -39,7 +39,7 @@ public class UserManagementController {
 	 * Method to retrieve all users of a tenant.
 	 * 
 	 * @param companyName
-	 * @return
+	 * @return List<User>
 	 */
 	@GetMapping(value = "{companyName}/users", produces = { MediaType.APPLICATION_JSON_VALUE })
 	public List<User> getUsers(@PathVariable("companyName") String companyName) {
@@ -52,7 +52,7 @@ public class UserManagementController {
 	 * Method to create a new user for a tenant.
 	 * 
 	 * @param companyName
-	 * @return
+	 * @return User
 	 */
 	@PostMapping(value = "{companyName}/users", produces = { MediaType.APPLICATION_JSON_VALUE })
 	public User createUser(@PathVariable("companyName") String companyName, @RequestBody User user) {
@@ -65,7 +65,7 @@ public class UserManagementController {
 	 * Method to update a tenant user's data.
 	 * 
 	 * @param companyName
-	 * @return
+	 * @return void
 	 */
 	@PutMapping(value = "{companyName}/users/{userName}", produces = { MediaType.APPLICATION_JSON_VALUE })
 	public void updateUser(@PathVariable("companyName") String companyName, @PathVariable("userName") String userName,
@@ -85,7 +85,7 @@ public class UserManagementController {
 	 * admin site.
 	 * 
 	 * @param companyName
-	 * @return
+	 * @return User
 	 */
 	@PostMapping(value = "users", produces = { MediaType.APPLICATION_JSON_VALUE })
 	public User createUser(@RequestBody ProviderUserEmail email, HttpServletRequest request) {
@@ -104,7 +104,7 @@ public class UserManagementController {
 	 * accessed from the admin site.
 	 * 
 	 * @param companyName
-	 * @return
+	 * @return List<User>
 	 */
 	@GetMapping(value = "users", produces = { MediaType.APPLICATION_JSON_VALUE })
 	public List<User> getUsers(HttpServletRequest request) {

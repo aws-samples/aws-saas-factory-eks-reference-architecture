@@ -32,7 +32,7 @@ public class TenantRegistrationController {
 	 * This method will on board new tenants in to the application
 	 * 
 	 * @param tenant
-	 * @return
+	 * @return String
 	 */
 	@RequestMapping("/register")
 	public String registerTenant(@RequestBody TenantDetails tenant) {
@@ -45,7 +45,7 @@ public class TenantRegistrationController {
 	/**
 	 * Heartbeat method for the backend services
 	 * 
-	 * @return
+	 * @return String
 	 */
 	@GetMapping("/amIUp")
 	public String amIUp() {

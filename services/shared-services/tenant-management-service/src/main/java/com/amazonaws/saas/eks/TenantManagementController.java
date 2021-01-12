@@ -47,7 +47,7 @@ public class TenantManagementController {
 	 * Registration Service
 	 * 
 	 * @param tenant
-	 * @return
+	 * @return TenantDetails
 	 */
 	@RequestMapping("/tenant/create")
 	public TenantDetails createTenant(@RequestBody TenantDetails tenant) {
@@ -59,7 +59,7 @@ public class TenantManagementController {
 	/**
 	 * Method to return all tenants. This method is accessed from the Admin site.
 	 * 
-	 * @return
+	 * @return List<Tenant>
 	 */
 	@GetMapping(value = "tenants", produces = { MediaType.APPLICATION_JSON_VALUE })
 	public List<Tenant> getTenants() {
@@ -73,7 +73,7 @@ public class TenantManagementController {
 	 * Admin site.
 	 * 
 	 * @param tenant
-	 * @return
+	 * @return Tenant
 	 */
 	@PutMapping(value = "tenants", produces = { MediaType.APPLICATION_JSON_VALUE })
 	public Tenant updateTenant(Tenant tenant) {
@@ -87,7 +87,7 @@ public class TenantManagementController {
 	 * login from the tenant's SaaS application.
 	 * 
 	 * @param tenantId
-	 * @return
+	 * @return AuthConfig
 	 */
 	@RequestMapping(path = "/auth-info", method = RequestMethod.GET)
 	public AuthConfig getAuthInfo(HttpServletRequest request) {

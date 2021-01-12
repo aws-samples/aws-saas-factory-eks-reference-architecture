@@ -103,7 +103,7 @@ public class ProductController {
 	 * 
 	 * @param product
 	 * @param request
-	 * @returnProduct
+	 * @return Product
 	 */
 	@PostMapping(value = "{companyName}/product/api/product", produces = { MediaType.APPLICATION_JSON_VALUE })
 	public Product saveProduct(@RequestBody Product product, HttpServletRequest request) {
