@@ -26,20 +26,19 @@ import org.springframework.web.filter.CorsFilter;
 @SpringBootApplication
 public class TenantManagementApplication {
 
-    public static void main(String[] args) {
-        SpringApplication.run(TenantManagementApplication.class, args);
-    }
-    
+	public static void main(String[] args) {
+		SpringApplication.run(TenantManagementApplication.class, args);
+	}
+
 	@Bean
 	public CorsFilter corsFilter() {
-	  UrlBasedCorsConfigurationSource source = new 
-	  UrlBasedCorsConfigurationSource();
-	  CorsConfiguration config = new CorsConfiguration();
-	  config.setAllowCredentials(true);
-	  config.addAllowedOrigin("*");
-	  config.addAllowedHeader("*");
-	  config.addAllowedMethod("*");
-	  source.registerCorsConfiguration("/**", config);
-	  return new CorsFilter(source);
+		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+		CorsConfiguration config = new CorsConfiguration();
+		config.setAllowCredentials(true);
+		config.addAllowedOrigin("*");
+		config.addAllowedHeader("*");
+		config.addAllowedMethod("*");
+		source.registerCorsConfiguration("/**", config);
+		return new CorsFilter(source);
 	}
 }

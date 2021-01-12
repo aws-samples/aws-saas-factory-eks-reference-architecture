@@ -30,7 +30,6 @@ import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.Table;
 
 public class EksSaaSUtil {
-
 	private static final String TENANT = "Tenant";
 	private static final Logger logger = LogManager.getLogger(EksSaaSUtil.class);
 	private static final String SAAS_PROVIDER_METADATA = "SAAS_PROVIDER_METADATA";
@@ -51,6 +50,7 @@ public class EksSaaSUtil {
 				.collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append).toString();
 
 		logger.info("random generatedString=>" + generatedString);
+
 		return generatedString;
 	}
 
@@ -61,7 +61,6 @@ public class EksSaaSUtil {
 	 * @return String userPoolId
 	 */
 	public static String getUserPoolForTenant(String companyName) {
-
 		String table_name = TENANT;
 		logger.info("Received TENANTID=>" + companyName + "for lookup.");
 

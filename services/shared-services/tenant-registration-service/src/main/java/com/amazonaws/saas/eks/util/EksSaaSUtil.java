@@ -22,7 +22,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class EksSaaSUtil {
-
 	private static final Logger logger = LogManager.getLogger(EksSaaSUtil.class);
 
 	public static String randomStr() {
@@ -38,5 +37,4 @@ public class EksSaaSUtil {
 		logger.info("random generatedString=>" + generatedString);
 		return generatedString;
 	}
-
 }

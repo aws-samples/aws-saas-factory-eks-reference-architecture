@@ -37,77 +37,85 @@ public class UserManagementController {
 
 	/**
 	 * Method to retrieve all users of a tenant.
+	 * 
 	 * @param companyName
 	 * @return
 	 */
 	@GetMapping(value = "{companyName}/users", produces = { MediaType.APPLICATION_JSON_VALUE })
-    public List<User> getUsers(@PathVariable("companyName") String companyName) {
-    	UserManagementService userManagement = new UserManagementService();
-    	
+	public List<User> getUsers(@PathVariable("companyName") String companyName) {
+		UserManagementService userManagement = new UserManagementService();
+
 		return userManagement.getUsers(companyName);
-    }
+	}
 
 	/**
 	 * Method to create a new user for a tenant.
+	 * 
 	 * @param companyName
 	 * @return
 	 */
 	@PostMapping(value = "{companyName}/users", produces = { MediaType.APPLICATION_JSON_VALUE })
-    public User createUser(@PathVariable("companyName") String companyName, @RequestBody User user) {
+	public User createUser(@PathVariable("companyName") String companyName, @RequestBody User user) {
+		UserManagementService userManagement = new UserManagementService();
 		
-    	UserManagementService userManagement = new UserManagementService();
-   		return userManagement.createUser(companyName, user);
-    }
-	
+		return userManagement.createUser(companyName, user);
+	}
+
 	/**
 	 * Method to update a tenant user's data.
+	 * 
 	 * @param companyName
 	 * @return
 	 */
 	@PutMapping(value = "{companyName}/users/{userName}", produces = { MediaType.APPLICATION_JSON_VALUE })
-    public void updateUser(@PathVariable("companyName") String companyName, @PathVariable("userName") String userName, @RequestBody UserStatusCheck status) {
+	public void updateUser(@PathVariable("companyName") String companyName, @PathVariable("userName") String userName,
+			@RequestBody UserStatusCheck status) {
 		UserManagementService service = new UserManagementService();
-    	
-    	User user = new User();
-    	user.setUserName(userName);
-    	
-    	if(status!= null && status.isEnabled()!=null) {
-    	    service.updateUser(user, companyName, status.isEnabled().toString());
-    	}    
-    }
+
+		User user = new User();
+		user.setUserName(userName);
+
+		if (status != null && status.isEnabled() != null) {
+			service.updateUser(user, companyName, status.isEnabled().toString());
+		}
+	}
 
 	/**
-	 * Method to create a new SaaS provider's user. This will be accessed from the admin site.
+	 * Method to create a new SaaS provider's user. This will be accessed from the
+	 * admin site.
+	 * 
 	 * @param companyName
 	 * @return
-	 */	
+	 */
 	@PostMapping(value = "users", produces = { MediaType.APPLICATION_JSON_VALUE })
 	public User createUser(@RequestBody ProviderUserEmail email, HttpServletRequest request) {
 		UserManagementService service = new UserManagementService();
-	    String origin = request.getHeader("origin");
-	
-		if(email!= null) {
+		String origin = request.getHeader("origin");
+
+		if (email != null) {
 			return service.createSaaSProviderUser(email.getEmail(), origin);
 		}
-	
+
 		return null;
 	}
 
 	/**
-	 * Method that will retrieve all the users of the SaaS provider. This will be accessed from the admin site.
+	 * Method that will retrieve all the users of the SaaS provider. This will be
+	 * accessed from the admin site.
+	 * 
 	 * @param companyName
 	 * @return
-	 */		
+	 */
 	@GetMapping(value = "users", produces = { MediaType.APPLICATION_JSON_VALUE })
-    public List<User> getUsers(HttpServletRequest request) {
+	public List<User> getUsers(HttpServletRequest request) {
 		UserManagementService service = new UserManagementService();
-        String origin = request.getHeader("origin");
+		String origin = request.getHeader("origin");
 
-    	return service.getSaaSProviderUsers(origin);
-    }
+		return service.getSaaSProviderUsers(origin);
+	}
 
-    static class UserStatusCheck {
-    	private Boolean enabled;
+	static class UserStatusCheck {
+		private Boolean enabled;
 
 		public Boolean isEnabled() {
 			return enabled;
@@ -116,11 +124,10 @@ public class UserManagementController {
 		public void setEnabled(Boolean enabled) {
 			this.enabled = enabled;
 		}
-    	
-    }
+	}
 
-    static class ProviderUserEmail {
-    	private String email;
+	static class ProviderUserEmail {
+		private String email;
 
 		public String getEmail() {
 			return email;
@@ -129,6 +136,5 @@ public class UserManagementController {
 		public void setEmail(String email) {
 			this.email = email;
 		}
-    	
-    }
+	}
 }

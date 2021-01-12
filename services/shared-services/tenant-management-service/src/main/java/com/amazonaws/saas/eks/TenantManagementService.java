@@ -44,7 +44,6 @@ import com.amazonaws.services.dynamodbv2.document.PutItemOutcome;
 import com.amazonaws.services.dynamodbv2.document.Table;
 
 public class TenantManagementService {
-
 	private static final String TENANT_ID = "TENANT_ID";
 	private static final String TENANT = "Tenant";
 	private static final Logger logger = LogManager.getLogger(TenantManagementService.class);
@@ -54,7 +53,7 @@ public class TenantManagementService {
 	 * table.
 	 * 
 	 * @param tenant
-	 * @return
+	 * @return TenantDetails
 	 */
 	protected TenantDetails createTenant(TenantDetails tenant) {
 		String tenantId = "";
@@ -70,15 +69,13 @@ public class TenantManagementService {
 
 		AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard().build();
 		DynamoDB dynamoDB = new DynamoDB(client);
-
 		Table table = dynamoDB.getTable(TENANT);
 		String plan = tenant.getPlan();
 
-		if(plan == null || plan == "") {
+		if (plan == null || plan == "") {
 			plan = "";
 		}
-		Item item = new Item().withPrimaryKey(TENANT_ID, tenant.getTenantId())
-				.withString("PLAN", plan);
+		Item item = new Item().withPrimaryKey(TENANT_ID, tenant.getTenantId()).withString("PLAN", plan);
 
 		PutItemOutcome outcome = table.putItem(item);
 		LoggingManager.logInfo(tenant.getTenantId(), "New tenant entry created in Tenant table!");
@@ -86,11 +83,10 @@ public class TenantManagementService {
 		return tenant;
 	}
 
-
-
 	/**
 	 * Retrieve tenants as a List
-	 * @return
+	 * 
+	 * @return List<Tenant>
 	 */
 	public List<Tenant> getTenants() {
 		DynamoDBMapper mapper = dynamoDBMapper();
@@ -98,38 +94,40 @@ public class TenantManagementService {
 
 		return tenants;
 	}
-	
+
 	/**
-	 * Update Tenant data
-	 * @return
+	 * Method to Update Tenant data
+	 * 
+	 * @return Tenant
 	 */
 	public Tenant updateTenant(Tenant tenant) {
 		try {
 			DynamoDBMapper mapper = dynamoDBMapper();
 
 			DynamoDBMapperConfig dynamoDBMapperConfig = new DynamoDBMapperConfig.Builder()
-					  .withConsistentReads(DynamoDBMapperConfig.ConsistentReads.CONSISTENT)
-					  .withSaveBehavior(DynamoDBMapperConfig.SaveBehavior.UPDATE)
-					  .build();
+					.withConsistentReads(DynamoDBMapperConfig.ConsistentReads.CONSISTENT)
+					.withSaveBehavior(DynamoDBMapperConfig.SaveBehavior.UPDATE).build();
 			mapper.save(tenant, dynamoDBMapperConfig);
 
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}
-		return tenant;
 
+		return tenant;
 	}
 
-	public TenantDetails saveTenantDetails(TenantDetails tenant) { /* Read the name from command args */
+	/**
+	 * Method to save Tenant Details in to the Tenant table
+	 * 
+	 * @param tenant
+	 * @return TenantDetails
+	 */
+	public TenantDetails saveTenantDetails(TenantDetails tenant) {
 		AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard().build();
 		DynamoDB dynamoDB = new DynamoDB(client);
 
 		Table table = dynamoDB.getTable(TENANT);
-
-		// Build the item
 		Item item = new Item().withPrimaryKey(TENANT_ID, tenant.getTenantId());
-
-		// Write the item to the table
 		PutItemOutcome outcome = table.putItem(item);
 
 		logger.info(
@@ -142,7 +140,7 @@ public class TenantManagementService {
 	 * Method to retrieve the Tenant User pool configuration data.
 	 * 
 	 * @param tenantId
-	 * @return 
+	 * @return AuthConfig
 	 */
 	public AuthConfig auth(String tenantId) {
 		logger.info("Received tenantId=>" + tenantId + "for lookup.");
@@ -171,7 +169,7 @@ public class TenantManagementService {
 			auth.setClearHashAfterLogin((Boolean) item.get("AUTH_CLEAR_HASH_AFTER_LOGIN"));
 			auth.setNonceStateSeparator("semicolon");
 			auth.setCognitoDomain((String) item.get("COGNITO_DOMAIN"));
-			
+
 			logger.info("Printing AuthConfig after retrieving it....");
 			logger.info(item.toJSONPretty());
 
@@ -182,32 +180,39 @@ public class TenantManagementService {
 
 		return auth;
 	}
-	
-	
+
 	/**
 	 * Method used to Update tenant data in to Tenant Dynamo table
-	 * @return
+	 * 
+	 * @return DynamoDBMapper
 	 */
 	public DynamoDBMapper dynamoDBMapper() {
 		DynamoDBMapperConfig dbMapperConfig = new DynamoDBMapperConfig.Builder()
-				.withTableNameOverride(TableNameOverride.withTableNameReplacement(TENANT))
-				.build();
-		
+				.withTableNameOverride(TableNameOverride.withTableNameReplacement(TENANT)).build();
+
 		AmazonDynamoDBClient dynamoClient = getAmazonDynamoDBLocalClient();
 		return new DynamoDBMapper(dynamoClient, dbMapperConfig);
 	}
 
+	/**
+	 * method to return the AmazonDynamoDBClient with credentials
+	 * @return AmazonDynamoDBClient
+	 */
 	private AmazonDynamoDBClient getAmazonDynamoDBLocalClient() {
 		return (AmazonDynamoDBClient) AmazonDynamoDBClientBuilder.standard()
-				.withCredentials(new DefaultAWSCredentialsProviderChain())
-				.build();
+				.withCredentials(new DefaultAWSCredentialsProviderChain()).build();
 	}
-	
+
+	/**
+	 * Helper method to generate Tenant Id from company name
+	 * @param companyName
+	 * @return String tenantId
+	 */
 	private String generateTenantId(String companyName) {
 		Pattern pattern = Pattern.compile("[\\s\\W]");
 		Matcher mat = pattern.matcher(companyName);
 		String tenantId = mat.replaceAll("").toLowerCase();
-    	return tenantId.substring(0, Math.min(tenantId.length(), 50));
+		return tenantId.substring(0, Math.min(tenantId.length(), 50));
 	}
 
 }

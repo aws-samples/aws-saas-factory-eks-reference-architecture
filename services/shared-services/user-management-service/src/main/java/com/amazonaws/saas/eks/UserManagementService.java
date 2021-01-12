@@ -40,19 +40,23 @@ public class UserManagementService {
 
 	private static final Logger logger = LogManager.getLogger(UserManagementService.class);
 
+	/**
+	 * Method to create a new user for the tenant
+	 * @param companyName
+	 * @param user
+	 * @return User
+	 */
 	public User createUser(String companyName, User user) {
 		AWSCognitoIdentityProvider cognitoIdentityProvider = AWSCognitoIdentityProviderClientBuilder.defaultClient();
-		
+
 		String userPoolId = EksSaaSUtil.getUserPoolForTenant(companyName);
-		
+
 		AdminCreateUserResult createUserResult = cognitoIdentityProvider
-				.adminCreateUser(new AdminCreateUserRequest().withUserPoolId(userPoolId)
-						.withUsername(user.getEmail())
+				.adminCreateUser(new AdminCreateUserRequest().withUserPoolId(userPoolId).withUsername(user.getEmail())
 						.withUserAttributes(new AttributeType().withName("email").withValue(user.getEmail()),
 								new AttributeType().withName("email_verified").withValue("true"),
 								new AttributeType().withName("custom:tenant-id").withValue(companyName)));
 
-		
 		UserType cognitoUser = createUserResult.getUser();
 		logger.info("Cognito - Create User Success=>" + cognitoUser.getUsername());
 
@@ -71,30 +75,41 @@ public class UserManagementService {
 				break;
 			}
 		}
+		
 		return user;
 	}
 
+	/**
+	 * Method to enable or disable tenant user
+	 * @param user
+	 * @param companyName
+	 * @param status
+	 */
 	public void updateUser(User user, String companyName, String status) {
-		
 		AWSCognitoIdentityProvider cognitoIdentityProvider = AWSCognitoIdentityProviderClientBuilder.defaultClient();
 		String userPoolId = EksSaaSUtil.getUserPoolForTenant(companyName);
-		
-		if(!Boolean.getBoolean(status)) {
+
+		if (!Boolean.getBoolean(status)) {
 			AdminDisableUserRequest adminDisableUserRequest = new AdminDisableUserRequest();
 			adminDisableUserRequest.setUsername(user.getUserName());
 			adminDisableUserRequest.setUserPoolId(userPoolId);
-			
+
 			AdminDisableUserResult result = cognitoIdentityProvider.adminDisableUser(adminDisableUserRequest);
 
 		} else {
 			AdminEnableUserRequest adminEnableUserRequest = new AdminEnableUserRequest();
 			adminEnableUserRequest.setUsername(user.getUserName());
 			adminEnableUserRequest.setUserPoolId(userPoolId);
-			
-		   AdminEnableUserResult result = cognitoIdentityProvider.adminEnableUser(adminEnableUserRequest);
+
+			AdminEnableUserResult result = cognitoIdentityProvider.adminEnableUser(adminEnableUserRequest);
 		}
 	}
 
+	/**
+	 * Method to retrieve all the users for a single tenant
+	 * @param companyName
+	 * @return
+	 */
 	public List<User> getUsers(String companyName) {
 		List<User> users = new ArrayList<User>();
 		AWSCognitoIdentityProvider cognitoclient = AWSCognitoIdentityProviderClientBuilder.defaultClient();
@@ -123,27 +138,30 @@ public class UserManagementService {
 				u.setStatus(userType.getUserStatus());
 				users.add(u);
 			}
-
 		} catch (Exception e) {
 			logger.error(e);
 		}
+		
 		return users;
 	}
-	
-	
+
+	/**
+	 * Method to create an admin user
+	 * @param email
+	 * @param origin
+	 * @return User
+	 */
 	public User createSaaSProviderUser(String email, String origin) {
 		String userPoolId = EksSaaSUtil.getTenantUserPool(origin);
 
 		User user = new User();
 		AWSCognitoIdentityProvider cognitoIdentityProvider = AWSCognitoIdentityProviderClientBuilder.defaultClient();
-				
+
 		AdminCreateUserResult createUserResult = cognitoIdentityProvider
-				.adminCreateUser(new AdminCreateUserRequest().withUserPoolId(userPoolId)
-						.withUsername(email)
+				.adminCreateUser(new AdminCreateUserRequest().withUserPoolId(userPoolId).withUsername(email)
 						.withUserAttributes(new AttributeType().withName("email").withValue(email),
 								new AttributeType().withName("email_verified").withValue("true")));
 
-		
 		UserType cognitoUser = createUserResult.getUser();
 		logger.info("Cognito - Create User Success=>" + cognitoUser.getUsername());
 
@@ -167,11 +185,14 @@ public class UserManagementService {
 		return user;
 	}
 
+	/**
+	 * Method to retrieve all the users of the SaaS provider
+	 * @param origin
+	 * @return List<User>
+	 */
 	public List<User> getSaaSProviderUsers(String origin) {
 		List<User> users = new ArrayList<User>();
-		
 		String userPoolId = EksSaaSUtil.getTenantUserPool(origin);
-
 		AWSCognitoIdentityProvider cognitoclient = AWSCognitoIdentityProviderClientBuilder.defaultClient();
 
 		try {
@@ -190,7 +211,6 @@ public class UserManagementService {
 						break;
 					}
 				}
-
 				u.setCreated(userType.getUserCreateDate().toString());
 				u.setModified(userType.getUserLastModifiedDate().toString());
 				u.setEnabled(userType.getEnabled());
@@ -201,6 +221,7 @@ public class UserManagementService {
 		} catch (Exception e) {
 			logger.error(e);
 		}
+		
 		return users;
 	}
 

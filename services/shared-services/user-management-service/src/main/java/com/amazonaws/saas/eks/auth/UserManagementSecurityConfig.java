@@ -18,7 +18,6 @@ package com.amazonaws.saas.eks.auth;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;	
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -37,25 +36,20 @@ public class UserManagementSecurityConfig extends WebSecurityConfigurerAdapter {
 	protected void configure(HttpSecurity http) throws Exception {
 
 		http.headers().cacheControl();
-		http.csrf().disable()
-				.authorizeRequests()
-					.antMatchers("/users/**")
-					.authenticated()
-					.and()
+		http.csrf().disable().authorizeRequests().antMatchers("/users/**").authenticated().and()
 				.addFilterBefore(awsCognitoJwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 		http.cors();
 	}
 
 	@Bean
 	public CorsFilter corsFilter() {
-	  UrlBasedCorsConfigurationSource source = new 
-	  UrlBasedCorsConfigurationSource();
-	  CorsConfiguration config = new CorsConfiguration();
-	  config.setAllowCredentials(true);
-	  config.addAllowedOrigin("*");
-	  config.addAllowedHeader("*");
-	  config.addAllowedMethod("*");
-	  source.registerCorsConfiguration("/**", config);
-	  return new CorsFilter(source);
+		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+		CorsConfiguration config = new CorsConfiguration();
+		config.setAllowCredentials(true);
+		config.addAllowedOrigin("*");
+		config.addAllowedHeader("*");
+		config.addAllowedMethod("*");
+		source.registerCorsConfiguration("/**", config);
+		return new CorsFilter(source);
 	}
 }

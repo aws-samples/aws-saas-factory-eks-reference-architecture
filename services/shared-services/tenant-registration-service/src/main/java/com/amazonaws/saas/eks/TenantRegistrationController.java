@@ -28,28 +28,28 @@ import com.amazonaws.saas.eks.dto.TenantDetails;
 @RestController
 public class TenantRegistrationController {
 
-    /**
-     * This method will on board new tenants in to application
-     * @param tenant
-     * @return
-     */
-    @RequestMapping("/register")
-    public String registerTenant(@RequestBody TenantDetails tenant) {
- 
-    	TenantRegistrationService register = new TenantRegistrationService();
+	/**
+	 * This method will on board new tenants in to the application
+	 * 
+	 * @param tenant
+	 * @return
+	 */
+	@RequestMapping("/register")
+	public String registerTenant(@RequestBody TenantDetails tenant) {
+		TenantRegistrationService register = new TenantRegistrationService();
 		String result = register.registerTenant(tenant);
 
 		return result;
-    }
-	
-   
-    /**
-     * Backend services Heartbeat method
-     * @return
-     */
-    @GetMapping("/amIUp")
-    public String amIUp() {
-        return "EKS SaaS Backend - I am up!!!";
-    }
+	}
+
+	/**
+	 * Heartbeat method for the backend services
+	 * 
+	 * @return
+	 */
+	@GetMapping("/amIUp")
+	public String amIUp() {
+		return "EKS SaaS Backend - I am up!!!";
+	}
 
 }

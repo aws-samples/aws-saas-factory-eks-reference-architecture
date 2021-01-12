@@ -75,7 +75,6 @@ import com.amazonaws.services.route53.model.ChangeResourceRecordSetsResult;
 import com.amazonaws.services.route53.model.ResourceRecordSet;
 
 public class TenantRegistrationService {
-
 	private static final String TENANT = "Tenant";
 	private static final Logger logger = LogManager.getLogger(TenantRegistrationService.class);
 	private static final String SAAS_PROVIDER_METADATA = "SAAS_PROVIDER_METADATA";
@@ -92,8 +91,8 @@ public class TenantRegistrationService {
 		} else {
 			logger.error("Error in tenant signup process. Please check the logs.");
 		}
+		
 		return "\"Error in tenant signup process. Please check the logs.\"";
-
 	}
 
 	/**
@@ -127,7 +126,6 @@ public class TenantRegistrationService {
 	 * @return tenant
 	 */
 	private TenantDetails createTenantServices(TenantDetails tenant) {
-
 		String stackName = tenant.getTenantId();
 		SaaSProviderMetadata saaSProviderMetadata = getSaaSProviderMetadata(tenant);
 
@@ -175,7 +173,6 @@ public class TenantRegistrationService {
 	}
 
 	private SaaSProviderMetadata getSaaSProviderMetadata(TenantDetails tenant) {
-
 		String table_name = SAAS_PROVIDER_METADATA;
 		String name = tenant.getCustomDomain();
 		SaaSProviderMetadata metadata = new SaaSProviderMetadata();
@@ -526,7 +523,6 @@ public class TenantRegistrationService {
 
 		LoggingManager.logInfo(tenant.getTenantId(), "Create User Pool Client Successful.");
 
-		// Return ClientId back
 		tenant.setClientId(result.getUserPoolClient().getClientId());
 
 		return tenant;
