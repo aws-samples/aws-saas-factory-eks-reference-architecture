@@ -52,9 +52,8 @@ import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 
 @Component
 public class TokenProcessor {
-	private static final String TENANT = "Tenant";
-
 	private static final Logger logger = LogManager.getLogger(TokenProcessor.class);
+	private static final String TENANT = "Tenant";
 
 	@Autowired
 	private JwtConfig jwtConfiguration;

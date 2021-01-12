@@ -154,7 +154,7 @@ Resources:
   CustomUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
-      Domain: !Sub eks-ref-arch-${S3OAIUserId}
+      Domain: !Ref AdminAppBucket
       UserPoolId:
         Ref: UserPool
   AdminAppAdminUser:
