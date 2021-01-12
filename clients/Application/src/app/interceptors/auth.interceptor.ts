@@ -36,7 +36,7 @@ export class AuthInterceptor implements HttpInterceptor {
       //     return next.handle(req);
       // }
 
-      const token = this.oidcSecurityService.getToken();
+      const token = this.oidcSecurityService.getIdToken();
 
       if (!token) {
           return next.handle(req);
