@@ -42,7 +42,7 @@ Resources:
       ProvisionedThroughput: 
         ReadCapacityUnits: "5"
         WriteCapacityUnits: "5"
-      TableName: "EKSREFARCH_TENANTS"
+      TableName: "Tenant"
 Outputs:
   AppCertArn: 
     Value: !GetAtt AppCert.CertArn

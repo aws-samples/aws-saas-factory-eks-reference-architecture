@@ -41,8 +41,14 @@ public class OrderRepository {
 	 * @return List<Order>
 	 */
 	public List<Order> getOrders(String tenantId) {
+		PaginatedScanList<Order> results = null;
 		DynamoDBMapper mapper = dynamoDBMapperLocal(tenantId);
-		PaginatedScanList<Order> results = mapper.scan(Order.class, new DynamoDBScanExpression());
+		
+		try {
+			results = mapper.scan(Order.class, new DynamoDBScanExpression());
+		} catch (Exception e) {
+			logger.error("TenantId: " + tenantId + "Get Orders failed " + e.getMessage());
+		}
 
 		return results;
 	}
@@ -56,11 +62,9 @@ public class OrderRepository {
 	public Order save(Order order, String tenantId) {
 		try {
 			DynamoDBMapper mapper = dynamoDBMapperLocal(tenantId);
-
 			mapper.save(order);
-
 		} catch (Exception e) {
-			logger.error(e.getMessage());
+			logger.error("TenantId: " + tenantId + "Save Order failed " + e.getMessage());
 		}
 		
 		return order;
@@ -74,17 +78,21 @@ public class OrderRepository {
 	 */
 	public Order getOrderById(String orderId, String tenantId) {
 		DynamoDBMapper mapper = dynamoDBMapperLocal(tenantId);
-
+		Order order = null;
+		
 		DynamoDBMapperConfig config = DynamoDBMapperConfig.builder()
 				.withConsistentReads(DynamoDBMapperConfig.ConsistentReads.CONSISTENT).build();
-		Order order = mapper.load(Order.class, orderId, config);
-		logger.info("Order=> " + order);
-
+		try {
+			order = mapper.load(Order.class, orderId, config);
+		} catch (Exception e) {
+			logger.error("TenantId: " + tenantId + "Get Order By Id failed " + e.getMessage());
+		}
+		
 		return order;
 	}
 
 	/**
-	 * Method to delate a tenant's order
+	 * Method to delete a tenant's order
 	 * @param order
 	 * @param tenantId
 	 */
@@ -93,7 +101,7 @@ public class OrderRepository {
 			DynamoDBMapper mapper = dynamoDBMapperLocal(tenantId);
 			mapper.delete(order);
 		} catch (Exception e) {
-			logger.error(e.getMessage());
+			logger.error("TenantId: " + tenantId + "Delete Order failed " + e.getMessage());
 		}
 	}
 	
