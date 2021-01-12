@@ -52,19 +52,20 @@ public class UserManagementController {
 	@GetMapping(value = "{companyName}/users", produces = { MediaType.APPLICATION_JSON_VALUE })
 	public List<User> getUsers(@PathVariable("companyName") String companyName, HttpServletRequest request) {
 		UserManagementService userManagement = new UserManagementService();
-		
+		List<User> users = null;
 		String userPoolId = null;
+
 		try {
 			userPoolId = tokenManager.extractUserPoolIdFromJwt(request);
-			
-			if(userPoolId != null) {
-				userManagement.getUsers(userPoolId);
+
+			if (userPoolId != null) {
+				users = userManagement.getUsers(userPoolId);
 			}
 		} catch (Exception e) {
-			logger.error("Invalid tenant. Value either missing, empty or null");
+			logger.error("UserManagement getUsers operation failed:" + e);
 		}
 
-		return null;
+		return users;
 	}
 
 	/**
@@ -74,10 +75,23 @@ public class UserManagementController {
 	 * @return User
 	 */
 	@PostMapping(value = "{companyName}/users", produces = { MediaType.APPLICATION_JSON_VALUE })
-	public User createUser(@PathVariable("companyName") String companyName, @RequestBody User user) {
+	public User createUser(@PathVariable("companyName") String companyName, @RequestBody User u,
+			HttpServletRequest request) {
 		UserManagementService userManagement = new UserManagementService();
-		
-		return userManagement.createUser(companyName, user);
+		User user = null;
+		String userPoolId = null;
+
+		try {
+			userPoolId = tokenManager.extractUserPoolIdFromJwt(request);
+
+			if (userPoolId != null) {
+				user = userManagement.createUser(companyName, u);
+			}
+		} catch (Exception e) {
+			logger.error("UserManagement create user operation failed:" + e);
+		}
+
+		return user;
 	}
 
 	/**
@@ -88,14 +102,23 @@ public class UserManagementController {
 	 */
 	@PutMapping(value = "{companyName}/users/{userName}", produces = { MediaType.APPLICATION_JSON_VALUE })
 	public void updateUser(@PathVariable("companyName") String companyName, @PathVariable("userName") String userName,
-			@RequestBody UserStatusCheck status) {
+			@RequestBody UserStatusCheck status, HttpServletRequest request) {
 		UserManagementService service = new UserManagementService();
+		String userPoolId = null;
 
 		User user = new User();
 		user.setUserName(userName);
 
-		if (status != null && status.isEnabled() != null) {
-			service.updateUser(user, companyName, status.isEnabled().toString());
+		try {
+			userPoolId = tokenManager.extractUserPoolIdFromJwt(request);
+
+			if (userPoolId != null) {
+				if (status != null && status.isEnabled() != null) {
+					service.updateUser(user, companyName, status.isEnabled().toString());
+				}
+			}
+		} catch (Exception e) {
+			logger.error("UserManagement Update user operation failed:" + e);
 		}
 	}
 

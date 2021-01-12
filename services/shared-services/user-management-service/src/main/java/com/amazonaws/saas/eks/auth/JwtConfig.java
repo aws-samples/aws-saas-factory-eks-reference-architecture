@@ -26,7 +26,7 @@ public class JwtConfig {
 	private String identityPoolId;
 	private String jwkUrl;
 	private String region;
-	private String userNameField = "username";
+	private String userNameField = "cognito:username";
 	private int connectionTimeout = 2000;
 	private int readTimeout = 2000;
 	private String httpHeader = "Authorization";
