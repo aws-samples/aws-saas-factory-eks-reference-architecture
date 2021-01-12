@@ -74,7 +74,7 @@ public class OrderRepository {
 	 * Method to get order by Id for a tenant
 	 * @param orderId
 	 * @param tenantId
-	 * @return
+	 * @return Order
 	 */
 	public Order getOrderById(String orderId, String tenantId) {
 		DynamoDBMapper mapper = dynamoDBMapperLocal(tenantId);
@@ -108,7 +108,7 @@ public class OrderRepository {
 	/**
 	 * Method to retrieve DynamoDBMapper and access to the tenant's Order table
 	 * @param tenantId
-	 * @return
+	 * @return DynamoDBMapper
 	 */
 	public DynamoDBMapper dynamoDBMapperLocal(String tenantId) {
 		String tableName = "Order-" + tenantId;
@@ -122,7 +122,7 @@ public class OrderRepository {
 	/**
 	 * Helper method for DynamoDBMapper
 	 * @param tenantId
-	 * @return
+	 * @return AmazonDynamoDBClient
 	 */
 	private AmazonDynamoDBClient getAmazonDynamoDBLocalClient(String tenantId) {
 		return (AmazonDynamoDBClient) AmazonDynamoDBClientBuilder.standard()
