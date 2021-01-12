@@ -48,6 +48,7 @@ import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jose.util.DefaultResourceRetriever;
 import com.nimbusds.jose.util.ResourceRetriever;
 import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
 import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 
@@ -86,33 +87,20 @@ public class TokenProcessor {
 		logger.info("Tenant Id => " + tenantId);
 
 		if (idToken != null) {
-			String table_name = TENANT;
-			logger.info("Received TENANTID=>" + tenantId + "for lookup.");
-
-			AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard().build();
-			DynamoDB dynamoDB = new DynamoDB(client);
-			Table table = dynamoDB.getTable(table_name);
-			String authServer = "";
-			String userPoolId = "";
-			String region = "";
-
+			SignedJWT signedJWT = null;
+			JWTClaimsSet claimsSet = null;
+			
 			try {
-				Item item = table.getItem("TENANT_ID", tenantId);
-				authServer = (String) item.get("AUTH_SERVER");
-				logger.info("authServer= " + authServer);
-
-				userPoolId = authServer.substring(authServer.lastIndexOf("/") + 1);
-				region = userPoolId.substring(0, userPoolId.indexOf("_"));
-				logger.info("userPoolId= " + userPoolId);
-				logger.info("region= " + region);
-
-			} catch (Exception e) {
-				logger.error("GetItem failed.");
-				logger.error(e.getMessage());
+			    signedJWT = SignedJWT.parse(this.getBearerToken(idToken));
+				claimsSet = signedJWT.getJWTClaimsSet();			
+			} catch (java.text.ParseException e) {
+			    logger.error(e);
 			}
-			jwtConfiguration.setUserPoolId(userPoolId);
-			jwtConfiguration.setRegion(region);
-			String jwkUrl = "https://cognito-idp." + region + ".amazonaws.com/" + userPoolId + "/.well-known/jwks.json";
+
+			String issuer = claimsSet.getIssuer();
+			logger.info("issuer: " + issuer);
+
+			String jwkUrl = issuer + "/.well-known/jwks.json";
 			jwtConfiguration.setJwkUrl(jwkUrl);
 			ResourceRetriever resourceRetriever = new DefaultResourceRetriever(jwtConfiguration.getConnectionTimeout(),
 					jwtConfiguration.getReadTimeout());
@@ -124,8 +112,6 @@ public class TokenProcessor {
 			jwtProcessor.setJWSKeySelector(keySelector);
 
 			JWTClaimsSet claims = jwtProcessor.process(this.getBearerToken(idToken), null);
-			validateIssuer(claims);
-			verifyIfIdToken(claims);
 			String username = getUserNameFrom(claims);
 
 			if (username != null) {
