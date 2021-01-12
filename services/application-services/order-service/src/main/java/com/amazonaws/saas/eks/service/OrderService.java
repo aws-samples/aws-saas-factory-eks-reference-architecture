@@ -21,7 +21,7 @@ import com.amazonaws.saas.eks.model.Order;
 
 public interface OrderService {
 
-    Order save(Order order, String tenantId);
+	Order save(Order order, String tenantId);
 
 	Order getOrderById(String orderId, String tenantId);
 

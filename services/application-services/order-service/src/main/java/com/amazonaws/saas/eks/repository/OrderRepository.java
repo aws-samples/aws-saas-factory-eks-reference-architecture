@@ -16,10 +16,7 @@
  */
 package com.amazonaws.saas.eks.repository;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Repository;
@@ -31,36 +28,18 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.TableNameOverride;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
-import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedScanList;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 
 @Repository
 public class OrderRepository {
 	private static final Logger logger = LogManager.getLogger(OrderRepository.class);
 
-	
-	public DynamoDBMapper dynamoDBMapperLocal(String tenantId) {
-		String tableName = "Order-" + tenantId;
-		
-		DynamoDBMapperConfig dbMapperConfig = new DynamoDBMapperConfig.Builder()
-				.withTableNameOverride(TableNameOverride.withTableNameReplacement(tableName))
-				.build();
-		
-		AmazonDynamoDBClient dynamoClient = getAmazonDynamoDBLocalClient(tenantId);
-		return new DynamoDBMapper(dynamoClient, dbMapperConfig);
-	}
-
-	private AmazonDynamoDBClient getAmazonDynamoDBLocalClient(String tenantId) {
-		return (AmazonDynamoDBClient) AmazonDynamoDBClientBuilder.standard()
-				//.withCredentials(WebIdentityTokenCredentialsProvider.builder().roleSessionName("ddb-query").build())
-				.withCredentials(new DefaultAWSCredentialsProviderChain())
-				.build();
-	}
-
-
+	/**
+	 * Method to get all orders for a tenant
+	 * @param tenantId
+	 * @return List<Order>
+	 */
 	public List<Order> getOrders(String tenantId) {
 		DynamoDBMapper mapper = dynamoDBMapperLocal(tenantId);
 		PaginatedScanList<Order> results = mapper.scan(Order.class, new DynamoDBScanExpression());
@@ -68,7 +47,12 @@ public class OrderRepository {
 		return results;
 	}
 
-
+	/**
+	 * Method to save an order for a tenant
+	 * @param order
+	 * @param tenantId
+	 * @return Order
+	 */
 	public Order save(Order order, String tenantId) {
 		try {
 			DynamoDBMapper mapper = dynamoDBMapperLocal(tenantId);
@@ -78,34 +62,64 @@ public class OrderRepository {
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}
+		
 		return order;
-
 	}
 
+	/**
+	 * Method to get order by Id for a tenant
+	 * @param orderId
+	 * @param tenantId
+	 * @return
+	 */
 	public Order getOrderById(String orderId, String tenantId) {
-		
 		DynamoDBMapper mapper = dynamoDBMapperLocal(tenantId);
 
-        // Retrieve the updated item.
-        DynamoDBMapperConfig config = DynamoDBMapperConfig.builder()
-            .withConsistentReads(DynamoDBMapperConfig.ConsistentReads.CONSISTENT)
-        .build();
-        Order order = mapper.load(Order.class, orderId, config);
-        logger.info("Order=> " + order);
-        
-        return order;
+		DynamoDBMapperConfig config = DynamoDBMapperConfig.builder()
+				.withConsistentReads(DynamoDBMapperConfig.ConsistentReads.CONSISTENT).build();
+		Order order = mapper.load(Order.class, orderId, config);
+		logger.info("Order=> " + order);
+
+		return order;
 	}
 
+	/**
+	 * Method to delate a tenant's order
+	 * @param order
+	 * @param tenantId
+	 */
 	public void delete(Order order, String tenantId) {
 		try {
-			
 			DynamoDBMapper mapper = dynamoDBMapperLocal(tenantId);
-
 			mapper.delete(order);
-
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}
+	}
+	
+	/**
+	 * Method to retrieve DynamoDBMapper and access to the tenant's Order table
+	 * @param tenantId
+	 * @return
+	 */
+	public DynamoDBMapper dynamoDBMapperLocal(String tenantId) {
+		String tableName = "Order-" + tenantId;
+		DynamoDBMapperConfig dbMapperConfig = new DynamoDBMapperConfig.Builder()
+				.withTableNameOverride(TableNameOverride.withTableNameReplacement(tableName)).build();
+
+		AmazonDynamoDBClient dynamoClient = getAmazonDynamoDBLocalClient(tenantId);
+		return new DynamoDBMapper(dynamoClient, dbMapperConfig);
+	}
+
+	/**
+	 * Helper method for DynamoDBMapper
+	 * @param tenantId
+	 * @return
+	 */
+	private AmazonDynamoDBClient getAmazonDynamoDBLocalClient(String tenantId) {
+		return (AmazonDynamoDBClient) AmazonDynamoDBClientBuilder.standard()
+				// .withCredentials(WebIdentityTokenCredentialsProvider.builder().roleSessionName("ddb-query").build())
+				.withCredentials(new DefaultAWSCredentialsProviderChain()).build();
 	}
 
 }

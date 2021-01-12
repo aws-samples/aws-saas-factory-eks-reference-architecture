@@ -40,72 +40,91 @@ import com.amazonaws.saas.eks.service.OrderService;
 @RestController
 public class OrderController {
 	private static final Logger logger = LogManager.getLogger(OrderController.class);
-	
+
 	@Autowired
-    private OrderService orderService;
+	private OrderService orderService;
 
 	@Autowired
 	private TokenManager tokenManager;
 
-    
-    @GetMapping(value="{companyName}/order/api/orders", produces = { MediaType.APPLICATION_JSON_VALUE })
-    public List<Order> getOrders(HttpServletRequest request) {
-    	logger.info("Return orders");
-   		String tenantId;
-		
+	/**
+	 * Method to retrieve all orders for a tenant
+	 * 
+	 * @param request
+	 * @return List<Order>
+	 */
+	@GetMapping(value = "{companyName}/order/api/orders", produces = { MediaType.APPLICATION_JSON_VALUE })
+	public List<Order> getOrders(HttpServletRequest request) {
+		logger.info("Return orders");
+		String tenantId;
+
 		try {
 			tenantId = tokenManager.getTenantId(request);
 		} catch (Exception e) {
 			logger.error("Invalid tenant. Value either missing, empty or null");
 			return null;
 		}
-		
-		if(tenantId!=null && !tenantId.isEmpty()) {
+
+		if (tenantId != null && !tenantId.isEmpty()) {
 			return orderService.getOrders(tenantId);
 		}
-		
-		return null;
-    }
 
-    @GetMapping(value = "{companyName}/order/api/order/{orderId}", produces = { MediaType.APPLICATION_JSON_VALUE })
+		return null;
+	}
+
+	/**
+	 * Method to get Order by id for a tenant
+	 * 
+	 * @param orderId
+	 * @param request
+	 * @return Order
+	 */
+	@GetMapping(value = "{companyName}/order/api/order/{orderId}", produces = { MediaType.APPLICATION_JSON_VALUE })
 	public Order getOrderById(@PathVariable("orderId") String orderId, HttpServletRequest request) {
-  		String tenantId;
-		
+		String tenantId;
+
 		try {
 			tenantId = tokenManager.getTenantId(request);
 		} catch (Exception e) {
 			logger.error("Invalid tenant. Value either missing, empty or null");
 			return null;
 		}
-		
-		if(tenantId!=null && !tenantId.isEmpty()) {
+
+		if (tenantId != null && !tenantId.isEmpty()) {
 			return orderService.getOrderById(orderId, tenantId);
 
 		}
 		return null;
 	}
-        
-    @PostMapping(value="{companyName}/order/api/order", produces = { MediaType.APPLICATION_JSON_VALUE })
-    public Order saveOrder(@RequestBody Order order, HttpServletRequest request) {
-    	String tenantId;
-		
+
+	/**
+	 * Method to save an order for a tenant
+	 * 
+	 * @param order
+	 * @param request
+	 * @return
+	 */
+	@PostMapping(value = "{companyName}/order/api/order", produces = { MediaType.APPLICATION_JSON_VALUE })
+	public Order saveOrder(@RequestBody Order order, HttpServletRequest request) {
+		String tenantId;
+
 		try {
 			tenantId = tokenManager.getTenantId(request);
 		} catch (Exception e) {
 			logger.error("Invalid tenant. Value either missing, empty or null");
 			return null;
 		}
-		
-		if(tenantId!=null && !tenantId.isEmpty()) {
-	        return orderService.save(order, tenantId);
-		}
-		
-		return null;
-    }
 
-    @RequestMapping("{companyName}/order/health/order")
-    public String health() {
-        return "\"Order service is up!\"";
-    }
+		if (tenantId != null && !tenantId.isEmpty()) {
+			return orderService.save(order, tenantId);
+		}
+
+		return null;
+	}
+
+	@RequestMapping("{companyName}/order/health/order")
+	public String health() {
+		return "\"Order service is up!\"";
+	}
 
 }
