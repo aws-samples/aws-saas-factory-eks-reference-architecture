@@ -183,4 +183,7 @@ Outputs:
   AdminOAuthProviderUrl: 
     Description: The URL of the authorization server for the admin client
     Value: !GetAtt UserPool.ProviderURL
+  AdminOAuthCustomDomain: 
+    Description: The custom cognito domain for this app client
+    Value: !Ref CustomUserPoolDomain
   

@@ -152,6 +152,11 @@ Outputs:
     Value: !GetAtt AdminSite.Outputs.AdminOAuthProviderUrl
     Export:
       Name: !Sub '${AWS::StackName}-AdminOAuthProviderUrl'
+  AdminOAuthCustomDomain:
+    Description: The custom cognito domain for this app client
+    Value: !GetAtt AdminSite.Outputs.AdminOAuthCustomDomain
+    Export:
+      Name: !Sub '${AWS::StackName}-AdminOAuthCustomDomain'
   LandingSiteBucket:
     Description: The S3 Bucket that will contain the static assets for the landing site application
     Value: !GetAtt LandingSite.Outputs.LandingBucket

@@ -34,6 +34,7 @@ fi
 
 APPCLIENTID=$(aws cloudformation list-exports --query "Exports[?Name=='${STACK_NAME}-AdminOAuthClientId'].Value" --output text)
 AUTHSERVERURL=$(aws cloudformation list-exports --query "Exports[?Name=='${STACK_NAME}-AdminOAuthProviderUrl'].Value" --output text)
+AUTHCUSTOMDOMAIN=$(aws cloudformation list-exports --query "Exports[?Name=='${STACK_NAME}-AdminOAuthCustomDomain'].Value" --output text)
 
 CURRENT_DIR=$(pwd)
 echo "Current Dir: $CURRENT_DIR"
@@ -47,6 +48,7 @@ export const environment = {
   production: true,
   clientId: '$APPCLIENTID',
   issuer: '$AUTHSERVERURL',
+  customDomain: '$AUTHCUSTOMDOMAIN',
   apiUrl: 'https://api.$CUSTOM_DOMAIN',
   domain: '$CUSTOM_DOMAIN'
 };
@@ -56,6 +58,7 @@ export const environment = {
   production: true,
   clientId: '$APPCLIENTID',
   issuer: '$AUTHSERVERURL',
+  customDomain: '$AUTHCUSTOMDOMAIN',
   apiUrl: 'https://api.$CUSTOM_DOMAIN',
   domain: '$CUSTOM_DOMAIN'
 };
