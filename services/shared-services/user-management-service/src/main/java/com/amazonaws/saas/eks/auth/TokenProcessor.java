@@ -54,14 +54,15 @@ import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 @Component
 public class TokenProcessor {
 	private static final Logger logger = LogManager.getLogger(TokenProcessor.class);
-
-	private static final String SAAS_PROVIDER_METADATA = "SAAS_PROVIDER_METADATA";
+	private static final String TENANT = "Tenant";
 
 	@Autowired
 	private JwtConfig jwtConfiguration;
 
 	public Authentication authenticate(HttpServletRequest request) throws Exception {
 		String idToken = request.getHeader(this.jwtConfiguration.getHttpHeader());
+		String tenantId = "";
+
 		String origin = request.getHeader("origin");
 		logger.info("Origin name => " + origin);
 
@@ -74,39 +75,43 @@ public class TokenProcessor {
 		try {
 			logger.info("Host name => " + origin);
 			URI uri = new URI(origin);
-			String domain = uri.toString();
+			String domain = uri.getHost();
 			String[] parts = domain.split("\\.");
-			origin = parts[1] + "." + parts[2];
-			logger.info("Origin for lookup => " + origin);
+			tenantId = parts[0];
+			logger.info("Tenant Id => " + tenantId);
 		} catch (URISyntaxException ex) {
 			logger.error(ex.toString());
 		}
 
+		logger.info("Tenant Id => " + tenantId);
+
 		if (idToken != null) {
-			String table_name = SAAS_PROVIDER_METADATA;
-			String userPoolId = "";
-			String region = "";
+			String table_name = TENANT;
+			logger.info("Received TENANTID=>" + tenantId + "for lookup.");
 
 			AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard().build();
 			DynamoDB dynamoDB = new DynamoDB(client);
 			Table table = dynamoDB.getTable(table_name);
+			String authServer = "";
+			String userPoolId = "";
+			String region = "";
 
 			try {
-				Item item = table.getItem("DOMAIN_NAME", origin);
-				userPoolId = (String) item.get("PROVIDER_USER_POOL_ID");
-				region = (String) item.get("REGION");
+				Item item = table.getItem("TENANT_ID", tenantId);
+				authServer = (String) item.get("AUTH_SERVER");
+				logger.info("authServer= " + authServer);
 
-				logger.info(item.toJSONPretty());
+				userPoolId = authServer.substring(authServer.lastIndexOf("/") + 1);
+				region = userPoolId.substring(0, userPoolId.indexOf("_"));
+				logger.info("userPoolId= " + userPoolId);
+				logger.info("region= " + region);
+
 			} catch (Exception e) {
 				logger.error("GetItem failed.");
 				logger.error(e.getMessage());
 			}
-			logger.info("userPoolId= " + userPoolId);
-			logger.info("region= " + region);
-
 			jwtConfiguration.setUserPoolId(userPoolId);
 			jwtConfiguration.setRegion(region);
-
 			String jwkUrl = "https://cognito-idp." + region + ".amazonaws.com/" + userPoolId + "/.well-known/jwks.json";
 			jwtConfiguration.setJwkUrl(jwkUrl);
 			ResourceRetriever resourceRetriever = new DefaultResourceRetriever(jwtConfiguration.getConnectionTimeout(),

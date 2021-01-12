@@ -107,41 +107,43 @@ public class UserManagementService {
 
 	/**
 	 * Method to retrieve all the users for a single tenant
+	 * 
 	 * @param companyName
 	 * @return
 	 */
-	public List<User> getUsers(String companyName) {
+	public List<User> getUsers(String userPoolId) {
 		List<User> users = new ArrayList<User>();
 		AWSCognitoIdentityProvider cognitoclient = AWSCognitoIdentityProviderClientBuilder.defaultClient();
 
 		try {
-			String userPoolId = EksSaaSUtil.getUserPoolForTenant(companyName);
-			ListUsersResult response = cognitoclient.listUsers(new ListUsersRequest().withUserPoolId(userPoolId));
+			if (userPoolId != null) {
+				ListUsersResult response = cognitoclient.listUsers(new ListUsersRequest().withUserPoolId(userPoolId));
 
-			for (UserType userType : response.getUsers()) {
-				User u = new User();
+				for (UserType userType : response.getUsers()) {
+					User u = new User();
 
-				for (AttributeType userAttribute : userType.getAttributes()) {
-					switch (userAttribute.getName()) {
-					case "email":
-						u.setEmail(userAttribute.getValue());
-						break;
-					case "email_verified":
-						u.setVerified(userAttribute.getValue());
-						break;
+					for (AttributeType userAttribute : userType.getAttributes()) {
+						switch (userAttribute.getName()) {
+						case "email":
+							u.setEmail(userAttribute.getValue());
+							break;
+						case "email_verified":
+							u.setVerified(userAttribute.getValue());
+							break;
+						}
 					}
-				}
 
-				u.setCreated(userType.getUserCreateDate().toString());
-				u.setModified(userType.getUserLastModifiedDate().toString());
-				u.setEnabled(userType.getEnabled());
-				u.setStatus(userType.getUserStatus());
-				users.add(u);
+					u.setCreated(userType.getUserCreateDate().toString());
+					u.setModified(userType.getUserLastModifiedDate().toString());
+					u.setEnabled(userType.getEnabled());
+					u.setStatus(userType.getUserStatus());
+					users.add(u);
+				}
 			}
 		} catch (Exception e) {
 			logger.error(e);
 		}
-		
+
 		return users;
 	}
 

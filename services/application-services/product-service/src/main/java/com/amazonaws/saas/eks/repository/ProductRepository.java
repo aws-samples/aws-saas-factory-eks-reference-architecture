@@ -55,7 +55,7 @@ public class ProductRepository {
 		expressionAttributeValues.put(":TenantId", new AttributeValue().withS(tenantId));
 
 		DynamoDBQueryExpression<Product> queryExpression = new DynamoDBQueryExpression<Product>()
-				.withKeyConditionExpression("#TenantId = :TenantId").withIndexName("TenantId-index")
+				.withKeyConditionExpression("#TenantId = :TenantId")
 				.withExpressionAttributeNames(expressionAttributeNames)
 				.withExpressionAttributeValues(expressionAttributeValues);
 
