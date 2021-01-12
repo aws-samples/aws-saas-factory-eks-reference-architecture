@@ -1,8 +1,10 @@
 import {Component, OnInit} from '@angular/core';
 import { Router } from '@angular/router';
 import { OidcSecurityService } from 'angular-auth-oidc-client';
+import { env } from 'process';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
 import { navItems } from '../../_nav';
 
 @Component({
@@ -34,8 +36,8 @@ export class DefaultLayoutComponent implements OnInit {
   }
 
   logout() {
-    this.oidcSecurityService.logoffAndRevokeTokens();
-    this.router.navigate(['/logoff']);
+    this.oidcSecurityService.logoffAndRevokeTokens().subscribe(() => {});
+    window.location.href = `${environment.issuer}/login?client_id=${environment.clientId}&response_type=code&redirect_uri=https://admin.${environment.domain}/signout`;
   }
 }
 

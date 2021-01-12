@@ -14,4 +14,5 @@ export interface ConfigParams {
   strictDiscoveryDocumentValidation: boolean;
   timeoutFactor: number;
   useSilentRefresh: boolean;
+  cognitoDomain?: string;
 }

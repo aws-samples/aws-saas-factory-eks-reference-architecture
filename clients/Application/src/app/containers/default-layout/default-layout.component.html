@@ -16,7 +16,7 @@
             <strong>Account</strong>
           </ng-template>
         </div>
-        <a href="{{getUrl()}}" *ngIf="isAuthenticated$ | async as isAuthenticated; else noAuth" class="dropdown-item"><i class="fa fa-lock"></i>Logout</a>
+        <a href="logout()" *ngIf="isAuthenticated$ | async as isAuthenticated; else noAuth" class="dropdown-item"><i class="fa fa-lock"></i>Logout</a>
         <ng-template #noAuth>
           <a class="dropdown-item" (click)="login()"><i class="fa fa-unlock"></i>Login</a>
         </ng-template>

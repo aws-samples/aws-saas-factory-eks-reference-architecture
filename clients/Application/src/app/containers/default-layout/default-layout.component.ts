@@ -49,13 +49,7 @@ export class DefaultLayoutComponent implements OnInit {
   }
 
   logout() {
-    this.authService.LogOutOfCognito().subscribe(val => {
-      this.router.navigate(['/logoff']);
-    }, err => e => console.error(e));
-  }
-
-  getUrl() {
-    return 'https://saascoffeekincorqobl.auth.us-east-1.amazoncognito.com/login?client_id=3lg8fvk18bborobgiicahpi01q&response_type=code&redirect_uri=https://saascoffee.eks-ref-arch.com/login'
+    this.authService.LogOutOfCognito().subscribe(() => {});
   }
 
   toggleMinimize(e) {

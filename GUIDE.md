@@ -35,7 +35,7 @@
 
 As more organizations make the move to a software-as-a-service (SaaS) delivery model, many are finding the Amazon Kubernetes Service (EKS) to be a good fit for their business and technical goals. To support this movement, we have created a sample EKS SaaS solution that provides developers and architects with a more concrete example of the architectural and design best practices that are associated with building a multi-tenant SaaS offering on AWS.
 
-In the sections that follow, we’ll look inside the inner-workings of this sample SaaS EKS environment. We’ll explore the key architectural strategies that are used to address the isolation, identity, data partitioning, routing, deployment, and operational considerations associated with building and delivering a SaaS solution an EKS SaaS solution on AWS. Overall, this should quip you with an end-to-end understanding of the entire solution and how to deploy/operate it.
+In the sections that follow, we’ll look inside the inner-workings of this sample SaaS EKS environment. We’ll explore the key architectural strategies that are used to address the isolation, identity, data partitioning, routing, deployment, and operational considerations associated with building and delivering a SaaS solution an EKS SaaS solution on AWS. Overall, this should equip you with an end-to-end understanding of the entire solution and how to deploy/operate it.
 
 Our focus here is on using this solution to expose you to the fundamentals of an EKS SaaS architecture. It’s not intended to represent a turnkey solution that can be used in a production scenario. Rather, we hope this solution might be the foundational building blocks on which a production deployment is based.
 
