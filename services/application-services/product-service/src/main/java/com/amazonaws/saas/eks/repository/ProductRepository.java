@@ -64,7 +64,7 @@ public class ProductRepository {
 		try {
 			results = mapper.query(Product.class, queryExpression);
 		} catch (Exception e) {
-			logger.error("TenantId: " + tenantId + "Get Products failed " + e.getMessage());
+			logger.error("TenantId: " + tenantId + "-Get Products failed " + e.getMessage());
 		}
 
 		return results;
@@ -80,7 +80,7 @@ public class ProductRepository {
 		try {
 			mapper.save(product);
 		} catch (Exception e) {
-			logger.error("TenantId: " + product.getTenantId() + "Save Product failed " + e.getMessage());
+			logger.error("TenantId: " + product.getTenantId() + "-Save Product failed " + e.getMessage());
 		}
 		
 		return product;
@@ -99,7 +99,7 @@ public class ProductRepository {
 					.withSaveBehavior(DynamoDBMapperConfig.SaveBehavior.UPDATE).build();
 			mapper.save(product, dynamoDBMapperConfig);
 		} catch (Exception e) {
-			logger.error("TenantId: " + product.getTenantId() + "Update Product failed " + e.getMessage());
+			logger.error("TenantId: " + product.getTenantId() + "-Update Product failed " + e.getMessage());
 		}
 		
 		return product;
@@ -119,7 +119,7 @@ public class ProductRepository {
 		try {
 			product = mapper.load(Product.class, productId, config);
 		} catch (Exception e) {
-			logger.error("TenantId: " + tenantId + "Get Product By Id failed " + e.getMessage());
+			logger.error("TenantId: " + tenantId + "-Get Product By Id failed " + e.getMessage());
 		}
 
 		logger.info("Product=> " + product);
@@ -136,7 +136,7 @@ public class ProductRepository {
 		try {
 			mapper.delete(product);
 		} catch (Exception e) {
-			logger.error("TenantId: " + product.getTenantId() + "Delete Product failed " + e.getMessage());
+			logger.error("TenantId: " + product.getTenantId() + "-Delete Product failed " + e.getMessage());
 		}
 	}
 

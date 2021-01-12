@@ -47,7 +47,7 @@ public class OrderRepository {
 		try {
 			results = mapper.scan(Order.class, new DynamoDBScanExpression());
 		} catch (Exception e) {
-			logger.error("TenantId: " + tenantId + "Get Orders failed " + e.getMessage());
+			logger.error("TenantId: " + tenantId + "-Get Orders failed " + e.getMessage());
 		}
 
 		return results;
@@ -64,7 +64,7 @@ public class OrderRepository {
 			DynamoDBMapper mapper = dynamoDBMapperLocal(tenantId);
 			mapper.save(order);
 		} catch (Exception e) {
-			logger.error("TenantId: " + tenantId + "Save Order failed " + e.getMessage());
+			logger.error("TenantId: " + tenantId + "-Save Order failed " + e.getMessage());
 		}
 		
 		return order;
@@ -85,7 +85,7 @@ public class OrderRepository {
 		try {
 			order = mapper.load(Order.class, orderId, config);
 		} catch (Exception e) {
-			logger.error("TenantId: " + tenantId + "Get Order By Id failed " + e.getMessage());
+			logger.error("TenantId: " + tenantId + "-Get Order By Id failed " + e.getMessage());
 		}
 		
 		return order;
@@ -101,7 +101,7 @@ public class OrderRepository {
 			DynamoDBMapper mapper = dynamoDBMapperLocal(tenantId);
 			mapper.delete(order);
 		} catch (Exception e) {
-			logger.error("TenantId: " + tenantId + "Delete Order failed " + e.getMessage());
+			logger.error("TenantId: " + tenantId + "-Delete Order failed " + e.getMessage());
 		}
 	}
 	
