@@ -31,10 +31,15 @@ import com.amazonaws.services.dynamodbv2.document.Table;
 
 public class EksSaaSUtil {
 
-	private static final String EKSREFARCH_TENANTS = "EKSREFARCH_TENANTS";
+	private static final String TENANT = "Tenant";
 	private static final Logger logger = LogManager.getLogger(EksSaaSUtil.class);
 	private static final String SAAS_PROVIDER_METADATA = "SAAS_PROVIDER_METADATA";
 
+	/**
+	 * Generates a random string of length 10
+	 * 
+	 * @return String
+	 */
 	public static String randomStr() {
 
 		int leftLimit = 97; // letter 'a'
@@ -49,9 +54,15 @@ public class EksSaaSUtil {
 		return generatedString;
 	}
 
+	/**
+	 * Method used to get the User pool for a tenant based on company name
+	 * 
+	 * @param companyName
+	 * @return String userPoolId
+	 */
 	public static String getUserPoolForTenant(String companyName) {
 
-		String table_name = EKSREFARCH_TENANTS;
+		String table_name = TENANT;
 		logger.info("Received TENANTID=>" + companyName + "for lookup.");
 
 		AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard().build();
@@ -78,8 +89,13 @@ public class EksSaaSUtil {
 
 		return userPoolId;
 	}
-	
 
+	/**
+	 * Method used to get the User pool for a tenant based on origin
+	 * 
+	 * @param origin
+	 * @return String userPoolId
+	 */
 	public static String getTenantUserPool(String origin) {
 		logger.info("Origin name => " + origin);
 		String userPoolId = null;

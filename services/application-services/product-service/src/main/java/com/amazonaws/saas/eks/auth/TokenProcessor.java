@@ -44,7 +44,6 @@ import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.jwk.source.RemoteJWKSet;
 import com.nimbusds.jose.proc.JWSKeySelector;
 import com.nimbusds.jose.proc.JWSVerificationKeySelector;
-import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jose.util.DefaultResourceRetriever;
 import com.nimbusds.jose.util.ResourceRetriever;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -53,111 +52,109 @@ import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 
 @Component
 public class TokenProcessor {
-	private static final String EKSREFARCH_TENANTS = "EKSREFARCH_TENANTS";
+	private static final String TENANT = "Tenant";
 
 	private static final Logger logger = LogManager.getLogger(TokenProcessor.class);
 
-    @Autowired
-    private JwtConfig jwtConfiguration;
+	@Autowired
+	private JwtConfig jwtConfiguration;
 
-    public Authentication authenticate(HttpServletRequest request) throws Exception {
-        String idToken = request.getHeader(this.jwtConfiguration.getHttpHeader());
-    	String tenantId = "";
+	public Authentication authenticate(HttpServletRequest request) throws Exception {
+		String idToken = request.getHeader(this.jwtConfiguration.getHttpHeader());
+		String tenantId = "";
 
-    	String origin = request.getHeader("origin");
-    	logger.info("Origin name => "+ origin);
-        
-    	if (origin == null || origin.equals("http://localhost:4200")) {
-            //TODO this is test code and should be deleted unless we create a test tenant with every install
-            origin = "http://a5co.aws-dev-shop.com";
-    	}
+		String origin = request.getHeader("origin");
+		logger.info("Origin name => " + origin);
 
-    	try {
-    		logger.info("Host name => "+ origin);
-            URI uri = new URI(origin);
-            String domain = uri.getHost();
-            String[] parts = domain.split("\\.");
-            tenantId = parts[0];
-            logger.info("Tenant Id => "+ tenantId);
-    	}
-    	catch(URISyntaxException ex) { 
-    	    logger.error(ex.toString());
-    	}
+		if (origin == null || origin.equals("http://localhost:4200")) {
+			// TODO this is test code and should be deleted unless we create a test tenant
+			// with every install
+			origin = "http://a5co.aws-dev-shop.com";
+		}
 
-    	logger.info("Tenant Id => "+ tenantId);
-    	
-    	//setUserPoolId(tenantId);
+		try {
+			logger.info("Host name => " + origin);
+			URI uri = new URI(origin);
+			String domain = uri.getHost();
+			String[] parts = domain.split("\\.");
+			tenantId = parts[0];
+			logger.info("Tenant Id => " + tenantId);
+		} catch (URISyntaxException ex) {
+			logger.error(ex.toString());
+		}
 
-        if (idToken != null) {
-    		String table_name = EKSREFARCH_TENANTS;
-    		logger.info("Received TENANTID=>" + tenantId + "for lookup.");
+		logger.info("Tenant Id => " + tenantId);
 
-    		AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard().build();
-    		DynamoDB dynamoDB = new DynamoDB(client);
-    		Table table = dynamoDB.getTable(table_name);
-    		String authServer = "";
-    		String userPoolId = "";
-    		String region = "";
+		if (idToken != null) {
+			String table_name = TENANT;
+			logger.info("Received TENANTID=>" + tenantId + "for lookup.");
 
-    		try {
-    			Item item = table.getItem("TENANT_ID", tenantId);
-    			authServer = (String) item.get("AUTH_SERVER");
-    			logger.info("authServer= " + authServer);
-    			
-    			userPoolId = authServer.substring(authServer.lastIndexOf("/")+1);   
-    			region = userPoolId.substring(0, userPoolId.indexOf("_"));
-    			logger.info("userPoolId= " + userPoolId); 
-    			logger.info("region= " + region); 
+			AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard().build();
+			DynamoDB dynamoDB = new DynamoDB(client);
+			Table table = dynamoDB.getTable(table_name);
+			String authServer = "";
+			String userPoolId = "";
+			String region = "";
 
-    		} catch (Exception e) {
-    			logger.error("GetItem failed.");
-    			logger.error(e.getMessage());
-    		}
-	        jwtConfiguration.setUserPoolId(userPoolId);
-	        jwtConfiguration.setRegion(region);
-       		String jwkUrl = "https://cognito-idp."+ region+".amazonaws.com/"+ userPoolId+"/.well-known/jwks.json";
-    		jwtConfiguration.setJwkUrl(jwkUrl);
-    		ResourceRetriever resourceRetriever =
-    				new DefaultResourceRetriever(jwtConfiguration.getConnectionTimeout(),
-    						jwtConfiguration.getReadTimeout());
-    						URL jwkSetURL= new URL(jwtConfiguration.getJwkUrl());
-    						
-    		JWKSource keySource= new RemoteJWKSet(jwkSetURL, resourceRetriever);
-    		ConfigurableJWTProcessor jwtProcessor= new DefaultJWTProcessor();
-    		JWSKeySelector keySelector= new JWSVerificationKeySelector(RS256, keySource);
-    		jwtProcessor.setJWSKeySelector(keySelector);
+			try {
+				Item item = table.getItem("TENANT_ID", tenantId);
+				authServer = (String) item.get("AUTH_SERVER");
+				logger.info("authServer= " + authServer);
 
-            JWTClaimsSet claims = jwtProcessor.process(this.getBearerToken(idToken),null);
-            validateIssuer(claims);
-            verifyIfIdToken(claims);
-            String username = getUserNameFrom(claims);
-            
-            if (username != null) {
-                List<GrantedAuthority> grantedAuthorities = of( new SimpleGrantedAuthority("ROLE_ADMIN"));
-                User user = new User(username, "", of());
-                return new JwtAuth(user, claims, grantedAuthorities);
-            }
-        }
-        return null;
-    }
+				userPoolId = authServer.substring(authServer.lastIndexOf("/") + 1);
+				region = userPoolId.substring(0, userPoolId.indexOf("_"));
+				logger.info("userPoolId= " + userPoolId);
+				logger.info("region= " + region);
 
-    private String getUserNameFrom(JWTClaimsSet claims) {
-        return claims.getClaims().get(this.jwtConfiguration.getUserNameField()).toString();
-    }
+			} catch (Exception e) {
+				logger.error("GetItem failed.");
+				logger.error(e.getMessage());
+			}
+			jwtConfiguration.setUserPoolId(userPoolId);
+			jwtConfiguration.setRegion(region);
+			String jwkUrl = "https://cognito-idp." + region + ".amazonaws.com/" + userPoolId + "/.well-known/jwks.json";
+			jwtConfiguration.setJwkUrl(jwkUrl);
+			ResourceRetriever resourceRetriever = new DefaultResourceRetriever(jwtConfiguration.getConnectionTimeout(),
+					jwtConfiguration.getReadTimeout());
+			URL jwkSetURL = new URL(jwtConfiguration.getJwkUrl());
 
-    private void verifyIfIdToken(JWTClaimsSet claims) throws Exception {
-        if (!claims.getIssuer().equals(this.jwtConfiguration.getCognitoIdentityPoolUrl())) {
-            throw new Exception("JWT Token is not an ID Token");
-        }
-    }
+			JWKSource keySource = new RemoteJWKSet(jwkSetURL, resourceRetriever);
+			ConfigurableJWTProcessor jwtProcessor = new DefaultJWTProcessor();
+			JWSKeySelector keySelector = new JWSVerificationKeySelector(RS256, keySource);
+			jwtProcessor.setJWSKeySelector(keySelector);
 
-    private void validateIssuer(JWTClaimsSet claims) throws Exception {
-        if (!claims.getIssuer().equals(this.jwtConfiguration.getCognitoIdentityPoolUrl())) {
-            throw new Exception(String.format("Issuer %s does not match cognito idp %s", claims.getIssuer(), this.jwtConfiguration.getCognitoIdentityPoolUrl()));
-        }
-    }
+			JWTClaimsSet claims = jwtProcessor.process(this.getBearerToken(idToken), null);
+			validateIssuer(claims);
+			verifyIfIdToken(claims);
+			String username = getUserNameFrom(claims);
 
-    private String getBearerToken(String token) {
-        return token.startsWith("Bearer ") ? token.substring("Bearer ".length()) : token;
-    }
+			if (username != null) {
+				List<GrantedAuthority> grantedAuthorities = of(new SimpleGrantedAuthority("ROLE_ADMIN"));
+				User user = new User(username, "", of());
+				return new JwtAuth(user, claims, grantedAuthorities);
+			}
+		}
+		return null;
+	}
+
+	private String getUserNameFrom(JWTClaimsSet claims) {
+		return claims.getClaims().get(this.jwtConfiguration.getUserNameField()).toString();
+	}
+
+	private void verifyIfIdToken(JWTClaimsSet claims) throws Exception {
+		if (!claims.getIssuer().equals(this.jwtConfiguration.getCognitoIdentityPoolUrl())) {
+			throw new Exception("JWT Token is not an ID Token");
+		}
+	}
+
+	private void validateIssuer(JWTClaimsSet claims) throws Exception {
+		if (!claims.getIssuer().equals(this.jwtConfiguration.getCognitoIdentityPoolUrl())) {
+			throw new Exception(String.format("Issuer %s does not match cognito idp %s", claims.getIssuer(),
+					this.jwtConfiguration.getCognitoIdentityPoolUrl()));
+		}
+	}
+
+	private String getBearerToken(String token) {
+		return token.startsWith("Bearer ") ? token.substring("Bearer ".length()) : token;
+	}
 }

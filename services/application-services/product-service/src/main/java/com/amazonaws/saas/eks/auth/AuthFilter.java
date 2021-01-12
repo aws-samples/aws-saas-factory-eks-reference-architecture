@@ -34,34 +34,33 @@ import org.springframework.stereotype.Component;
 @Component
 public class AuthFilter extends GenericFilter {
 
-    private static final Log logger = LogFactory.getLog(AuthFilter.class);
-    private TokenProcessor cognitoIdTokenProcessor;
+	private static final Log logger = LogFactory.getLog(AuthFilter.class);
+	private TokenProcessor cognitoIdTokenProcessor;
 
-    public AuthFilter(TokenProcessor cognitoIdTokenProcessor) {
-        this.cognitoIdTokenProcessor = cognitoIdTokenProcessor;
-    }
+	public AuthFilter(TokenProcessor cognitoIdTokenProcessor) {
+		this.cognitoIdTokenProcessor = cognitoIdTokenProcessor;
+	}
 
-    @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain) throws IOException, ServletException {
-        Authentication authentication;
+	@Override
+	public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain)
+			throws IOException, ServletException {
+		Authentication authentication;
 
-        try {
-            authentication = this.cognitoIdTokenProcessor.authenticate((HttpServletRequest)request);
-            if (authentication != null) {
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-            }
-        } catch (Exception var6) {
-            logger.error("Cognito ID Token processing error", var6);
-            SecurityContextHolder.clearContext();
-        }
+		try {
+			authentication = this.cognitoIdTokenProcessor.authenticate((HttpServletRequest) request);
+			if (authentication != null) {
+				SecurityContextHolder.getContext().setAuthentication(authentication);
+			}
+		} catch (Exception var6) {
+			logger.error("Cognito ID Token processing error", var6);
+			SecurityContextHolder.clearContext();
+		}
 
-        filterChain.doFilter(request, response);
-    }
+		filterChain.doFilter(request, response);
+	}
 
 	@Override
 	public void destroy() {
 		// TODO Auto-generated method stub
-		
 	}
 }
-

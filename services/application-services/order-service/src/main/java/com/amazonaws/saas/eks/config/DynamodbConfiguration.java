@@ -40,18 +40,14 @@ public class DynamodbConfiguration {
 	@Bean(name = "dynamoDBMapper")
 	public DynamoDBMapper dynamoDBMapperLocal() {
 		Regions region = Regions.US_EAST_1;
-		DynamoDBMapperConfig dbMapperConfig = new DynamoDBMapperConfig.Builder()
-				.build();
+		DynamoDBMapperConfig dbMapperConfig = new DynamoDBMapperConfig.Builder().build();
 		AmazonDynamoDBClient dynamoClient = getAmazonDynamoDBLocalClient(region);
 		return new DynamoDBMapper(dynamoClient, dbMapperConfig);
 	}
 
-	// This Client is configured for Local only with the Local Profile.
 	private AmazonDynamoDBClient getAmazonDynamoDBLocalClient(Regions region) {
 		return (AmazonDynamoDBClient) AmazonDynamoDBClientBuilder.standard()
-				//.withCredentials(WebIdentityTokenCredentialsProvider.builder().roleSessionName("ddb-query").build())
-				.withCredentials(new DefaultAWSCredentialsProviderChain())
-				.withRegion(region).build();
+				// .withCredentials(WebIdentityTokenCredentialsProvider.builder().roleSessionName("ddb-query").build())
+				.withCredentials(new DefaultAWSCredentialsProviderChain()).withRegion(region).build();
 	}
-
 }

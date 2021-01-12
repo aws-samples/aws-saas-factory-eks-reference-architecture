@@ -46,7 +46,7 @@ import com.amazonaws.services.dynamodbv2.document.Table;
 public class TenantManagementService {
 
 	private static final String TENANT_ID = "TENANT_ID";
-	private static final String EKSREFARCH_TENANTS = "EKSREFARCH_TENANTS";
+	private static final String TENANT = "Tenant";
 	private static final Logger logger = LogManager.getLogger(TenantManagementService.class);
 
 	/**
@@ -61,7 +61,7 @@ public class TenantManagementService {
 		String companyName = tenant.getCompanyName();
 
 		if (companyName != null && companyName != "") {
-			tenantId = getTenantId(companyName);
+			tenantId = generateTenantId(companyName);
 			tenant.setTenantId(tenantId);
 		} else {
 			logger.error("Company Name is empty or null");
@@ -71,7 +71,7 @@ public class TenantManagementService {
 		AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard().build();
 		DynamoDB dynamoDB = new DynamoDB(client);
 
-		Table table = dynamoDB.getTable(EKSREFARCH_TENANTS);
+		Table table = dynamoDB.getTable(TENANT);
 		String plan = tenant.getPlan();
 
 		if(plan == null || plan == "") {
@@ -81,7 +81,7 @@ public class TenantManagementService {
 				.withString("PLAN", plan);
 
 		PutItemOutcome outcome = table.putItem(item);
-		LoggingManager.logInfo(tenant.getTenantId(), "New tenant entry created in EKSREFARCH_TENANTS table!");
+		LoggingManager.logInfo(tenant.getTenantId(), "New tenant entry created in Tenant table!");
 
 		return tenant;
 	}
@@ -119,18 +119,12 @@ public class TenantManagementService {
 		return tenant;
 
 	}
-	private String getTenantId(String companyName) {
-		Pattern pattern = Pattern.compile("[\\s\\W]");
-		Matcher mat = pattern.matcher(companyName);
-		String tenantId = mat.replaceAll("").toLowerCase();
-    	return tenantId.substring(0, Math.min(tenantId.length(), 50));
-	}
 
 	public TenantDetails saveTenantDetails(TenantDetails tenant) { /* Read the name from command args */
 		AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard().build();
 		DynamoDB dynamoDB = new DynamoDB(client);
 
-		Table table = dynamoDB.getTable(EKSREFARCH_TENANTS);
+		Table table = dynamoDB.getTable(TENANT);
 
 		// Build the item
 		Item item = new Item().withPrimaryKey(TENANT_ID, tenant.getTenantId());
@@ -154,7 +148,7 @@ public class TenantManagementService {
 		logger.info("Received tenantId=>" + tenantId + "for lookup.");
 
 		AuthConfig auth = new AuthConfig();
-		String table_name = "EKSREFARCH_TENANTS";
+		String table_name = TENANT;
 		AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard().build();
 		DynamoDB dynamoDB = new DynamoDB(client);
 		Table table = dynamoDB.getTable(table_name);
@@ -189,7 +183,6 @@ public class TenantManagementService {
 		return auth;
 	}
 	
-
 	
 	/**
 	 * Method used to Update tenant data in to Tenant Dynamo table
@@ -197,7 +190,7 @@ public class TenantManagementService {
 	 */
 	public DynamoDBMapper dynamoDBMapper() {
 		DynamoDBMapperConfig dbMapperConfig = new DynamoDBMapperConfig.Builder()
-				.withTableNameOverride(TableNameOverride.withTableNameReplacement(EKSREFARCH_TENANTS))
+				.withTableNameOverride(TableNameOverride.withTableNameReplacement(TENANT))
 				.build();
 		
 		AmazonDynamoDBClient dynamoClient = getAmazonDynamoDBLocalClient();
@@ -209,14 +202,12 @@ public class TenantManagementService {
 				.withCredentials(new DefaultAWSCredentialsProviderChain())
 				.build();
 	}
-
 	
-	public static void main(String args[]) {
-		TenantManagementService service = new TenantManagementService();
-		TenantDetails tenant = new TenantDetails();
-		tenant.setCompanyName("r123124");
-		tenant.setPlan("Basic");
-		service.createTenant(tenant );
+	private String generateTenantId(String companyName) {
+		Pattern pattern = Pattern.compile("[\\s\\W]");
+		Matcher mat = pattern.matcher(companyName);
+		String tenantId = mat.replaceAll("").toLowerCase();
+    	return tenantId.substring(0, Math.min(tenantId.length(), 50));
 	}
 
 }

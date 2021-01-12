@@ -49,10 +49,16 @@ public class ProductController {
 	@Autowired
 	private TokenManager tokenManager;
 
+	/**
+	 * Method to retrieve all products for a tenant.
+	 * 
+	 * @param request
+	 * @return List<Product>
+	 */
 	@GetMapping(value = "{companyName}/product/api/products", produces = { MediaType.APPLICATION_JSON_VALUE })
 	public List<Product> getProducts(HttpServletRequest request) {
 		String tenantId;
-		
+
 		try {
 			tenantId = tokenManager.getTenantId(request);
 		} catch (Exception e) {
@@ -60,92 +66,126 @@ public class ProductController {
 			return null;
 		}
 
-		if(tenantId!=null && !tenantId.isEmpty()) {
+		if (tenantId != null && !tenantId.isEmpty()) {
 			return productService.getProducts(tenantId);
 		}
-		
+
 		return null;
 	}
 
-	@GetMapping(value = "{companyName}/product/api/product/{productId}", produces = { MediaType.APPLICATION_JSON_VALUE })
+	/**
+	 * Method that retrieves a tenant product by productId.
+	 * 
+	 * @param productId
+	 * @param request
+	 * @return Product
+	 */
+	@GetMapping(value = "{companyName}/product/api/product/{productId}", produces = {
+			MediaType.APPLICATION_JSON_VALUE })
 	public Product getProductById(@PathVariable("productId") String productId, HttpServletRequest request) {
 		String tenantId = null;
-		
+
 		try {
 			tenantId = tokenManager.getTenantId(request);
 		} catch (Exception e) {
 			logger.error("Invalid tenant. Value either missing, empty or null");
 		}
-		
-		if(tenantId!=null && !tenantId.isEmpty()) {
-			return productService.getProductById(productId);			
+
+		if (tenantId != null && !tenantId.isEmpty()) {
+			return productService.getProductById(productId, tenantId);
 		}
-		
+
 		return null;
 	}
 
+	/**
+	 * Method to save the tenant product
+	 * 
+	 * @param product
+	 * @param request
+	 * @returnProduct
+	 */
 	@PostMapping(value = "{companyName}/product/api/product", produces = { MediaType.APPLICATION_JSON_VALUE })
 	public Product saveProduct(@RequestBody Product product, HttpServletRequest request) {
 		String tenantId = null;
-		
+
 		try {
 			tenantId = tokenManager.getTenantId(request);
 		} catch (Exception e) {
 			logger.error("Invalid tenant. Value either missing, empty or null");
 		}
-		
-		if(tenantId!=null && !tenantId.isEmpty()) {
+
+		if (tenantId != null && !tenantId.isEmpty()) {
 			Product newProduct = new Product();
 			newProduct.setTenantId(tenantId);
 			newProduct.setName(product.getName());
 			newProduct.setPrice(product.getPrice());
 			newProduct.setPictureUrl(product.getPictureUrl());
-			
+
 			return productService.save(newProduct);
 		}
 		return null;
 	}
 
+	/**
+	 * Method to update a tenant product
+	 * 
+	 * @param product
+	 * @param request
+	 * @return Product
+	 */
 	@PutMapping(value = "{companyName}/product/api/product", produces = { MediaType.APPLICATION_JSON_VALUE })
 	public Product updateProduct(@RequestBody Product product, HttpServletRequest request) {
 		String tenantId = null;
-		
+
 		try {
 			tenantId = tokenManager.getTenantId(request);
 		} catch (Exception e) {
 			logger.error("Invalid tenant. Value either missing, empty or null");
 		}
-		
-		if(tenantId!=null && !tenantId.isEmpty()) {
+
+		if (tenantId != null && !tenantId.isEmpty()) {
 			Product updateProduct = new Product();
 			updateProduct.setProductId(product.getProductId());
 			updateProduct.setTenantId(tenantId);
 			updateProduct.setName(product.getName());
 			updateProduct.setPrice(product.getPrice());
 			updateProduct.setPictureUrl(product.getPictureUrl());
-			return productService.update(updateProduct);			
+			return productService.update(updateProduct);
 		}
-		
+
 		return null;
 	}
 
+	/**
+	 * Method to delete a tenant product
+	 * 
+	 * @param product
+	 * @param request
+	 */
 	@DeleteMapping(value = "{companyName}/product/api/product")
 	public void deleteProduct(@RequestBody Product product, HttpServletRequest request) {
 		String tenantId = null;
-		
+
 		try {
 			tenantId = tokenManager.getTenantId(request);
 		} catch (Exception e) {
 			logger.error("Invalid tenant. Value either missing, empty or null");
 		}
-		
-		if(tenantId!=null && !tenantId.isEmpty()) {
+
+		if (tenantId != null && !tenantId.isEmpty()) {
+			product.setTenantId(tenantId);
 			productService.delete(product);
 		} else {
 			logger.error("Invalid tenant. Delete unsuccessful");
 		}
 	}
 
+	/**
+	 * Hearbeat method to check if product service is up and running
+	 * 
+	 * @return
+	 */
 	@RequestMapping("{tenantId}/product/health/product")
 	public String health() {
 		return "\"Product service is up!\"";

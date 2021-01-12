@@ -40,7 +40,14 @@ public class ProductRepository {
 	@Resource(name = "dynamoDBMapper")
 	DynamoDBMapper mapper;
 
+	/**
+	 * Method to retrieve all products for a tenant
+	 * 
+	 * @param tenantId
+	 * @return List<Product>
+	 */
 	public List<Product> getProducts(String tenantId) {
+		PaginatedQueryList<Product> results = null;
 
 		Map<String, String> expressionAttributeNames = new HashMap<String, String>();
 		expressionAttributeNames.put("#TenantId", "TenantId");
@@ -54,52 +61,87 @@ public class ProductRepository {
 
 		queryExpression.setConsistentRead(false);
 
-		PaginatedQueryList<Product> results = mapper.query(Product.class, queryExpression);
+		try {
+			results = mapper.query(Product.class, queryExpression);
+
+		} catch (Exception e) {
+			logger.error("TenantId: " + tenantId + "Get Products failed " + e.getMessage());
+		}
 
 		return results;
 	}
 
+	/**
+	 * Method to save a tenant product
+	 * 
+	 * @param product
+	 * @return Product
+	 */
 	public Product save(Product product) {
 		try {
 			mapper.save(product);
 
 		} catch (Exception e) {
-			logger.error(e.getMessage());
+			logger.error("TenantId: " + product.getTenantId() + "Save Product failed " + e.getMessage());
 		}
 		return product;
 
 	}
 
+	/**
+	 * Method to update a tenant product
+	 * 
+	 * @param product
+	 * @return Product
+	 */
 	public Product update(Product product) {
 		try {
 			DynamoDBMapperConfig dynamoDBMapperConfig = new DynamoDBMapperConfig.Builder()
-					  .withConsistentReads(DynamoDBMapperConfig.ConsistentReads.CONSISTENT)
-					  .withSaveBehavior(DynamoDBMapperConfig.SaveBehavior.UPDATE)
-					  .build();
+					.withConsistentReads(DynamoDBMapperConfig.ConsistentReads.CONSISTENT)
+					.withSaveBehavior(DynamoDBMapperConfig.SaveBehavior.UPDATE).build();
 			mapper.save(product, dynamoDBMapperConfig);
 
 		} catch (Exception e) {
-			logger.error(e.getMessage());
+			logger.error("TenantId: " + product.getTenantId() + "Update Product failed " + e.getMessage());
 		}
 		return product;
 
 	}
 
-	public Product getProductById(String productId) {
+	/**
+	 * Method to get a tenant's product by productId
+	 * 
+	 * @param productId
+	 * @return Product
+	 */
+	public Product getProductById(String productId, String tenantId) {
 		DynamoDBMapperConfig config = DynamoDBMapperConfig.builder()
 				.withConsistentReads(DynamoDBMapperConfig.ConsistentReads.CONSISTENT).build();
-		Product product = mapper.load(Product.class, productId, config);
+
+		Product product = null;
+
+		try {
+			product = mapper.load(Product.class, productId, config);
+		} catch (Exception e) {
+			logger.error("TenantId: " + tenantId + "Get Product By Id failed " + e.getMessage());
+		}
+
 		logger.info("Product=> " + product);
 
 		return product;
 	}
 
+	/**
+	 * Method to delete a tenant's product
+	 * 
+	 * @param product
+	 */
 	public void delete(Product product) {
 		try {
 			mapper.delete(product);
 
 		} catch (Exception e) {
-			logger.error(e.getMessage());
+			logger.error("TenantId: " + product.getTenantId() + "Delete Product failed " + e.getMessage());
 		}
 	}
 

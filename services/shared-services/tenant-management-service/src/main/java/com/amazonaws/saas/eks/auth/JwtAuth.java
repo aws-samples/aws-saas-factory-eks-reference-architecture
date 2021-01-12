@@ -14,26 +14,34 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package com.amazonaws.saas.eks.exception;
+package com.amazonaws.saas.eks.auth;
+import com.nimbusds.jwt.JWTClaimsSet;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 
-public class ItemNotFoundException extends RuntimeException {
+import java.util.Collection;
 
-	private static final long serialVersionUID = 8915422612903998859L;
+public class JwtAuth extends AbstractAuthenticationToken {
 
-	public ItemNotFoundException() {
-		super();
-	}
+    private final Object principal;
+    private JWTClaimsSet jwtClaimsSet;
 
-	public ItemNotFoundException(final String message) {
-		super(message);
-	}
+    public JwtAuth(Object principal, JWTClaimsSet jwtClaimsSet, Collection<? extends GrantedAuthority> authorities) {
+        super(authorities);
+        this.principal = principal;
+        this.jwtClaimsSet = jwtClaimsSet;
+        super.setAuthenticated(true);
+    }
 
-	public ItemNotFoundException(final Throwable cause) {
-		super(cause);
-	}
+    public Object getCredentials() {
+        return null;
+    }
 
-	public ItemNotFoundException(final String message, final Throwable cause) {
-		super(message, cause);
-	}
+    public Object getPrincipal() {
+        return this.principal;
+    }
 
+    public JWTClaimsSet getJwtClaimsSet() {
+        return this.jwtClaimsSet;
+    }
 }

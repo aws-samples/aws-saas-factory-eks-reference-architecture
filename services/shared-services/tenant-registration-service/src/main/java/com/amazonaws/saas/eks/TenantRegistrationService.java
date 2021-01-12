@@ -76,11 +76,11 @@ import com.amazonaws.services.route53.model.ResourceRecordSet;
 
 public class TenantRegistrationService {
 
+	private static final String TENANT = "Tenant";
 	private static final Logger logger = LogManager.getLogger(TenantRegistrationService.class);
 	private static final String SAAS_PROVIDER_METADATA = "SAAS_PROVIDER_METADATA";
 
 	public String registerTenant(TenantDetails tenant) {
-
 		if (tenant != null) {
 			tenant = createTenant(tenant);
 			tenant = registerUser(tenant);
@@ -104,8 +104,8 @@ public class TenantRegistrationService {
 	 */
 	private TenantDetails createTenant(TenantDetails tenant) {
 		RestTemplate restTemplate = new RestTemplate();
-		 String tenantManagementServiceUrl = "http://localhost:8002/tenant/create";
-		//String tenantManagementServiceUrl = "http://tenant-management-service/tenant/create";
+		 //String tenantManagementServiceUrl = "http://localhost:8002/tenant/create";
+		String tenantManagementServiceUrl = "http://tenant-management-service/tenant/create";
 
 		ResponseEntity<TenantDetails> response = restTemplate.postForEntity(tenantManagementServiceUrl, tenant,
 				TenantDetails.class);
@@ -118,13 +118,6 @@ public class TenantRegistrationService {
 
 		return response.getBody();
 	}
-
-	private String getTenantId(String companyName) {
-		Pattern pattern = Pattern.compile("[\\s\\W]");
-		Matcher mat = pattern.matcher(companyName);
-		String tenantId = mat.replaceAll("").toLowerCase();
-    	return tenantId.substring(0, Math.min(tenantId.length(), 50));
-	}
 	
 	/**
 	 * Triggers the pipeline that will provision the SaaS application services for
@@ -136,7 +129,7 @@ public class TenantRegistrationService {
 	private TenantDetails createTenantServices(TenantDetails tenant) {
 
 		String stackName = tenant.getTenantId();
-		 SaaSProviderMetadata saaSProviderMetadata = getSaaSProviderMetadata(tenant);
+		SaaSProviderMetadata saaSProviderMetadata = getSaaSProviderMetadata(tenant);
 
 		LoggingManager.logInfo(tenant.getTenantId(), "StackName =>" + stackName);
 		LoggingManager.logInfo(tenant.getTenantId(), "S3 URL =>" + saaSProviderMetadata.getS3Endpoint());
@@ -194,7 +187,6 @@ public class TenantRegistrationService {
 		Table table = dynamoDB.getTable(table_name);
 
 		try {
-
 			Item item = table.getItem("DOMAIN_NAME", name);
 			metadata.setS3Endpoint((String) item.get("S3_ENDPOINT"));
 			metadata.setProductServiceEcrRepoUri((String) item.get("PRODUCT_SERVICE_ECR"));
@@ -231,7 +223,6 @@ public class TenantRegistrationService {
 
 		return tenant;
 	}
-	
 
 	/**
 	 * Retrieve Cloudfront Distribution data from the provider metadata table using
@@ -241,7 +232,6 @@ public class TenantRegistrationService {
 	 * @return
 	 */
 	private TenantDetails getDistributionConfig(TenantDetails tenant) {
-
 		String table_name = "SAAS_PROVIDER_METADATA";
 		String name = tenant.getCustomDomain();
 
@@ -267,8 +257,6 @@ public class TenantRegistrationService {
 
 		return tenant;
 	}
-
-
 	
 	/**
 	 * Adds the tenant's custom domain to the Cloudfront distribution config's
@@ -281,7 +269,6 @@ public class TenantRegistrationService {
 		AmazonCloudFront amazonCloudFront = AmazonCloudFrontClientBuilder.defaultClient();
 
 		UpdateDistributionRequest updateDistributionRequest = new UpdateDistributionRequest();
-
 		GetDistributionResult distroInfo = getDistributionDetails(amazonCloudFront, tenant);
 
 		LoggingManager.logInfo(tenant.getTenantId(), "CustomDomain:" + tenant.getCustomDomain());
@@ -324,19 +311,12 @@ public class TenantRegistrationService {
 		return tenant;
 	}
 
-	private GetDistributionResult getDistributionDetails(AmazonCloudFront amazonCloudFront, TenantDetails tenant) {
-
-		GetDistributionRequest getDistributionRequest = new GetDistributionRequest();
-		getDistributionRequest.setId(tenant.getAppCloudFrontId());
-		return amazonCloudFront.getDistribution(getDistributionRequest);
-	}
-	
 	/**
 	 * Creates a new recordset of type A in Route53 for the new tenant's custom
 	 * domain
 	 * 
 	 * @param tenant
-	 * @return
+	 * @return TenantDetails
 	 */
 	private TenantDetails addRoute53Recordset(TenantDetails tenant) {
 		String name = tenant.getTenantId() + "." + tenant.getCustomDomain();
@@ -386,7 +366,7 @@ public class TenantRegistrationService {
 	 * initially, so an auth challenge is initiated in the flow.
 	 * 
 	 * @param tenant
-	 * @return
+	 * @return TenantDetails
 	 */
 	protected TenantDetails createUser(TenantDetails tenant) {
 		AWSCognitoIdentityProvider cognitoIdentityProvider = AWSCognitoIdentityProviderClientBuilder.defaultClient();
@@ -408,12 +388,11 @@ public class TenantRegistrationService {
 	 * Creates a new Amazon Cognito user pool.
 	 * 
 	 * @param tenant
-	 * @return
+	 * @return TenantDetails
 	 */
 	protected TenantDetails createUserPool(TenantDetails tenant) {
 
 		AWSCognitoIdentityProvider cognitoIdentityProvider = AWSCognitoIdentityProviderClientBuilder.defaultClient();
-
 		CreateUserPoolRequest createUserPoolRequest = new CreateUserPoolRequest();
 
 		createUserPoolRequest.setPoolName(tenant.getTenantId() + "-UserPool");
@@ -462,7 +441,6 @@ public class TenantRegistrationService {
 		LoggingManager.logInfo(tenant.getTenantId(), "Create User Pool Successful.");
 
 		return tenant;
-
 	}
 
 	/**
@@ -553,6 +531,20 @@ public class TenantRegistrationService {
 
 		return tenant;
 	}
+	
+	/**
+	 * Method that generates a tenantID from the companyName
+	 * @param companyName
+	 * @return String
+	 */
+	private String generateTenantId(String companyName) {
+		Pattern pattern = Pattern.compile("[\\s\\W]");
+		Matcher mat = pattern.matcher(companyName);
+		String tenantId = mat.replaceAll("").toLowerCase();
+
+		return tenantId.substring(0, Math.min(tenantId.length(), 50));
+	}
+
 	/**
 	 * Update Tenant table with user pool data
 	 * 
@@ -564,7 +556,7 @@ public class TenantRegistrationService {
 		String companyName = tenant.getCompanyName();
 
 		if (companyName != null && companyName != "") {
-			tenantId = getTenantId(companyName);
+			tenantId = generateTenantId(companyName);
 			tenant.setTenantId(tenantId);
 		} else {
 			logger.error("Company Name is empty or null");
@@ -574,7 +566,7 @@ public class TenantRegistrationService {
 		AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard().build();
 		DynamoDB dynamoDB = new DynamoDB(client);
 
-		Table table = dynamoDB.getTable("EKSREFARCH_TENANTS");
+		Table table = dynamoDB.getTable(TENANT);
 
 		UpdateItemSpec updateItemSpec = new UpdateItemSpec().withPrimaryKey("TENANT_ID", tenant.getTenantId())
 				.withUpdateExpression(
@@ -608,6 +600,19 @@ public class TenantRegistrationService {
 				"Tenant Registration Complete! Calling CodePipeline to provision tenant application's backend EKS services");
 
 		return tenant;
+	}
+	
+	/**
+	 * Retrieves the Cloudfront Distribution details
+	 * @param amazonCloudFront
+	 * @param tenant
+	 * @return GetDistributionResult
+	 */
+	private GetDistributionResult getDistributionDetails(AmazonCloudFront amazonCloudFront, TenantDetails tenant) {
+		GetDistributionRequest getDistributionRequest = new GetDistributionRequest();
+		getDistributionRequest.setId(tenant.getAppCloudFrontId());
+		
+		return amazonCloudFront.getDistribution(getDistributionRequest);
 	}
 
 }

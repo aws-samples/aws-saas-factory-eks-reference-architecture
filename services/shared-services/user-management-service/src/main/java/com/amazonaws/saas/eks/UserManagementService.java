@@ -71,7 +71,6 @@ public class UserManagementService {
 				break;
 			}
 		}
-
 		return user;
 	}
 
@@ -203,28 +202,6 @@ public class UserManagementService {
 			logger.error(e);
 		}
 		return users;
-	}
-
-	
-
-	public static void main(String args[]) {
-		UserManagementService service = new UserManagementService();
-		/*User user = new User();
-		String email = "ranjithkraman@gmail.com";
-		user.setEmail(email);
-		TenantDetails tenant = new TenantDetails();
-		tenant.setCompanyName("saasbeer1");
-		tenant.setAuthServer("asdfasf");
-		tenant.setClientId("sadfasdf");
-		tenant.setRedirectUrl("asdfasdf");
-		tenant.setSilentRefreshRedirectUri("sfasdf");
-		*/
-		//service.getUsers("test145co");
-		//service.createUser("test145co", user);
-		//service.updateTenant(tenant );
-		//List<User> users = service.getSaaSProviderUsers("us-east-1_0AIpIsE2X");
-		User user = service.createSaaSProviderUser("r@r.com", "us-east-1_0AIpIsE2X");
-		System.out.println("Done");
 	}
 
 }
