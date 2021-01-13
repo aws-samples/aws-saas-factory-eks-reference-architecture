@@ -30,7 +30,7 @@ export class AuthInterceptor implements HttpInterceptor {
   constructor(private oidcSecurityService: OidcSecurityService) {}
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-      const token = this.oidcSecurityService.getToken();
+      const token = this.oidcSecurityService.getIdToken();
 
       if (!token) {
           return next.handle(req);
