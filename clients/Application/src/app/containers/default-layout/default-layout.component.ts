@@ -49,6 +49,7 @@ export class DefaultLayoutComponent implements OnInit {
   }
 
   logout() {
+    this.oidcSecurityService.logoffAndRevokeTokens().subscribe(() => {});
     this.authService.LogOutOfCognito().subscribe(() => {});
   }
 
