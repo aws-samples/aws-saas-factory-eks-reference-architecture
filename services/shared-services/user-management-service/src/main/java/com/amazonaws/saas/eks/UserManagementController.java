@@ -44,13 +44,13 @@ public class UserManagementController {
 	private TokenManager tokenManager;
 
 	/**
-	 * Method to retrieve all users of a tenant.
+	 * Method to retrieve all users from the Cognito user pool.
 	 * 
 	 * @param companyName
 	 * @return List<User>
 	 */
-	@GetMapping(value = "{companyName}/users", produces = { MediaType.APPLICATION_JSON_VALUE })
-	public List<User> getUsers(@PathVariable("companyName") String companyName, HttpServletRequest request) {
+	@GetMapping(value = "users", produces = { MediaType.APPLICATION_JSON_VALUE })
+	public List<User> getUsers(HttpServletRequest request) {
 		UserManagementService userManagement = new UserManagementService();
 		List<User> users = null;
 		String userPoolId = null;
@@ -69,14 +69,13 @@ public class UserManagementController {
 	}
 
 	/**
-	 * Method to create a new user for a tenant.
+	 * Method to create a new user in the User pool.
 	 * 
 	 * @param companyName
 	 * @return User
 	 */
-	@PostMapping(value = "{companyName}/users", produces = { MediaType.APPLICATION_JSON_VALUE })
-	public User createUser(@PathVariable("companyName") String companyName, @RequestBody User u,
-			HttpServletRequest request) {
+	@PostMapping(value = "users", produces = { MediaType.APPLICATION_JSON_VALUE })
+	public User createUser(@RequestBody User u, HttpServletRequest request) {
 		UserManagementService userManagement = new UserManagementService();
 		User user = null;
 		String userPoolId = null;
@@ -85,7 +84,7 @@ public class UserManagementController {
 			userPoolId = tokenManager.extractUserPoolIdFromJwt(request);
 
 			if (userPoolId != null) {
-				user = userManagement.createUser(companyName, u);
+				user = userManagement.createUser(userPoolId, u);
 			}
 		} catch (Exception e) {
 			logger.error("UserManagement create user operation failed:" + e);
@@ -95,14 +94,14 @@ public class UserManagementController {
 	}
 
 	/**
-	 * Method to update a tenant user's data.
+	 * Method to update user's data in the user pool.
 	 * 
 	 * @param companyName
 	 * @return void
 	 */
-	@PutMapping(value = "{companyName}/users/{userName}", produces = { MediaType.APPLICATION_JSON_VALUE })
-	public void updateUser(@PathVariable("companyName") String companyName, @PathVariable("userName") String userName,
-			@RequestBody UserStatusCheck status, HttpServletRequest request) {
+	@PutMapping(value = "users/{userName}", produces = { MediaType.APPLICATION_JSON_VALUE })
+	public void updateUser(@PathVariable("userName") String userName, @RequestBody UserStatusCheck status,
+			HttpServletRequest request) {
 		UserManagementService service = new UserManagementService();
 		String userPoolId = null;
 
@@ -114,46 +113,12 @@ public class UserManagementController {
 
 			if (userPoolId != null) {
 				if (status != null && status.isEnabled() != null) {
-					service.updateUser(user, companyName, status.isEnabled().toString());
+					service.updateUser(user, userPoolId, status.isEnabled().toString());
 				}
 			}
 		} catch (Exception e) {
 			logger.error("UserManagement Update user operation failed:" + e);
 		}
-	}
-
-	/**
-	 * Method to create a new SaaS provider's user. This will be accessed from the
-	 * admin site.
-	 * 
-	 * @param companyName
-	 * @return User
-	 */
-	@PostMapping(value = "users", produces = { MediaType.APPLICATION_JSON_VALUE })
-	public User createUser(@RequestBody ProviderUserEmail email, HttpServletRequest request) {
-		UserManagementService service = new UserManagementService();
-		String origin = request.getHeader("origin");
-
-		if (email != null) {
-			return service.createSaaSProviderUser(email.getEmail(), origin);
-		}
-
-		return null;
-	}
-
-	/**
-	 * Method that will retrieve all the users of the SaaS provider. This will be
-	 * accessed from the admin site.
-	 * 
-	 * @param companyName
-	 * @return List<User>
-	 */
-	@GetMapping(value = "users", produces = { MediaType.APPLICATION_JSON_VALUE })
-	public List<User> getUsers(HttpServletRequest request) {
-		UserManagementService service = new UserManagementService();
-		String origin = request.getHeader("origin");
-
-		return service.getSaaSProviderUsers(origin);
 	}
 
 	static class UserStatusCheck {

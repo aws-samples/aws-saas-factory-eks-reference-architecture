@@ -55,36 +55,12 @@ import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 @Component
 public class TokenProcessor {
 	private static final Logger logger = LogManager.getLogger(TokenProcessor.class);
-	private static final String TENANT = "Tenant";
 
 	@Autowired
 	private JwtConfig jwtConfiguration;
 
 	public Authentication authenticate(HttpServletRequest request) throws Exception {
 		String idToken = request.getHeader(this.jwtConfiguration.getHttpHeader());
-		String tenantId = "";
-
-		String origin = request.getHeader("origin");
-		logger.info("Origin name => " + origin);
-
-		if (origin == null || origin.equals("http://localhost:4200")) {
-			// TODO this is test code and should be deleted unless we create a test tenant
-			// with every install
-			origin = "http://a5co.aws-dev-shop.com";
-		}
-
-		try {
-			logger.info("Host name => " + origin);
-			URI uri = new URI(origin);
-			String domain = uri.getHost();
-			String[] parts = domain.split("\\.");
-			tenantId = parts[0];
-			logger.info("Tenant Id => " + tenantId);
-		} catch (URISyntaxException ex) {
-			logger.error(ex.toString());
-		}
-
-		logger.info("Tenant Id => " + tenantId);
 
 		if (idToken != null) {
 			SignedJWT signedJWT = null;
