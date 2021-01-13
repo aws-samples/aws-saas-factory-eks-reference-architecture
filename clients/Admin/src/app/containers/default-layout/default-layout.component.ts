@@ -37,7 +37,9 @@ export class DefaultLayoutComponent implements OnInit {
 
   logout() {
     this.oidcSecurityService.logoffAndRevokeTokens().subscribe(() => {});
-    window.location.href = `${environment.issuer}/login?client_id=${environment.clientId}&response_type=code&redirect_uri=https://admin.${environment.domain}/signout`;
+    const match = environment.issuer.match(/(?!\.)([\w-]+)(?=\.amazonaws)/);
+    const region = !!match ? match[0] : '';
+    window.location.href = `https://${environment.customDomain}.auth.${region}.amazoncognito.com/login?client_id=${environment.clientId}&response_type=code&redirect_uri=https://admin.${environment.domain}`;
   }
 }
 
