@@ -37,7 +37,6 @@ import com.amazonaws.services.cognitoidp.model.ListUsersResult;
 import com.amazonaws.services.cognitoidp.model.UserType;
 
 public class UserManagementService {
-
 	private static final Logger logger = LogManager.getLogger(UserManagementService.class);
 
 	/**
