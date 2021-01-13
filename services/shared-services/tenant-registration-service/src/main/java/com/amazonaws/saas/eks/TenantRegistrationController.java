@@ -16,6 +16,8 @@
  */
 package com.amazonaws.saas.eks;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -27,6 +29,7 @@ import com.amazonaws.saas.eks.dto.TenantDetails;
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 @RestController
 public class TenantRegistrationController {
+	private static final Logger logger = LogManager.getLogger(TenantRegistrationController.class);
 
 	/**
 	 * This method will on board new tenants in to the application
@@ -37,9 +40,20 @@ public class TenantRegistrationController {
 	@RequestMapping("/register")
 	public String registerTenant(@RequestBody TenantDetails tenant) {
 		TenantRegistrationService register = new TenantRegistrationService();
-		String result = register.registerTenant(tenant);
+		String tenantId = null;
 
-		return result;
+		try {
+			tenantId = register.registerTenant(tenant);
+			
+			if(tenantId != null) {
+				logger.info("TenantId: " + tenantId + "- registration is now complete.");
+				return "\"Tenant registration successful. Please check your email for next steps.\"";
+			}
+		} catch (Exception e) {
+			logger.error("TenantId: " + tenantId + "-registration failed: ", e);
+		}
+
+		return "\"Error in tenant signup process.\"";
 	}
 
 	/**

@@ -80,19 +80,22 @@ public class TenantRegistrationService {
 	private static final String SAAS_PROVIDER_METADATA = "SAAS_PROVIDER_METADATA";
 
 	public String registerTenant(TenantDetails tenant) {
+		String tenantId = null;
+		
 		if (tenant != null) {
 			tenant = createTenant(tenant);
 			tenant = registerUser(tenant);
 			tenant = createTenantServices(tenant);
 
-			LoggingManager.logInfo(tenant.getTenantId(), "Tenant registration success!");
-			return "\"Tenant registration success.\"";
-
+			tenantId = tenant.getTenantId();
+			LoggingManager.logInfo(tenantId, "Tenant registration success!");
+			
+			return tenantId;
 		} else {
 			logger.error("Error in tenant signup process. Please check the logs.");
 		}
 		
-		return "\"Error in tenant signup process. Please check the logs.\"";
+		return tenantId;
 	}
 
 	/**
@@ -103,8 +106,8 @@ public class TenantRegistrationService {
 	 */
 	private TenantDetails createTenant(TenantDetails tenant) {
 		RestTemplate restTemplate = new RestTemplate();
-		 //String tenantManagementServiceUrl = "http://localhost:8002/tenant/create";
-		String tenantManagementServiceUrl = "http://tenant-management-service/tenant/create";
+		String tenantManagementServiceUrl = "http://localhost:8002/tenant/create";
+		//String tenantManagementServiceUrl = "http://tenant-management-service/tenant/create";
 
 		ResponseEntity<TenantDetails> response = restTemplate.postForEntity(tenantManagementServiceUrl, tenant,
 				TenantDetails.class);
