@@ -42,20 +42,18 @@ public class UserManagementService {
 
 	/**
 	 * Method to create a new user for the tenant
+	 * 
 	 * @param companyName
 	 * @param user
 	 * @return User
 	 */
-	public User createUser(String companyName, User user) {
+	public User createUser(String userPoolId, User user) {
 		AWSCognitoIdentityProvider cognitoIdentityProvider = AWSCognitoIdentityProviderClientBuilder.defaultClient();
-
-		String userPoolId = EksSaaSUtil.getUserPoolForTenant(companyName);
 
 		AdminCreateUserResult createUserResult = cognitoIdentityProvider
 				.adminCreateUser(new AdminCreateUserRequest().withUserPoolId(userPoolId).withUsername(user.getEmail())
 						.withUserAttributes(new AttributeType().withName("email").withValue(user.getEmail()),
-								new AttributeType().withName("email_verified").withValue("true"),
-								new AttributeType().withName("custom:tenant-id").withValue(companyName)));
+								new AttributeType().withName("email_verified").withValue("true")));
 
 		UserType cognitoUser = createUserResult.getUser();
 		logger.info("Cognito - Create User Success=>" + cognitoUser.getUsername());
@@ -75,19 +73,19 @@ public class UserManagementService {
 				break;
 			}
 		}
-		
+
 		return user;
 	}
 
 	/**
 	 * Method to enable or disable tenant user
+	 * 
 	 * @param user
 	 * @param companyName
 	 * @param status
 	 */
-	public void updateUser(User user, String companyName, String status) {
+	public void updateUser(User user, String userPoolId, String status) {
 		AWSCognitoIdentityProvider cognitoIdentityProvider = AWSCognitoIdentityProviderClientBuilder.defaultClient();
-		String userPoolId = EksSaaSUtil.getUserPoolForTenant(companyName);
 
 		if (!Boolean.getBoolean(status)) {
 			AdminDisableUserRequest adminDisableUserRequest = new AdminDisableUserRequest();
@@ -146,85 +144,4 @@ public class UserManagementService {
 
 		return users;
 	}
-
-	/**
-	 * Method to create an admin user
-	 * @param email
-	 * @param origin
-	 * @return User
-	 */
-	public User createSaaSProviderUser(String email, String origin) {
-		String userPoolId = EksSaaSUtil.getTenantUserPool(origin);
-
-		User user = new User();
-		AWSCognitoIdentityProvider cognitoIdentityProvider = AWSCognitoIdentityProviderClientBuilder.defaultClient();
-
-		AdminCreateUserResult createUserResult = cognitoIdentityProvider
-				.adminCreateUser(new AdminCreateUserRequest().withUserPoolId(userPoolId).withUsername(email)
-						.withUserAttributes(new AttributeType().withName("email").withValue(email),
-								new AttributeType().withName("email_verified").withValue("true")));
-
-		UserType cognitoUser = createUserResult.getUser();
-		logger.info("Cognito - Create User Success=>" + cognitoUser.getUsername());
-
-		user.setEmail(email);
-		user.setCreated(cognitoUser.getUserCreateDate().toString());
-		user.setModified(cognitoUser.getUserLastModifiedDate().toString());
-		user.setEnabled(cognitoUser.getEnabled());
-		user.setStatus(cognitoUser.getUserStatus());
-
-		for (AttributeType userAttribute : cognitoUser.getAttributes()) {
-			switch (userAttribute.getName()) {
-			case "email":
-				user.setEmail(userAttribute.getValue());
-				break;
-			case "email_verified":
-				user.setVerified(userAttribute.getValue());
-				break;
-			}
-		}
-
-		return user;
-	}
-
-	/**
-	 * Method to retrieve all the users of the SaaS provider
-	 * @param origin
-	 * @return List<User>
-	 */
-	public List<User> getSaaSProviderUsers(String origin) {
-		List<User> users = new ArrayList<User>();
-		String userPoolId = EksSaaSUtil.getTenantUserPool(origin);
-		AWSCognitoIdentityProvider cognitoclient = AWSCognitoIdentityProviderClientBuilder.defaultClient();
-
-		try {
-			ListUsersResult response = cognitoclient.listUsers(new ListUsersRequest().withUserPoolId(userPoolId));
-
-			for (UserType userType : response.getUsers()) {
-				User u = new User();
-
-				for (AttributeType userAttribute : userType.getAttributes()) {
-					switch (userAttribute.getName()) {
-					case "email":
-						u.setEmail(userAttribute.getValue());
-						break;
-					case "email_verified":
-						u.setVerified(userAttribute.getValue());
-						break;
-					}
-				}
-				u.setCreated(userType.getUserCreateDate().toString());
-				u.setModified(userType.getUserLastModifiedDate().toString());
-				u.setEnabled(userType.getEnabled());
-				u.setStatus(userType.getUserStatus());
-				users.add(u);
-			}
-
-		} catch (Exception e) {
-			logger.error(e);
-		}
-		
-		return users;
-	}
-
 }

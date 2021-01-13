@@ -49,6 +49,27 @@ spec:
           serviceName: tenant-registration-service
           servicePort: 80
         path: /
+  - host: api.DOMAIN_NAME
+    http:
+      paths:
+      - backend:
+          serviceName: tenant-management-service
+          servicePort: 80
+        path: /auth-info
+  - host: api.DOMAIN_NAME
+    http:
+      paths:
+      - backend:
+          serviceName: tenant-management-service
+          servicePort: 80
+        path: /tenants
+  - host: api.DOMAIN_NAME
+    http:
+      paths:
+      - backend:
+          serviceName: user-management-service
+          servicePort: 80
+        path: /users
 
 ---
 apiVersion: apps/v1
