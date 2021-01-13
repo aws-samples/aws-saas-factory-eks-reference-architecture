@@ -22,7 +22,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.amazonaws.saas.eks.dto.User;
-import com.amazonaws.saas.eks.util.EksSaaSUtil;
 import com.amazonaws.services.cognitoidp.AWSCognitoIdentityProvider;
 import com.amazonaws.services.cognitoidp.AWSCognitoIdentityProviderClientBuilder;
 import com.amazonaws.services.cognitoidp.model.AdminCreateUserRequest;
@@ -42,7 +41,7 @@ public class UserManagementService {
 	/**
 	 * Method to create a new user for the tenant
 	 * 
-	 * @param companyName
+	 * @param userPoolId
 	 * @param user
 	 * @return User
 	 */
@@ -80,7 +79,7 @@ public class UserManagementService {
 	 * Method to enable or disable tenant user
 	 * 
 	 * @param user
-	 * @param companyName
+	 * @param userPoolId
 	 * @param status
 	 */
 	public void updateUser(User user, String userPoolId, String status) {
@@ -105,8 +104,8 @@ public class UserManagementService {
 	/**
 	 * Method to retrieve all the users for a single tenant
 	 * 
-	 * @param companyName
-	 * @return
+	 * @param userPoolId
+	 * @return List<User>
 	 */
 	public List<User> getUsers(String userPoolId) {
 		List<User> users = new ArrayList<User>();

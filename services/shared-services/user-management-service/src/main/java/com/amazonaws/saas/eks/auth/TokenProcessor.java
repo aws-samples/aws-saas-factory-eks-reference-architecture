@@ -19,8 +19,6 @@ package com.amazonaws.saas.eks.auth;
 import static com.nimbusds.jose.JWSAlgorithm.RS256;
 import static java.util.List.of;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.List;
 
@@ -35,16 +33,10 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Component;
 
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
-import com.amazonaws.services.dynamodbv2.document.DynamoDB;
-import com.amazonaws.services.dynamodbv2.document.Item;
-import com.amazonaws.services.dynamodbv2.document.Table;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.jwk.source.RemoteJWKSet;
 import com.nimbusds.jose.proc.JWSKeySelector;
 import com.nimbusds.jose.proc.JWSVerificationKeySelector;
-import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jose.util.DefaultResourceRetriever;
 import com.nimbusds.jose.util.ResourceRetriever;
 import com.nimbusds.jwt.JWTClaimsSet;

@@ -46,7 +46,7 @@ public class UserManagementController {
 	/**
 	 * Method to retrieve all users from the Cognito user pool.
 	 * 
-	 * @param companyName
+	 * @param HttpServletRequest request
 	 * @return List<User>
 	 */
 	@GetMapping(value = "users", produces = { MediaType.APPLICATION_JSON_VALUE })
@@ -71,7 +71,8 @@ public class UserManagementController {
 	/**
 	 * Method to create a new user in the User pool.
 	 * 
-	 * @param companyName
+	 * @param User
+	 * @param request
 	 * @return User
 	 */
 	@PostMapping(value = "users", produces = { MediaType.APPLICATION_JSON_VALUE })
@@ -96,8 +97,9 @@ public class UserManagementController {
 	/**
 	 * Method to update user's data in the user pool.
 	 * 
-	 * @param companyName
-	 * @return void
+	 * @param userName
+	 * @param status
+	 * @param request
 	 */
 	@PutMapping(value = "users/{userName}", produces = { MediaType.APPLICATION_JSON_VALUE })
 	public void updateUser(@PathVariable("userName") String userName, @RequestBody UserStatusCheck status,

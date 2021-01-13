@@ -16,8 +16,6 @@
  */
 package com.amazonaws.saas.eks.auth;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.logging.log4j.LogManager;

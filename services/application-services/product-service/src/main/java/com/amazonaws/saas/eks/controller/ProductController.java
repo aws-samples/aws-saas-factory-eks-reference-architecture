@@ -138,6 +138,7 @@ public class ProductController {
 	@PutMapping(value = "{companyName}/product/api/product", produces = { MediaType.APPLICATION_JSON_VALUE })
 	public Product updateProduct(@RequestBody Product product, HttpServletRequest request) {
 		String tenantId = null;
+		Product updateProduct = new Product();
 
 		try {
 			tenantId = tokenManager.getTenantId(request);
@@ -146,7 +147,6 @@ public class ProductController {
 		}
 
 		if (tenantId != null && !tenantId.isEmpty()) {
-			Product updateProduct = new Product();
 			updateProduct.setProductId(product.getProductId());
 			updateProduct.setTenantId(tenantId);
 			updateProduct.setName(product.getName());
@@ -155,7 +155,7 @@ public class ProductController {
 			return productService.update(updateProduct);
 		}
 
-		return null;
+		return updateProduct;
 	}
 
 	/**
