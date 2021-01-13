@@ -57,20 +57,22 @@ public class ProductController {
 	 */
 	@GetMapping(value = "{companyName}/product/api/products", produces = { MediaType.APPLICATION_JSON_VALUE })
 	public List<Product> getProducts(HttpServletRequest request) {
-		String tenantId;
+		String tenantId = null;
+		List<Product> products = null;
 
 		try {
 			tenantId = tokenManager.getTenantId(request);
+
+			if (tenantId != null && !tenantId.isEmpty()) {
+				products = productService.getProducts(tenantId);
+				return products;
+			}
 		} catch (Exception e) {
-			logger.error("Invalid tenant. Value either missing, empty or null");
+			logger.error("TenantId: " + tenantId + "-get products failed: ", e);
 			return null;
 		}
 
-		if (tenantId != null && !tenantId.isEmpty()) {
-			return productService.getProducts(tenantId);
-		}
-
-		return null;
+		return products;
 	}
 
 	/**
@@ -84,18 +86,20 @@ public class ProductController {
 			MediaType.APPLICATION_JSON_VALUE })
 	public Product getProductById(@PathVariable("productId") String productId, HttpServletRequest request) {
 		String tenantId = null;
+		Product product = null;
 
 		try {
 			tenantId = tokenManager.getTenantId(request);
+
+			if (tenantId != null && !tenantId.isEmpty()) {
+				product = productService.getProductById(productId, tenantId);
+				return product;
+			}
 		} catch (Exception e) {
-			logger.error("Invalid tenant. Value either missing, empty or null");
+			logger.error("TenantId: " + tenantId + "-get product by ID failed: ", e);
 		}
 
-		if (tenantId != null && !tenantId.isEmpty()) {
-			return productService.getProductById(productId, tenantId);
-		}
-
-		return null;
+		return product;
 	}
 
 	/**
@@ -108,24 +112,25 @@ public class ProductController {
 	@PostMapping(value = "{companyName}/product/api/product", produces = { MediaType.APPLICATION_JSON_VALUE })
 	public Product saveProduct(@RequestBody Product product, HttpServletRequest request) {
 		String tenantId = null;
+		Product newProduct = new Product();
 
 		try {
 			tenantId = tokenManager.getTenantId(request);
+
+			if (tenantId != null && !tenantId.isEmpty()) {
+				newProduct.setTenantId(tenantId);
+				newProduct.setName(product.getName());
+				newProduct.setPrice(product.getPrice());
+				newProduct.setPictureUrl(product.getPictureUrl());
+
+				newProduct = productService.save(newProduct);
+				return newProduct;
+			}
 		} catch (Exception e) {
-			logger.error("Invalid tenant. Value either missing, empty or null");
+			logger.error("TenantId: " + tenantId + "-save product failed: ", e);
 		}
 
-		if (tenantId != null && !tenantId.isEmpty()) {
-			Product newProduct = new Product();
-			newProduct.setTenantId(tenantId);
-			newProduct.setName(product.getName());
-			newProduct.setPrice(product.getPrice());
-			newProduct.setPictureUrl(product.getPictureUrl());
-
-			return productService.save(newProduct);
-		}
-		
-		return null;
+		return newProduct;
 	}
 
 	/**
@@ -142,17 +147,19 @@ public class ProductController {
 
 		try {
 			tenantId = tokenManager.getTenantId(request);
-		} catch (Exception e) {
-			logger.error("Invalid tenant. Value either missing, empty or null");
-		}
 
-		if (tenantId != null && !tenantId.isEmpty()) {
-			updateProduct.setProductId(product.getProductId());
-			updateProduct.setTenantId(tenantId);
-			updateProduct.setName(product.getName());
-			updateProduct.setPrice(product.getPrice());
-			updateProduct.setPictureUrl(product.getPictureUrl());
-			return productService.update(updateProduct);
+			if (tenantId != null && !tenantId.isEmpty()) {
+				updateProduct.setProductId(product.getProductId());
+				updateProduct.setTenantId(tenantId);
+				updateProduct.setName(product.getName());
+				updateProduct.setPrice(product.getPrice());
+				updateProduct.setPictureUrl(product.getPictureUrl());
+
+				updateProduct = productService.update(updateProduct);
+				return updateProduct;
+			}
+		} catch (Exception e) {
+			logger.error("TenantId: " + tenantId + "-update product failed: ", e);
 		}
 
 		return updateProduct;
@@ -170,15 +177,15 @@ public class ProductController {
 
 		try {
 			tenantId = tokenManager.getTenantId(request);
-		} catch (Exception e) {
-			logger.error("Invalid tenant. Value either missing, empty or null");
-		}
 
-		if (tenantId != null && !tenantId.isEmpty()) {
-			product.setTenantId(tenantId);
-			productService.delete(product);
-		} else {
-			logger.error("Invalid tenant. Delete unsuccessful");
+			if (tenantId != null && !tenantId.isEmpty()) {
+				product.setTenantId(tenantId);
+				productService.delete(product);
+			} else {
+				logger.error("TenantId: " + tenantId + "-Invalid tenant. Delete unsuccessful");
+			}
+		} catch (Exception e) {
+			logger.error("TenantId: " + tenantId + "-delete product failed: ", e);
 		}
 	}
 
