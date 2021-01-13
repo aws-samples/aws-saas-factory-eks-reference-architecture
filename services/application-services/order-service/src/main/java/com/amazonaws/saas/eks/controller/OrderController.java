@@ -56,20 +56,22 @@ public class OrderController {
 	@GetMapping(value = "{companyName}/order/api/orders", produces = { MediaType.APPLICATION_JSON_VALUE })
 	public List<Order> getOrders(HttpServletRequest request) {
 		logger.info("Return orders");
-		String tenantId;
+		String tenantId = null;
+		List<Order> orders = null;
 
 		try {
 			tenantId = tokenManager.getTenantId(request);
+			
+			if (tenantId != null && !tenantId.isEmpty()) {
+				orders =  orderService.getOrders(tenantId);
+				return orders;
+			}
 		} catch (Exception e) {
-			logger.error("Invalid tenant. Value either missing, empty or null");
+			logger.error("TenantId: " + tenantId + "-get orders failed: ", e);
 			return null;
 		}
 
-		if (tenantId != null && !tenantId.isEmpty()) {
-			return orderService.getOrders(tenantId);
-		}
-
-		return null;
+		return orders;
 	}
 
 	/**
@@ -81,20 +83,22 @@ public class OrderController {
 	 */
 	@GetMapping(value = "{companyName}/order/api/order/{orderId}", produces = { MediaType.APPLICATION_JSON_VALUE })
 	public Order getOrderById(@PathVariable("orderId") String orderId, HttpServletRequest request) {
-		String tenantId;
-
+		String tenantId = null;
+		Order order = null;
+		
 		try {
 			tenantId = tokenManager.getTenantId(request);
+			
+			if (tenantId != null && !tenantId.isEmpty()) {
+				order = orderService.getOrderById(orderId, tenantId);
+				return order;
+			}
 		} catch (Exception e) {
-			logger.error("Invalid tenant. Value either missing, empty or null");
+			logger.error("TenantId: " + tenantId + "-get order by ID failed: ", e);
 			return null;
 		}
 
-		if (tenantId != null && !tenantId.isEmpty()) {
-			return orderService.getOrderById(orderId, tenantId);
-
-		}
-		return null;
+		return order;
 	}
 
 	/**
@@ -106,20 +110,21 @@ public class OrderController {
 	 */
 	@PostMapping(value = "{companyName}/order/api/order", produces = { MediaType.APPLICATION_JSON_VALUE })
 	public Order saveOrder(@RequestBody Order order, HttpServletRequest request) {
-		String tenantId;
-
+		String tenantId = null;
+		Order newOrder = null;
+		
 		try {
 			tenantId = tokenManager.getTenantId(request);
+			if (tenantId != null && !tenantId.isEmpty()) {
+				newOrder = orderService.save(order, tenantId);
+				return newOrder;
+			}
 		} catch (Exception e) {
-			logger.error("Invalid tenant. Value either missing, empty or null");
+			logger.error("TenantId: " + tenantId + "-save order failed: ", e);
 			return null;
 		}
 
-		if (tenantId != null && !tenantId.isEmpty()) {
-			return orderService.save(order, tenantId);
-		}
-
-		return null;
+		return newOrder;
 	}
 
 	@RequestMapping("{companyName}/order/health/order")
