@@ -16,8 +16,6 @@
  */
 package com.amazonaws.saas.eks.auth;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import javax.servlet.http.HttpServletRequest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -36,27 +34,6 @@ public class TokenManager {
 
 	public String getTenantId(HttpServletRequest request) throws Exception {
 		String idToken = request.getHeader(this.jwtConfiguration.getHttpHeader());
-		String companyName = "";
-
-		String origin = request.getHeader("origin");
-		logger.info("Origin name => " + origin);
-
-		if (origin == null || origin.equals("http://localhost:4200")) {
-			// TODO this is test code and should be deleted unless we create a test tenant
-			// with every install
-			origin = "http://a5co.aws-dev-shop.com";
-		}
-
-		try {
-			logger.info("Host name => " + origin);
-			URI uri = new URI(origin);
-			String domain = uri.getHost();
-			String[] parts = domain.split("\\.");
-			companyName = parts[0];
-			logger.info("Company Name => " + companyName);
-		} catch (URISyntaxException ex) {
-			logger.error(ex.toString());
-		}
 
 		if (idToken != null) {
 			SignedJWT signedJWT = null;
