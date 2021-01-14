@@ -431,7 +431,7 @@ public class TenantRegistrationService {
 
 		CreateUserPoolResult result = cognitoIdentityProvider.createUserPool(createUserPoolRequest);
 		String userPoolId = result.getUserPool().getId();
-		String authServer = "https://cognito-idp." + selectedRegion + ".amazonaws.com/" + userPoolId;
+		String authServer = "https://cognito-idp." + getRegion(userPoolId) + ".amazonaws.com/" + userPoolId;
 
 		tenant.setUserPoolId(userPoolId);
 		tenant.setAuthServer(authServer);
@@ -457,14 +457,13 @@ public class TenantRegistrationService {
 
 		String domain = tenant.getTenantId() + EksSaaSUtil.randomStr();
 		createUserPoolDomainRequest.setDomain(domain);
-		tenant.setCognitoDomain("https://" + domain + ".auth." + selectedRegion + ".amazoncognito.com");
+		tenant.setCognitoDomain("https://" + domain + ".auth." + getRegion(tenant.getUserPoolId()) + ".amazoncognito.com");
 
 		cognitoIdentityProvider.createUserPoolDomain(createUserPoolDomainRequest);
 		LoggingManager.logInfo(tenant.getTenantId(), "Create User Pool Domain Successful.");
 
 		return tenant;
 	}
-	private static String selectedRegion = "us-east-1";
 
 	/**
 	 * Creates the user pool client
@@ -612,6 +611,12 @@ public class TenantRegistrationService {
 		getDistributionRequest.setId(tenant.getAppCloudFrontId());
 		
 		return amazonCloudFront.getDistribution(getDistributionRequest);
+	}
+	
+	private String getRegion(String userPoolId) {
+		int index = userPoolId.indexOf("_");
+		
+		return userPoolId.substring(0,index);
 	}
 
 }

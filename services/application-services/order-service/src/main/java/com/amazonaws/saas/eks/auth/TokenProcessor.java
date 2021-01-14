@@ -58,6 +58,7 @@ public class TokenProcessor {
 	@Autowired
 	private JwtConfig jwtConfiguration;
 
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public Authentication authenticate(HttpServletRequest request) throws Exception {
 		String idToken = request.getHeader(this.jwtConfiguration.getHttpHeader());
 		String tenantId = "";
