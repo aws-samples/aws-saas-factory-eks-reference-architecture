@@ -106,8 +106,8 @@ public class TenantRegistrationService {
 	 */
 	private TenantDetails createTenant(TenantDetails tenant) {
 		RestTemplate restTemplate = new RestTemplate();
-		String tenantManagementServiceUrl = "http://localhost:8002/tenant/create";
-		//String tenantManagementServiceUrl = "http://tenant-management-service/tenant/create";
+		//String tenantManagementServiceUrl = "http://localhost:8002/tenant/create";
+		String tenantManagementServiceUrl = "http://tenant-management-service/tenant/create";
 
 		ResponseEntity<TenantDetails> response = restTemplate.postForEntity(tenantManagementServiceUrl, tenant,
 				TenantDetails.class);
