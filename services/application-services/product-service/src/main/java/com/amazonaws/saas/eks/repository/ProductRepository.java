@@ -26,7 +26,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Repository;
 
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.saas.eks.model.Product;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
@@ -36,9 +39,6 @@ import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 @Repository
 public class ProductRepository {
 	private static final Logger logger = LogManager.getLogger(ProductRepository.class);
-
-	@Resource(name = "dynamoDBMapper")
-	DynamoDBMapper mapper;
 
 	/**
 	 * Method to retrieve all products for a tenant
@@ -62,6 +62,7 @@ public class ProductRepository {
 		queryExpression.setConsistentRead(false);
 
 		try {
+			DynamoDBMapper mapper = dynamoDBMapper();
 			results = mapper.query(Product.class, queryExpression);
 		} catch (Exception e) {
 			logger.error("TenantId: " + tenantId + "-Get Products failed " + e.getMessage());
@@ -78,11 +79,10 @@ public class ProductRepository {
 	 */
 	public Product save(Product product) {
 		try {
-			DynamoDBMapperConfig dynamoDBMapperConfig = new DynamoDBMapperConfig.Builder()
-					.withConsistentReads(DynamoDBMapperConfig.ConsistentReads.CONSISTENT)
-					.withSaveBehavior(DynamoDBMapperConfig.SaveBehavior.PUT).build();
-			mapper.save(product, dynamoDBMapperConfig);
+			DynamoDBMapper mapper = dynamoDBMapper();
+			mapper.save(product);
 		} catch (Exception e) {
+			logger.error(e);
 			logger.error("TenantId: " + product.getTenantId() + "-Save Product failed " + e.getMessage());
 		}
 
@@ -97,6 +97,7 @@ public class ProductRepository {
 	 */
 	public Product update(Product product) {
 		try {
+			DynamoDBMapper mapper = dynamoDBMapper();
 			DynamoDBMapperConfig dynamoDBMapperConfig = new DynamoDBMapperConfig.Builder()
 					.withConsistentReads(DynamoDBMapperConfig.ConsistentReads.CONSISTENT)
 					.withSaveBehavior(DynamoDBMapperConfig.SaveBehavior.UPDATE).build();
@@ -120,6 +121,7 @@ public class ProductRepository {
 		Product product = null;
 
 		try {
+			DynamoDBMapper mapper = dynamoDBMapper();
 			product = mapper.load(Product.class, productId, config);
 		} catch (Exception e) {
 			logger.error("TenantId: " + tenantId + "-Get Product By Id failed " + e.getMessage());
@@ -137,10 +139,34 @@ public class ProductRepository {
 	 */
 	public void delete(Product product) {
 		try {
+			DynamoDBMapper mapper = dynamoDBMapper();
 			mapper.delete(product);
 		} catch (Exception e) {
 			logger.error("TenantId: " + product.getTenantId() + "-Delete Product failed " + e.getMessage());
 		}
+	}
+	
+	public DynamoDBMapper dynamoDBMapper() {
+		DynamoDBMapperConfig dbMapperConfig = new DynamoDBMapperConfig.Builder().build();
+		AmazonDynamoDBClient dynamoClient = getAmazonDynamoDBLocalClient();
+		return new DynamoDBMapper(dynamoClient, dbMapperConfig);
+	}
+
+	private AmazonDynamoDBClient getAmazonDynamoDBLocalClient() {
+		return (AmazonDynamoDBClient) AmazonDynamoDBClientBuilder.standard()
+				.withCredentials(new DefaultAWSCredentialsProviderChain()).build();
+	}
+
+	
+	public static void main(String args[]) {
+		ProductRepository repo = new ProductRepository();
+		Product product = new Product();
+		product.setName("pen");
+		product.setTenantId("saas1301local");
+		//product.setProductId("asdfasdf");
+		product.setPrice(100.00);
+		repo.save(product );
+		
 	}
 
 }
