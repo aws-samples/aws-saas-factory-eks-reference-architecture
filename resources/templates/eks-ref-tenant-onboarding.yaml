@@ -18,10 +18,10 @@ Resources:
     Type: AWS::DynamoDB::Table
     Properties: 
       AttributeDefinitions: 
-        - AttributeName: "ProductId"
+        - AttributeName: "TenantId"
           AttributeType: "S"
       KeySchema:
-        - AttributeName: "ProductId"
+        - AttributeName: "TenantId"
           KeyType: "HASH"
       ProvisionedThroughput: 
         ReadCapacityUnits: "5"
