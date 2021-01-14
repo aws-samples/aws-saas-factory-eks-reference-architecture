@@ -4,11 +4,7 @@ The code provide here is intended to provide a sample implementation of a SaaS E
 
 Note that the instructions below are intended to give you step-by-step, how-to instructions for getting this solution up and running in your own AWS account. For a general description and overview of the solution, please see the [developer's guide here](GUIDE.md).
 
-[![DeveloperGuide](images/developerguide.png)](GUIDE.md)
-
 ## Setting up the environment
-
-## Setup Instructions
 
 > :warning: The Cloud9 workspace should be built by an IAM user with Administrator privileges, not the root account user. Please ensure you are logged in as an IAM user, not the root account user.
 
@@ -81,7 +77,7 @@ Note that the instructions below are intended to give you step-by-step, how-to i
 
     Where Admin Email is the email address of the SaaS Admin. Stack Name is whatever name you want to give to the CloudFormation stack which gets deployed. Domain Name is the actual domain that you're bringing to this scenario, e.g. my-eks-domain.com. Lastly Hosted Zone ID is the ID of the Route53 hosted zone for this domain (you created or recorded in step 1 of this guide)
 
-    Important: During the Stack provisioning a Nested Stack is created for provisioning a Certificate to be used by the application. Open ACM service and you will find the status of the certificate is in "Pending Validation". Expand the Certificate and look for the two domains that was created. Look for the button "Create record in Route 53" and click. This will update the DNS configuration by adding a new entry in Route 53. Within a few minutes, the certificate status will change to "Issued". At this point you will see the Cloudformation AppCert nested stack will continue with its provisioning.
+    :warning: Important: During the Stack provisioning a Nested Stack is created for provisioning a Certificate to be used by the application. Open ACM service and you will find the status of the certificate is in "Pending Validation". Expand the Certificate and look for the two domains that was created. Look for the button "Create record in Route 53" and click. This will update the DNS configuration by adding a new entry in Route 53. Within a few minutes, the certificate status will change to "Issued". At this point you will see the Cloudformation AppCert nested stack will continue with its provisioning.
 
     This [script](./deploy.sh) creates a unique S3 Bucket and uploads our CloudFormation artifacts to that bucket. It then kicks off a CloudFormation stack with all the supporting pieces for our EKS Reference Architecture, including our CloudFront distributions for both the administration and tenant websites, as well as a wildcard certificate to provision those sites and corresponding bucket policies. It also creates the DynamoDB Tables used by our shared microservices for Tenant and User management and registration.
 
