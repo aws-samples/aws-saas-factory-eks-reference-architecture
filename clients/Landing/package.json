@@ -18,7 +18,7 @@
     "@angular/platform-browser": "~9.1.12",
     "@angular/platform-browser-dynamic": "~9.1.12",
     "@angular/router": "~9.1.12",
-    "bootstrap": "4.1.1",
+    "bootstrap": "4.3.1",
     "font-awesome": "^4.7.0",
     "ngx-bootstrap": "^6.1.0",
     "rxjs": "~6.5.4",
