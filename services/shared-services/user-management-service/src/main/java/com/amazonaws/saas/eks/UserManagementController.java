@@ -76,22 +76,22 @@ public class UserManagementController {
 	 * @return User
 	 */
 	@PostMapping(value = "users", produces = { MediaType.APPLICATION_JSON_VALUE })
-	public User createUser(@RequestBody User u, HttpServletRequest request) {
+	public User createUser(@RequestBody User user, HttpServletRequest request) {
 		UserManagementService userManagement = new UserManagementService();
-		User user = null;
+		User newUser = null;
 		String userPoolId = null;
 
 		try {
 			userPoolId = tokenManager.extractUserPoolIdFromJwt(request);
 
 			if (userPoolId != null) {
-				user = userManagement.createUser(userPoolId, u);
+				newUser = userManagement.createUser(userPoolId, user);
 			}
 		} catch (Exception e) {
 			logger.error("UserManagement create user operation failed:" + e);
 		}
 
-		return user;
+		return newUser;
 	}
 
 	/**

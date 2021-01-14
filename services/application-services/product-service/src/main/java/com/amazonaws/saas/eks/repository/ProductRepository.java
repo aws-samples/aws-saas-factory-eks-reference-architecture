@@ -78,7 +78,10 @@ public class ProductRepository {
 	 */
 	public Product save(Product product) {
 		try {
-			mapper.save(product);
+			DynamoDBMapperConfig dynamoDBMapperConfig = new DynamoDBMapperConfig.Builder()
+					.withConsistentReads(DynamoDBMapperConfig.ConsistentReads.CONSISTENT)
+					.withSaveBehavior(DynamoDBMapperConfig.SaveBehavior.PUT).build();
+			mapper.save(product, dynamoDBMapperConfig);
 		} catch (Exception e) {
 			logger.error("TenantId: " + product.getTenantId() + "-Save Product failed " + e.getMessage());
 		}
