@@ -8,13 +8,29 @@ Parameters:
     Type: String
   CrossRegionStackMakerLambda:
     Type: String
+Conditions:
+  CreateELBCert: !Not
+    - !Equals 
+      - !Ref 'AWS::Region'
+      - 'us-east-1'
 Resources:
-  AppCert:
+  ELBCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Condition: CreateELBCert
+    Properties:
+      DomainName: !Sub '*.${CustomDomainName}'
+      SubjectAlternativeNames:
+        - !Sub '${CustomDomainName}'
+      DomainValidationOptions:
+        - DomainName: !Ref CustomDomainName
+          ValidationDomain: !Ref CustomDomainName
+      ValidationMethod: DNS    
+  CloudFormationAppCert:
     Type: Custom::CrossRegionStackMaker
     Version: 1.0
     Properties:
       ServiceToken: !Ref CrossRegionStackMakerLambda
-      TemplateURL: !Sub https://${EKSRefArchBucket}.s3.amazonaws.com/eks-ref-acm.yaml
+      TemplateURL: !Sub https://${EKSRefArchBucket}.s3.amazonaws.com/eks-ref-cloudfront-acm.yaml
       ParentStackId: !Ref AWS::StackId
       Region: us-east-1
       CfnParameters:
@@ -44,10 +60,14 @@ Resources:
         WriteCapacityUnits: "5"
       TableName: "Tenant"
 Outputs:
-  AppCertArn: 
-    Value: !GetAtt AppCert.CertArn
+  CloudFrontAppCertArn: 
+    Value: !GetAtt CloudFormationAppCert.CloudFrontAppCert
     Export:
-      Name: !Sub '${AWS::StackName}-AppCertArn'
+      Name: !Sub '${AWS::StackName}-CloudFrontAppCertArn'
+  ELBAppCertArn:
+    Value: !Ref ELBCertificate
+    Export:
+      Name: !Sub '${AWS::StackName}-ELBCertificate'
   S3OAIUserId:
     Value: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
     Export:

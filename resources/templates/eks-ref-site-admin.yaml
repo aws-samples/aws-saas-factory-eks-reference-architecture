@@ -7,7 +7,7 @@ Parameters:
     AllowedPattern: ^[^\s@]+@[^\s@]+\.[^\s@]+$
     ConstraintDescription: Must be a valid email address.
     Type: String
-  AppCertArn:
+  CloudFrontAppCertArn:
     Type: String
   CustomDomainName:
     Type: String
@@ -75,7 +75,7 @@ Resources:
             OriginAccessIdentity: !Sub origin-access-identity/cloudfront/${S3OAIId}
         PriceClass: 'PriceClass_All'  
         ViewerCertificate:
-          AcmCertificateArn: !Ref AppCertArn
+          AcmCertificateArn: !Ref CloudFrontAppCertArn
           MinimumProtocolVersion: 'TLSv1.2_2018'
           SslSupportMethod: 'sni-only'
   AdminAppSiteAlias:

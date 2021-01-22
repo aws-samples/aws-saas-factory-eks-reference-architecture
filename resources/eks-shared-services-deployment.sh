@@ -27,7 +27,7 @@ USER_MGMT_ECR=$(aws cloudformation list-exports --query "Exports[?Name=='${STACK
 
 echo "Install Nginx controller"
 cd resources/templates
-ACM_CERT=$(aws acm list-certificates  --query "CertificateSummaryList[?DomainName=='*.$DOMAIN_NAME'].CertificateArn" --region us-east-1 --output text)
+ACM_CERT=$(aws acm list-certificates  --query "CertificateSummaryList[?DomainName=='*.$DOMAIN_NAME'].CertificateArn" --output text)
 sed -i -e 's,ACM_CERT,'$ACM_CERT',g' nginx-ingress-config.yaml
 
 helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx

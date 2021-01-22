@@ -8,7 +8,7 @@ Parameters:
     Type: String
   S3OAIId:
     Type: String
-  AppCertArn:
+  CloudFrontAppCertArn:
     Type: String
   HostedZoneId:
     Type: String
@@ -70,7 +70,7 @@ Resources:
             OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${S3OAIId}'
         PriceClass: 'PriceClass_All'  
         ViewerCertificate:
-          AcmCertificateArn: !Ref AppCertArn
+          AcmCertificateArn: !Ref CloudFrontAppCertArn
           MinimumProtocolVersion: 'TLSv1.2_2018'
           SslSupportMethod: 'sni-only'
   LandingAppSiteAlias:
