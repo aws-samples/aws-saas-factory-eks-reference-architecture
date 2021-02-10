@@ -27,7 +27,7 @@ Resources:
           KeyType: "HASH"
         - AttributeName: "ProductId"
           KeyType: "RANGE"
-     ProvisionedThroughput: 
+      ProvisionedThroughput: 
         ReadCapacityUnits: "5"
         WriteCapacityUnits: "5"
       TableName: "Product"
