@@ -39,16 +39,15 @@ public class DynamodbConfiguration {
 
 	@Bean(name = "dynamoDBMapper")
 	public DynamoDBMapper dynamoDBMapperLocal() {
-		Regions region = Regions.US_EAST_1;
 		DynamoDBMapperConfig dbMapperConfig = new DynamoDBMapperConfig.Builder().build();
-		AmazonDynamoDBClient dynamoClient = getAmazonDynamoDBLocalClient(region);
+		AmazonDynamoDBClient dynamoClient = getAmazonDynamoDBLocalClient();
 		return new DynamoDBMapper(dynamoClient, dbMapperConfig);
 	}
 
-	private AmazonDynamoDBClient getAmazonDynamoDBLocalClient(Regions region) {
+	private AmazonDynamoDBClient getAmazonDynamoDBLocalClient() {
 		return (AmazonDynamoDBClient) AmazonDynamoDBClientBuilder.standard()
 				// .withCredentials(WebIdentityTokenCredentialsProvider.builder().roleSessionName("ddb-query").build())
-				.withCredentials(new DefaultAWSCredentialsProviderChain()).withRegion(region).build();
+				.withCredentials(new DefaultAWSCredentialsProviderChain()).build();
 	}
 
 }

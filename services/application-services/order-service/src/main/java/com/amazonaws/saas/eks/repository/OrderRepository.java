@@ -42,7 +42,7 @@ public class OrderRepository {
 	 */
 	public List<Order> getOrders(String tenantId) {
 		PaginatedScanList<Order> results = null;
-		DynamoDBMapper mapper = dynamoDBMapperLocal(tenantId);
+		DynamoDBMapper mapper = dynamoDBMapper(tenantId);
 		
 		try {
 			results = mapper.scan(Order.class, new DynamoDBScanExpression());
@@ -61,7 +61,7 @@ public class OrderRepository {
 	 */
 	public Order save(Order order, String tenantId) {
 		try {
-			DynamoDBMapper mapper = dynamoDBMapperLocal(tenantId);
+			DynamoDBMapper mapper = dynamoDBMapper(tenantId);
 			mapper.save(order);
 		} catch (Exception e) {
 			logger.error("TenantId: " + tenantId + "-Save Order failed " + e.getMessage());
@@ -77,7 +77,7 @@ public class OrderRepository {
 	 * @return Order
 	 */
 	public Order getOrderById(String orderId, String tenantId) {
-		DynamoDBMapper mapper = dynamoDBMapperLocal(tenantId);
+		DynamoDBMapper mapper = dynamoDBMapper(tenantId);
 		Order order = null;
 		
 		DynamoDBMapperConfig config = DynamoDBMapperConfig.builder()
@@ -98,7 +98,7 @@ public class OrderRepository {
 	 */
 	public void delete(Order order, String tenantId) {
 		try {
-			DynamoDBMapper mapper = dynamoDBMapperLocal(tenantId);
+			DynamoDBMapper mapper = dynamoDBMapper(tenantId);
 			mapper.delete(order);
 		} catch (Exception e) {
 			logger.error("TenantId: " + tenantId + "-Delete Order failed " + e.getMessage());
@@ -110,7 +110,7 @@ public class OrderRepository {
 	 * @param tenantId
 	 * @return DynamoDBMapper
 	 */
-	public DynamoDBMapper dynamoDBMapperLocal(String tenantId) {
+	public DynamoDBMapper dynamoDBMapper(String tenantId) {
 		String tableName = "Order-" + tenantId;
 		DynamoDBMapperConfig dbMapperConfig = new DynamoDBMapperConfig.Builder()
 				.withTableNameOverride(TableNameOverride.withTableNameReplacement(tableName)).build();

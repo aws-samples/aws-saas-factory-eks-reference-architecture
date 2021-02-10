@@ -20,9 +20,13 @@ Resources:
       AttributeDefinitions: 
         - AttributeName: "TenantId"
           AttributeType: "S"
+        - AttributeName: "ProductId"
+          AttributeType: "S"
       KeySchema:
         - AttributeName: "TenantId"
           KeyType: "HASH"
+        - AttributeName: "ProductId"
+          KeyType: "RANGE"
       ProvisionedThroughput: 
         ReadCapacityUnits: "5"
         WriteCapacityUnits: "5"
