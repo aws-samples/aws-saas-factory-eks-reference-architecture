@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
-Description: AWS EKS Reference Wildcard and Application Certificates
+Description: AWS EKS Reference Wildcard and Application Certificates for CloudFront distribution
 Parameters:
   CustomDomainName:
     Type: String
@@ -16,5 +16,5 @@ Resources:
           ValidationDomain: !Ref CustomDomainName
       ValidationMethod: DNS
 Outputs:
-  CertArn:
+  CloudFrontAppCert:
     Value: !Ref AppCert

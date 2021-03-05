@@ -85,7 +85,7 @@ Resources:
     Properties:
       TemplateURL: !Sub https://${EKSRefArchBucket}.s3.amazonaws.com/eks-ref-site-application.yaml
       Parameters:
-        AppCertArn: !GetAtt Base.Outputs.AppCertArn
+        CloudFrontAppCertArn: !GetAtt Base.Outputs.CloudFrontAppCertArn
         CustomDomainName: !Ref DomainName
         HostedZoneId: !Ref HostedZoneId
         S3OAIId: !GetAtt Base.Outputs.S3OAIId
@@ -97,7 +97,7 @@ Resources:
       TemplateURL: !Sub https://${EKSRefArchBucket}.s3.amazonaws.com/eks-ref-site-admin.yaml
       Parameters:
         AdminEmailAddress: !Ref AdminEmailAddress
-        AppCertArn: !GetAtt Base.Outputs.AppCertArn
+        CloudFrontAppCertArn: !GetAtt Base.Outputs.CloudFrontAppCertArn
         CustomDomainName: !Ref DomainName
         HostedZoneId: !Ref HostedZoneId
         S3OAIId: !GetAtt Base.Outputs.S3OAIId
@@ -108,7 +108,7 @@ Resources:
     Properties:
       TemplateURL: !Sub https://${EKSRefArchBucket}.s3.amazonaws.com/eks-ref-site-landing.yaml
       Parameters:
-        AppCertArn: !GetAtt Base.Outputs.AppCertArn
+        CloudFrontAppCertArn: !GetAtt Base.Outputs.CloudFrontAppCertArn
         CustomDomainName: !Ref DomainName
         HostedZoneId: !Ref HostedZoneId
         S3OAIId: !GetAtt Base.Outputs.S3OAIId
