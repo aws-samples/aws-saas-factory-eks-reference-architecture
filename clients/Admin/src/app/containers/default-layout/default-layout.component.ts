@@ -39,7 +39,7 @@ export class DefaultLayoutComponent implements OnInit {
     this.oidcSecurityService.logoffAndRevokeTokens().subscribe(() => {});
     const match = environment.issuer.match(/(?!\.)([\w-]+)(?=\.amazonaws)/);
     const region = !!match ? match[0] : '';
-    window.location.href = `https://${environment.customDomain}.auth.${region}.amazoncognito.com/login?client_id=${environment.clientId}&response_type=code&redirect_uri=https://admin.${environment.domain}`;
+    window.location.href = `https://${environment.domain}.auth.${region}.amazoncognito.com/login?client_id=${environment.clientId}&response_type=code&redirect_uri=https://admin.${environment.domain}`;
   }
 }
 
