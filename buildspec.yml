@@ -8,7 +8,8 @@ phases:
       - curl --silent --location https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz | tar xz -C .
       - chmod +x ./kubectl ./aws-iam-authenticator
       - export PATH=$PWD/:$PATH
-      - apt-get update && apt-get -y install jq python3-pip python3-dev && pip3 install --upgrade awscli
+      - apt-get update && apt-get -y install jq
+      - curl https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o awscliv2.zip && unzip awscliv2.zip && ./aws/install
   pre_build:
       commands:
         - export KUBECONFIG=$HOME/.kube/config
