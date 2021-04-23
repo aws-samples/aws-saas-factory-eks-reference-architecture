@@ -35,12 +35,6 @@ Resources:
       Region: us-east-1
       CfnParameters:
         CustomDomainName: !Ref CustomDomainName
-  # DomainHostedZone:
-  #   Type: 'AWS::Route53::HostedZone'
-  #   Properties: 
-  #     HostedZoneConfig: 
-  #       Comment: 'Hosted zone for custom domain'
-  #     Name: !Ref CustomDomainName
   CloudFrontOriginAccessIdentity:
     Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
     Properties:
@@ -64,10 +58,6 @@ Outputs:
     Value: !GetAtt CloudFormationAppCert.CloudFrontAppCert
     Export:
       Name: !Sub '${AWS::StackName}-CloudFrontAppCertArn'
-  ELBAppCertArn:
-    Value: !Ref ELBCertificate
-    Export:
-      Name: !Sub '${AWS::StackName}-ELBCertificate'
   S3OAIUserId:
     Value: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
     Export:
