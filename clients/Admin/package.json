@@ -41,6 +41,7 @@
     "ts-helpers": "^1.1.2",
     "tslib": "^1.14.1",
     "web-animations-js": "^2.3.2",
+    "xmlhttprequest-ssl": "^1.6.2",
     "zone.js": "~0.10.3"
   },
   "devDependencies": {
@@ -54,7 +55,7 @@
     "codelyzer": "^5.2.2",
     "jasmine-core": "^3.6.0",
     "jasmine-spec-reporter": "^5.0.2",
-    "karma": "^5.1.1",
+    "karma": "^6.3.2",
     "karma-chrome-launcher": "^3.1.0",
     "karma-coverage-istanbul-reporter": "^3.0.3",
     "karma-jasmine": "^3.3.1",
