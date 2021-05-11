@@ -24,7 +24,6 @@ import { ProductCreateComponent } from './product-create/product-create.componen
 import { ProductEditComponent } from './product-edit/product-edit.component';
 
 // 3P components
-import { NgxDropzoneModule } from 'ngx-dropzone';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 
 @NgModule({
@@ -35,7 +34,6 @@ import { PopoverModule } from 'ngx-bootstrap/popover';
     PopoverModule.forRoot(),
     ProductsRoutingModule,
     ReactiveFormsModule,
-    NgxDropzoneModule
   ]
 })
 export class ProductsModule { }
