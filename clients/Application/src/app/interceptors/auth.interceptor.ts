@@ -19,33 +19,31 @@ import {
   HttpRequest,
   HttpHandler,
   HttpEvent,
-  HttpInterceptor
+  HttpInterceptor,
 } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { OidcSecurityService } from 'angular-auth-oidc-client';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
-  private secureRoutes = ['http://my.route.io/secureapi'];
-
   constructor(private oidcSecurityService: OidcSecurityService) {}
 
-  intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-      // Ensure we send the token only to routes which are secured
-      // if (!this.secureRoutes.find((x) => req.url.startsWith(x))) {
-      //     return next.handle(req);
-      // }
+  intercept(
+    req: HttpRequest<any>,
+    next: HttpHandler
+  ): Observable<HttpEvent<any>> {
+    const token = this.oidcSecurityService.getIdToken();
 
-      const token = this.oidcSecurityService.getIdToken();
-
-      if (!token) {
-          return next.handle(req);
-      }
-
-      req = req.clone({
-          headers: req.headers.set('Authorization', 'Bearer ' + token),
-      });
-
+    // We only want to add the ID Token to our API endpoints. Let the Auth library handle
+    // tokens for the Cognito endpoints
+    if (!token || req.url.includes('amazoncognito')) {
       return next.handle(req);
+    }
+
+    req = req.clone({
+      headers: req.headers.set('Authorization', 'Bearer ' + token),
+    });
+
+    return next.handle(req);
   }
 }
