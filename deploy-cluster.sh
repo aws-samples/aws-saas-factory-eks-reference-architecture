@@ -28,7 +28,7 @@ managedNodeGroups:
   desiredCapacity: 3
   ssh:
     allow: true
-    publicKeyName: eks-saas
+    publicKeyName: eks-task
 
 # To enable all of the control plane logs, uncomment below:
 # cloudWatch:
