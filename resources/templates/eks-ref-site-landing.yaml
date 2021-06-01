@@ -64,7 +64,7 @@ Resources:
         Enabled: true
         HttpVersion: http2
         Origins:
-        - DomainName: !GetAtt 'LandingAppBucket.DomainName'
+        - DomainName: !GetAtt 'LandingAppBucket.RegionalDomainName'
           Id: s3origin
           S3OriginConfig:
             OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${S3OAIId}'

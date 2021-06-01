@@ -69,7 +69,7 @@ Resources:
         Enabled: true
         HttpVersion: http2
         Origins:
-        - DomainName: !GetAtt AdminAppBucket.DomainName
+        - DomainName: !GetAtt AdminAppBucket.RegionalDomainName
           Id: s3origin
           S3OriginConfig:
             OriginAccessIdentity: !Sub origin-access-identity/cloudfront/${S3OAIId}
