@@ -18,9 +18,11 @@ package com.amazonaws.saas.eks;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.amazonaws.saas.eks.dto.TenantUserDto;
 import com.amazonaws.saas.eks.dto.User;
 import com.amazonaws.services.cognitoidp.AWSCognitoIdentityProvider;
 import com.amazonaws.services.cognitoidp.AWSCognitoIdentityProviderClientBuilder;
@@ -45,14 +47,17 @@ public class UserManagementService {
 	 * @param user
 	 * @return User
 	 */
-	public User createUser(String userPoolId, User user) {
+	public User createUser(TenantUserDto tenantUserDto, User user) {
 		AWSCognitoIdentityProvider cognitoIdentityProvider = AWSCognitoIdentityProviderClientBuilder.defaultClient();
 
 		AdminCreateUserResult createUserResult = cognitoIdentityProvider
-				.adminCreateUser(new AdminCreateUserRequest().withUserPoolId(userPoolId).withUsername(user.getEmail())
+				.adminCreateUser(new AdminCreateUserRequest().withUserPoolId(tenantUserDto.getUserPoolId())
+						.withUsername(user.getEmail())
 						.withUserAttributes(new AttributeType().withName("email").withValue(user.getEmail()),
-								new AttributeType().withName("email_verified").withValue("true")));
+								new AttributeType().withName("email_verified").withValue("true"),
+								new AttributeType().withName("custom:tenant-id").withValue(tenantUserDto.getTenantId())));
 
+		
 		UserType cognitoUser = createUserResult.getUser();
 		logger.info("Cognito - Create User Success=>" + cognitoUser.getUsername());
 

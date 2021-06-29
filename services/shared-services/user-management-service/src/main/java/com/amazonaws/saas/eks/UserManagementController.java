@@ -33,6 +33,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.amazonaws.saas.eks.auth.TokenManager;
+import com.amazonaws.saas.eks.dto.TenantUserDto;
 import com.amazonaws.saas.eks.dto.User;
 
 @CrossOrigin(origins = "*", allowedHeaders = "*")
@@ -79,13 +80,13 @@ public class UserManagementController {
 	public User createUser(@RequestBody User user, HttpServletRequest request) {
 		UserManagementService userManagement = new UserManagementService();
 		User newUser = null;
-		String userPoolId = null;
+		TenantUserDto tenantUserDto = null;
 
 		try {
-			userPoolId = tokenManager.extractUserPoolIdFromJwt(request);
+			tenantUserDto = tokenManager.extractDataFromJwt(request);
 
-			if (userPoolId != null) {
-				newUser = userManagement.createUser(userPoolId, user);
+			if (tenantUserDto != null) {
+				newUser = userManagement.createUser(tenantUserDto, user);
 			}
 		} catch (Exception e) {
 			logger.error("UserManagement create user operation failed:" + e);
