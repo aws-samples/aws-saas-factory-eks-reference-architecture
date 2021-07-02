@@ -64,7 +64,7 @@ export const environment = {
 };
 EoF
 
-npm install && npm run build
+npm install --force && npm run build
 
 echo "aws s3 sync --delete --cache-control no-store dist s3://$S3_BUCKET"
 aws s3 sync --delete --cache-control no-store dist s3://$S3_BUCKET

@@ -1,7 +1,6 @@
-import {Component, OnInit} from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { OidcSecurityService } from 'angular-auth-oidc-client';
-import { env } from 'process';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
@@ -9,7 +8,7 @@ import { navItems } from '../../_nav';
 
 @Component({
   selector: 'app-dashboard',
-  templateUrl: './default-layout.component.html'
+  templateUrl: './default-layout.component.html',
 })
 export class DefaultLayoutComponent implements OnInit {
   public sidebarMinimized = false;
@@ -17,13 +16,15 @@ export class DefaultLayoutComponent implements OnInit {
   isAuthenticated$: Observable<Boolean>;
   username$: Observable<string>;
 
-  constructor(public oidcSecurityService: OidcSecurityService,
-              private router: Router) {}
+  constructor(
+    public oidcSecurityService: OidcSecurityService,
+    private router: Router
+  ) {}
 
   ngOnInit() {
     this.isAuthenticated$ = this.oidcSecurityService.isAuthenticated$;
     this.username$ = this.oidcSecurityService.userData$.pipe(
-      map(ud => ud?.email)
+      map((ud) => ud?.email)
     );
   }
 
@@ -42,4 +43,3 @@ export class DefaultLayoutComponent implements OnInit {
     window.location.href = `https://${environment.domain}.auth.${region}.amazoncognito.com/login?client_id=${environment.clientId}&response_type=code&redirect_uri=https://admin.${environment.domain}`;
   }
 }
-
