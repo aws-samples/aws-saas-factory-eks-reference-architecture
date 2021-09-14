@@ -118,7 +118,7 @@ Once you have your baseline infrastructure created, you can begin to think more 
 ![Figure 3 - Deployed tenant microservices](images/figure-3.png)  
 Figure 3 - Deployed tenant microservices
 
-Figure 3 illustrates how the microservices of our applicated are deployed into our baseline infrastructure. You’ll notice that we’ve landed these in the same cluster that was used to deploy the shared services of the environment. The key difference here is that none of these microservices and namespaces are created until a tenant actually onboards.
+Figure 3 illustrates how the microservices of our application are deployed into our baseline infrastructure. You’ll notice that we’ve landed these in the same cluster that was used to deploy the shared services of the environment. The key difference here is that none of these microservices and namespaces are created until a tenant actually onboards.
 
 Of course, the constructs needed to bring these microservice to has more moving parts to it. The diagram in Figure 4 provides a much more granular view of the elements of our tenant environments.
 
@@ -160,7 +160,7 @@ This order tables are secured with IAM Roles that prevent any cross-tenant acces
 
 As requests flow from the tenant into each of our microservice, the system must be able to identify the tenant that is associated with each request and route that request to the appropriate tenant namespace. There are multiple ways to address this routing requirement. For the EKS SaaS solution, we relied on the open-source NGINX Ingress controller to route traffic to each namespace.
 
-To make this work, the system must create a new ingress resource for each that is deployed for each of our tenants. These ingress controllers are created during the tenant onboarding experience, enabling the NGINIX ingress controller to send traffic to the appropriate, tenant-specific destination.
+To make this work, the system must create a new ingress resource for each that is deployed for each of our tenants. These ingress controllers are created during the tenant onboarding experience, enabling the NGINX ingress controller to send traffic to the appropriate, tenant-specific destination.
 
 The diagram in Figure 5 provides a view of the key elements of this experience. Here we have two tenants accessing the microservices of our application. The qualify each request with an identifier (/tenant1, for example) that is passed through to the ingress controller. The controller uses this context to route the data to the appropriate tenant microservice.
 
@@ -181,7 +181,7 @@ The administration app is meant to represent the experience that would be used b
 
 The application is secured by its own Cognito user pool that’s created during the baseline infrastructure provisioning, detailed above.
 
-### Sample SaaS Appliction
+### Sample SaaS Application
 
 The sample SaaS application is basic e-commerce application that is here as a placeholder to illustrate how your application would authenticate users and interact with the application’s microservices. The application is secured by its own Cognito user pool that is created and configured as each new the tenant is onboarded.
 
@@ -193,7 +193,7 @@ Once authenticated, the client app illustrates basic microservice interaction wi
 
 ### Landing Page
 
-The landing page is a simple, anonymous signup page. It’s representative of our public-facing marketing page through which prospective tenants can sign-up. When you select the sign-up option, you will provide data about your new tenant and submit that information to the system’s registration service. This service will then create and configure all of the resources needed to introduce a new tenant into the system.
+The landing page is a simple, anonymous sign-up page. It’s representative of our public-facing marketing page through which prospective tenants can sign-up. When you select the sign-up option, you will provide data about your new tenant and submit that information to the system’s registration service. This service will then create and configure all of the resources needed to introduce a new tenant into the system.
 
 As part of this onboarding flow, the system will also send a verification email to the address that was provided during sign-up. The information in this email will allow you to access the system with a temporary password.
 
