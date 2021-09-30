@@ -13,11 +13,11 @@ spec:
         app: order
     spec:
       containers:
-      - name: order
-        image: ORDER_SERVICE_ECR_REPO_URI:latest
-        ports:
-        - containerPort: 5001
-          name: "http"
+        - name: order
+          image: ORDER_SERVICE_ECR_REPO_URI:latest
+          ports:
+            - containerPort: 5001
+              name: "http"
 ---
 apiVersion: v1
 kind: Service
@@ -27,14 +27,14 @@ spec:
   selector:
     app: order
   ports:
-  - name: http
-    protocol: TCP
-    port: 80
-    targetPort: 5001
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 5001
   type: NodePort
-  
+
 ---
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: order-service-ingress
@@ -42,10 +42,13 @@ metadata:
     kubernetes.io/ingress.class: "nginx"
 spec:
   rules:
-  - host: api.CUSTOM_DOMAIN
-    http:
-      paths:
-      - path: /TENANT_NAME/order
-        backend:
-          serviceName: order-service
-          servicePort: 80
+    - host: api.CUSTOM_DOMAIN
+      http:
+        paths:
+          - path: /TENANT_NAME/order
+            backend:
+              service:
+                name: order-service
+                port:
+                  number: 80
+            pathType: Prefix

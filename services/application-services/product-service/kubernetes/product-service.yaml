@@ -13,11 +13,11 @@ spec:
         app: product
     spec:
       containers:
-      - name: product
-        image: PRODUCT_SERVICE_ECR_REPO_URI:latest
-        ports:
-        - containerPort: 5000
-          name: "http"
+        - name: product
+          image: PRODUCT_SERVICE_ECR_REPO_URI:latest
+          ports:
+            - containerPort: 5000
+              name: "http"
 ---
 apiVersion: v1
 kind: Service
@@ -27,14 +27,14 @@ spec:
   selector:
     app: product
   ports:
-  - name: http
-    protocol: TCP
-    port: 80
-    targetPort: 5000
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 5000
   type: NodePort
 
 ---
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: product-service-ingress
@@ -42,10 +42,13 @@ metadata:
     kubernetes.io/ingress.class: "nginx"
 spec:
   rules:
-  - host: api.CUSTOM_DOMAIN
-    http:
-      paths:
-      - path: /TENANT_NAME/product
-        backend:
-          serviceName: product-service
-          servicePort: 80
+    - host: api.CUSTOM_DOMAIN
+      http:
+        paths:
+          - path: /TENANT_NAME/product
+            backend:
+              service:
+                name: product-service
+                port:
+                  number: 80
+            pathType: Prefix
