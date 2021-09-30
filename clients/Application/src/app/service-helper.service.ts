@@ -14,16 +14,14 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import { NAMED_ENTITIES } from '@angular/compiler';
 import { Injectable } from '@angular/core';
 import { environment } from '../environments/environment';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ServiceHelperService {
-
-  constructor() { }
+  constructor() {}
 
   getUrl(entity: string) {
     const tenantId = this.getTenantName();
@@ -38,4 +36,3 @@ export class ServiceHelperService {
     return tenantId;
   }
 }
-
