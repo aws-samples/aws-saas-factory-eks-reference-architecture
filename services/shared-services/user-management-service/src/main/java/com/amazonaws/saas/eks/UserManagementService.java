@@ -50,12 +50,20 @@ public class UserManagementService {
 	public User createUser(TenantUserDto tenantUserDto, User user) {
 		AWSCognitoIdentityProvider cognitoIdentityProvider = AWSCognitoIdentityProviderClientBuilder.defaultClient();
 
-		AdminCreateUserResult createUserResult = cognitoIdentityProvider
-				.adminCreateUser(new AdminCreateUserRequest().withUserPoolId(tenantUserDto.getUserPoolId())
-						.withUsername(user.getEmail())
-						.withUserAttributes(new AttributeType().withName("email").withValue(user.getEmail()),
-								new AttributeType().withName("email_verified").withValue("true"),
-								new AttributeType().withName("custom:tenant-id").withValue(tenantUserDto.getTenantId())));
+		AdminCreateUserResult createUserResult = null;
+		
+		if(tenantUserDto!=null && tenantUserDto.getTenantId()!=null) {
+			createUserResult = cognitoIdentityProvider.adminCreateUser(new AdminCreateUserRequest()
+					.withUserPoolId(tenantUserDto.getUserPoolId()).withUsername(user.getEmail())
+					.withUserAttributes(new AttributeType().withName("email").withValue(user.getEmail()),
+							new AttributeType().withName("email_verified").withValue("true"),
+							new AttributeType().withName("custom:tenant-id").withValue(tenantUserDto.getTenantId())));			
+		} else {
+			createUserResult = cognitoIdentityProvider.adminCreateUser(new AdminCreateUserRequest()
+					.withUserPoolId(tenantUserDto.getUserPoolId()).withUsername(user.getEmail())
+					.withUserAttributes(new AttributeType().withName("email").withValue(user.getEmail()),
+							new AttributeType().withName("email_verified").withValue("true")));						
+		}
 
 		
 		UserType cognitoUser = createUserResult.getUser();
