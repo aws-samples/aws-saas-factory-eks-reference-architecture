@@ -58,7 +58,8 @@ spec:
           - backend:
               service:
                 name: tenant-management-service
-                port: 80
+                port:
+                  number: 80
             path: /auth-info
             pathType: Prefix
     - host: api.DOMAIN_NAME
