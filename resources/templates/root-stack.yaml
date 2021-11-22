@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
-Description: AWS EKS Reference Architecture Root Stack (sf-1s7m7mni4)
+Description: AWS EKS Reference Architecture Root Stack
 Parameters:
   EKSRefArchBucket:
     Description: EKS Reference Architecture assets S3 bucket

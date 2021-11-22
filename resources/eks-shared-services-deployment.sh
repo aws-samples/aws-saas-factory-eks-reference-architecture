@@ -39,7 +39,7 @@ sed -i -e 's,DOMAIN_NAME,'$DOMAIN_NAME',g' external-dns-config.yaml
 helm repo add "bitnami" "https://charts.bitnami.com/bitnami"
 helm install extdns --values external-dns-config.yaml bitnami/external-dns
 
-echo "Waiting for the NLB to be created. This will be converted to an if exists condition check-TBD"
+echo "Waiting for the NLB to be created. This will be converted to an if exists condition check"
 sleep 180
 
 echo "Shared services deployment started"

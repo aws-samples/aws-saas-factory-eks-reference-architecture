@@ -100,7 +100,7 @@ Note that the instructions below are intended to give you step-by-step, how-to i
 8. Once finished, the following websites should be provisioned and ready for you to use:
 
     [https://www.YOURDOMAIN.com](https://www.YOURDOMAIN.com) - This is the "landing page" for your multi-tenant e-Commerce platform. From this page, customers can self-signup for a new account
-    [https://admin.YOURDOMAIN.com](https://admin.YOURDOMAIN.com) - This is the "administration" page for your multi-tenant e-Commerce platform. From this page, your tenant administrator can view global statistics for the platform and onboard new tenants. In a normal application, this page would be behind some strict security. We've left this page entirely anonmymous for demonstration purposes.
+    [https://admin.YOURDOMAIN.com](https://admin.YOURDOMAIN.com) - This is the "administration" page for your multi-tenant e-Commerce platform. From this page, your tenant administrator can view global statistics for the platform and onboard new tenants. In a normal application, this page would be behind some strict security. We've left this page entirely anonymous for demonstration purposes.
 
 ## License
 
