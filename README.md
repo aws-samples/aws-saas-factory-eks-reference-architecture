@@ -1,3 +1,26 @@
+# *** **_WARNING_** *** 
+This `vNext` reference architecture is a work-in-progress and not yet ready for any practical use. If you are looking for a reference architecture to start your application on, please refer to the `main` branch for a stable version.
+
+## How to deploy vNExt?
+
+If you don't have a custom domain, it will only require an email address for the SaaS administrator:
+
+```
+npm i
+npm run deploy --email=your@email.com
+```
+
+However, if you want to you use your custom domain hosted in a Route53 public hosted zone, use the following:
+```
+npm i
+npm run deploy --email=your@email.com --domain=base.domain.com --hostedzone=hosted-zone-id
+```
+
+## *** **_Note_** ***
+
+Please do not follow the rest of the instructions in this document. It is still a work in progress. 
+
+
 # EKS SaaS - Reference Solution
 
 The code provide here is intended to provide a sample implementation of a SaaS EKS solution. The goal is to provide SaaS developers and architects with working code that will illustrate how multi-tenant SaaS applications can be design and delivered on AWS. The solution covers a broad range of multi-tenant considerations, including tenant isolation, identity, data partitioning, and deployment. It provides developers with a prescriptive approach the the fundamentals of building SaaS solution with EKS. The focus here is more on giving developers a view into the working elements of the solution without going to the extent of making a full, production-ready solution. Instead, we're hoping this can jump start your process and address some of the common challenges that teams must address when delivering a SaaS solution with EKS.

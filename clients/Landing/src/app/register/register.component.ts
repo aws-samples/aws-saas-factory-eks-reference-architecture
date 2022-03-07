@@ -89,11 +89,14 @@ export class RegisterComponent implements OnInit {
   }
 
   getTenantUrl() {
-    const host: string[] = window.location.hostname.split('.');
     const companyName: string = this.form.value.companyName;
     const re = /[\W\s]+/g;
     const tenantId = companyName.replace(re, '').toLowerCase();
-    const url = `https://${tenantId}.${host.length === 1 ? 'eks-ref-arch.com' : host.slice(1, 2)}`;
-    return url;
+    
+    if(environment.usingCustomDomain){
+      return `https://${tenantId}.${environment.domain}/`;
+    } else{
+      return `https://${environment.domain}/${tenantId}/`;
+    }
   }
 }

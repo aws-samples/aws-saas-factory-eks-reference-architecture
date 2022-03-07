@@ -15,7 +15,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 import { NgModule } from '@angular/core';
-import { Routes, RouterModule } from '@angular/router';
+import { Routes, RouterModule, UrlSegment } from '@angular/router';
 
 // Import Containers
 import { DefaultLayoutComponent } from './containers';
@@ -24,8 +24,9 @@ import { P404Component } from './views/error/404.component';
 import { P500Component } from './views/error/500.component';
 import { UnauthorizedComponent } from './views/error/unauthorized.component';
 import { LogoffComponent } from './views/logoff/logoff.component';
+import { environment } from '../environments/environment';
 
-export const routes: Routes = [
+const appRoutes: Routes = [
   {
     path: '',
     redirectTo: 'dashboard',
@@ -85,6 +86,38 @@ export const routes: Routes = [
     path: 'unauthorized',
     component: UnauthorizedComponent,
   },
+];
+
+const parentedRoutes: Routes = [
+  {
+    matcher: (segments) => {
+      if(environment.usingCustomDomain) {
+        const hostname = window.location.hostname;
+        const parts = hostname.split('.');
+        const tenantId = parts.length === 1 ? 'saascoffee' : parts[0];
+        return ({
+          consumed: [],
+          posParams: {
+            tenantId: new UrlSegment(tenantId, {})
+          }
+        });
+      } else if(segments.length > 0) {
+        return ({
+          consumed: segments.slice(0, 1),
+          posParams: {
+            tenantId: new UrlSegment(segments[0].path, {})
+          }
+        });
+      } else {
+        return null;
+      }
+    },
+    children: appRoutes
+  }
+]
+
+export const routes: Routes = [
+  ...parentedRoutes,
   { path: '**', component: P404Component }
 ];
 

@@ -53,7 +53,7 @@ public class OrderController {
 	 * @param request
 	 * @return List<Order>
 	 */
-	@GetMapping(value = "{companyName}/order/api/orders", produces = { MediaType.APPLICATION_JSON_VALUE })
+	@GetMapping(value = "{companyName}/orders", produces = { MediaType.APPLICATION_JSON_VALUE })
 	public List<Order> getOrders(HttpServletRequest request) {
 		logger.info("Return orders");
 		String tenantId = null;
@@ -81,7 +81,7 @@ public class OrderController {
 	 * @param request
 	 * @return Order
 	 */
-	@GetMapping(value = "{companyName}/order/api/order/{orderId}", produces = { MediaType.APPLICATION_JSON_VALUE })
+	@GetMapping(value = "{companyName}/orders/{orderId}", produces = { MediaType.APPLICATION_JSON_VALUE })
 	public Order getOrderById(@PathVariable("orderId") String orderId, HttpServletRequest request) {
 		String tenantId = null;
 		Order order = null;
@@ -108,7 +108,7 @@ public class OrderController {
 	 * @param request
 	 * @return Order
 	 */
-	@PostMapping(value = "{companyName}/order/api/order", produces = { MediaType.APPLICATION_JSON_VALUE })
+	@PostMapping(value = "{companyName}/orders", produces = { MediaType.APPLICATION_JSON_VALUE })
 	public Order saveOrder(@RequestBody Order order, HttpServletRequest request) {
 		String tenantId = null;
 		Order newOrder = null;
@@ -127,7 +127,7 @@ public class OrderController {
 		return newOrder;
 	}
 
-	@RequestMapping("{companyName}/order/health/order")
+	@RequestMapping("{companyName}/orders/health")
 	public String health() {
 		return "\"Order service is up!\"";
 	}

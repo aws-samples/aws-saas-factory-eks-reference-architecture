@@ -55,7 +55,7 @@ public class ProductController {
 	 * @param request
 	 * @return List<Product>
 	 */
-	@GetMapping(value = "{companyName}/product/api/products", produces = { MediaType.APPLICATION_JSON_VALUE })
+	@GetMapping(value = "{companyName}/products", produces = { MediaType.APPLICATION_JSON_VALUE })
 	public List<Product> getProducts(HttpServletRequest request) {
 		String tenantId = null;
 		List<Product> products = null;
@@ -82,7 +82,7 @@ public class ProductController {
 	 * @param request
 	 * @return Product
 	 */
-	@GetMapping(value = "{companyName}/product/api/product/{productId}", produces = {
+	@GetMapping(value = "{companyName}/products/{productId}", produces = {
 			MediaType.APPLICATION_JSON_VALUE })
 	public Product getProductById(@PathVariable("productId") String productId, HttpServletRequest request) {
 		String tenantId = null;
@@ -109,7 +109,7 @@ public class ProductController {
 	 * @param request
 	 * @return Product
 	 */
-	@PostMapping(value = "{companyName}/product/api/product", produces = { MediaType.APPLICATION_JSON_VALUE })
+	@PostMapping(value = "{companyName}/products", produces = { MediaType.APPLICATION_JSON_VALUE })
 	public Product saveProduct(@RequestBody Product product, HttpServletRequest request) {
 		String tenantId = null;
 		Product newProduct = new Product();
@@ -140,7 +140,7 @@ public class ProductController {
 	 * @param request
 	 * @return Product
 	 */
-	@PutMapping(value = "{companyName}/product/api/product", produces = { MediaType.APPLICATION_JSON_VALUE })
+	@PutMapping(value = "{companyName}/products", produces = { MediaType.APPLICATION_JSON_VALUE })
 	public Product updateProduct(@RequestBody Product product, HttpServletRequest request) {
 		String tenantId = null;
 		Product updateProduct = new Product();
@@ -171,7 +171,7 @@ public class ProductController {
 	 * @param product
 	 * @param request
 	 */
-	@DeleteMapping(value = "{companyName}/product/api/product")
+	@DeleteMapping(value = "{companyName}/products")
 	public void deleteProduct(@RequestBody Product product, HttpServletRequest request) {
 		String tenantId = null;
 
@@ -194,7 +194,7 @@ public class ProductController {
 	 * 
 	 * @return
 	 */
-	@RequestMapping("{tenantId}/product/health/product")
+	@RequestMapping("{tenantId}/products/health")
 	public String health() {
 		return "\"Product service is up!\"";
 	}

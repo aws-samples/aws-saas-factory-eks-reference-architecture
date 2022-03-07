@@ -29,27 +29,27 @@ export class ProductService {
     private svcHelper: ServiceHelperService) { }
 
   fetch(): Observable<Product[]> {
-    const url = `${this.svcHelper.getUrl('product')}/products`;
+    const url = `${this.svcHelper.getUrl('products')}`;
     return this.http.get<Product[]>(url);
   }
 
   get(productId: string): Observable<Product> {
-    const url = `${this.svcHelper.getUrl('product')}/product/${productId}`;
+    const url = `${this.svcHelper.getUrl('products')}/${productId}`;
     return this.http.get<Product>(url);
   }
 
   delete(product: Product) {
-    const url = `${this.svcHelper.getUrl('product')}/product/${product.productId}`;
+    const url = `${this.svcHelper.getUrl('products')}/${product.productId}`;
     return this.http.delete<Product>(url);
   }
 
   put(product: Product) {
-    const url = `${this.svcHelper.getUrl('product')}/product/${product.productId}`;
+    const url = `${this.svcHelper.getUrl('products')}/${product.productId}`;
     return this.http.put<Product>(url, product);
   }
 
   post(product: Product) {
-    const url = `${this.svcHelper.getUrl('product')}/product/`;
+    const url = `${this.svcHelper.getUrl('products')}`;
     return this.http.post<Product>(url, product);
   }
 }

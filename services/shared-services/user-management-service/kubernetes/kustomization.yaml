@@ -1,0 +1,15 @@
+namespace: default
+commonLabels:
+  saas/common: "true"
+  saas/service: user-management
+resources:
+- service.yaml
+patchesJson6902:
+- path: host-patch.yaml
+  target:
+    group: networking.k8s.io
+    version: v1
+    kind: Ingress
+    name: user-management-service-ingress
+images:
+- name: KUSTOMIZE_IMAGE

@@ -1,0 +1,21 @@
+commonLabels:
+  saas/tenant: "true"
+  saas/service: product
+resources:
+- service.yaml
+patchesJson6902:
+- path: host-patch.yaml
+  target:
+    group: networking.k8s.io
+    version: v1
+    kind: Ingress
+    name: product-service-ingress
+- path: path-patch.yaml
+  target:
+    group: networking.k8s.io
+    version: v1
+    kind: Ingress
+    name: product-service-ingress
+
+images:
+- name: KUSTOMIZE_IMAGE
