@@ -109,7 +109,10 @@ export class TenantOnboarding extends Construct {
                     },
                     post_build: {
                         commands: [
-
+                            // TODO: think of a better way to deploy the services to the new tenant
+                            // TODO: DO NOT deploy to other tenants
+                            `aws codebuild start-build --project-name ProductService`,
+                            `aws codebuild start-build --project-name OrderService`,
                         ]
                     },
                 },
@@ -156,9 +159,6 @@ export class TenantOnboarding extends Construct {
                     },
                     post_build: {
                         commands: [
-                            // TODO: think of a better way to deploy the services to the new tenant
-                            `aws codebuild start-build --project-name ProductService`,
-                            `aws codebuild start-build --project-name OrderService`,
                         ]
                     },
                 },
