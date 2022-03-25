@@ -140,16 +140,6 @@ export class EKSClusterStack extends Stack {
         eksNodeRole.addManagedPolicy(iam.ManagedPolicy.fromManagedPolicyArn(this, "EKSWorkerNodePolicy", "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"));
         eksNodeRole.addManagedPolicy(iam.ManagedPolicy.fromManagedPolicyArn(this, "ECRReadOnlyPolicy", "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"));
         eksNodeRole.addManagedPolicy(iam.ManagedPolicy.fromManagedPolicyArn(this, "SSMAgentPolicy", "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"));
-
-        eksNodeRole.addToPolicy(new iam.PolicyStatement({
-            actions: [
-                "codebuild:StartBuild"
-            ],
-            resources: [
-                "*"
-            ],
-            effect: iam.Effect.ALLOW
-        }));
     }
 
     private addSharedServicesPermissions(cluster: eks.Cluster, props: EKSClusterStackProps) {
@@ -179,6 +169,15 @@ export class EKSClusterStack extends Stack {
             resources: [
                 Arn.format({ service: "codebuild", resource: "project", resourceName: props.tenantOnboardingProjectName }, this),
                 Arn.format({ service: "codebuild", resource: "project", resourceName: props.tenantDeletionProjectName }, this),
+            ],
+            effect: iam.Effect.ALLOW
+        }));
+        sharedServiceAccount.addToPrincipalPolicy(new iam.PolicyStatement({
+            actions: [
+                "cognito-idp:ListUsers"
+            ],
+            resources: [
+                Arn.format({ service: "cognito-idp", resource: "userpool", resourceName: "*" }, this),
             ],
             effect: iam.Effect.ALLOW
         }));
