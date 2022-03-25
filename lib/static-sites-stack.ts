@@ -70,7 +70,8 @@ export class StaticSitesStack extends Stack {
                 issuer: cognito!.authServerUrl,
                 customDomain: cognito!.appClientId,
                 apiUrl: props.apiUrl,
-                domain: siteDomain
+                domain: siteDomain,
+                usingCustomDomain: useCustomDomain,
             }),
             customDomain: useCustomDomain ? `admin.${props.customBaseDomain!}` : undefined,
             hostedZone: hostedZone
