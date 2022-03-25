@@ -13,6 +13,8 @@ spec:
       labels:
         app: user-management
     spec:
+      serviceAccountName: KUSTOMIZE_SHARED_SVC_ACCOUNT_NAME
+      automountServiceAccountToken: true
       containers:
       - name: user-management
         image: KUSTOMIZE_IMAGE

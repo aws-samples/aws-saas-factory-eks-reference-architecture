@@ -4,10 +4,9 @@ import * as path from "path";
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import { StaticSite } from "./constructs/static-site";
 import { Distribution } from "aws-cdk-lib/aws-cloudfront";
-import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 
 export interface StaticSitesStackProps extends StackProps {
-    readonly apiDomain: string
+    readonly apiUrl: string
     readonly saasAdminEmail: string
 
     readonly customBaseDomain?: string
@@ -40,7 +39,7 @@ export class StaticSitesStack extends Stack {
             createCognitoUserPool: false,
             siteConfigurationGenerator: (siteDomain, _) => ({
                 production: true,
-                apiUrl: `https://${props.apiDomain}`,
+                apiUrl: props.apiUrl,
                 domain: siteDomain,
                 usingCustomDomain: useCustomDomain,
             }),
@@ -70,7 +69,7 @@ export class StaticSitesStack extends Stack {
                 clientId: cognito!.appClientId,
                 issuer: cognito!.authServerUrl,
                 customDomain: cognito!.appClientId,
-                apiUrl: `https://${props.apiDomain}`,
+                apiUrl: props.apiUrl,
                 domain: siteDomain
             }),
             customDomain: useCustomDomain ? `admin.${props.customBaseDomain!}` : undefined,
@@ -92,7 +91,7 @@ export class StaticSitesStack extends Stack {
             createCognitoUserPool: false,
             siteConfigurationGenerator: (siteDomain, _) => ({
                 production: true,
-                apiUrl: `https://${props.apiDomain}`,
+                apiUrl: props.apiUrl,
                 domain: siteDomain,
                 usingCustomDomain: useCustomDomain,
             }),

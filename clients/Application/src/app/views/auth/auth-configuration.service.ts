@@ -4,6 +4,7 @@ import { LogLevel, OidcConfigService } from 'angular-auth-oidc-client';
 import { Observable } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
+import { ServiceHelperService } from '../../service-helper.service';
 import { ConfigParams } from './models/config-params';
 
 @Injectable({
@@ -13,8 +14,8 @@ export class AuthConfigurationService {
   params$: Observable<ConfigParams>;
   params: ConfigParams;
 
-  constructor(private oidcConfigService: OidcConfigService, private http: HttpClient) {
-    const url = `${environment.apiUrl}/auth-info`;
+  constructor(private oidcConfigService: OidcConfigService, private http: HttpClient, private svcHelper: ServiceHelperService) {
+    const url = `${environment.apiUrl}/auth-info` + (environment.usingCustomDomain ? "" : `?tenantId=${this.svcHelper.getTenantId()}`);
     this.params$ = this.http.get<ConfigParams>(url);
     this.params$.subscribe(val => this.params = val, err => console.error(err));
   }

@@ -1,10 +1,9 @@
-import { Arn, CfnOutput, CfnParameter, Stack, StackProps } from 'aws-cdk-lib';
+import { Arn, CfnOutput, Fn, Stack, StackProps } from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 import * as eks from 'aws-cdk-lib/aws-eks';
-import * as acm from 'aws-cdk-lib/aws-certificatemanager';
-import * as route53 from 'aws-cdk-lib/aws-route53';
+
 import * as YAML from 'js-yaml';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -13,6 +12,8 @@ export interface EKSClusterStackProps extends StackProps {
     readonly clusterName: string
     readonly tenantOnboardingProjectName: string
     readonly tenantDeletionProjectName: string
+    readonly ingressControllerName: string
+    readonly sharedServiceAccountName: string
 
     readonly customDomain?: string
     readonly hostedZoneId?: string
@@ -22,8 +23,8 @@ export class EKSClusterStack extends Stack {
 
     readonly codebuildKubectlRoleArn: string;
     readonly vpc: ec2.Vpc;
-    readonly apiDomain: string;
     readonly openIdConnectProviderArn: string;
+    readonly nlbDomain: string
 
     constructor(scope: Construct, id: string, props: EKSClusterStackProps) {
         super(scope, id, props);
@@ -33,11 +34,6 @@ export class EKSClusterStack extends Stack {
         if (useCustomDomain && !props.hostedZoneId) {
             throw new Error(`HostedZoneId must be specified when using custom domain.`)
         }
-
-        const apiCertificate =
-            useCustomDomain ?
-                this.createApiCertificate(props.customDomain!, props.hostedZoneId!) :
-                undefined;
 
         this.vpc = new ec2.Vpc(this, "EKSVpc", {
             cidr: "192.168.0.0/16",
@@ -104,7 +100,10 @@ export class EKSClusterStack extends Stack {
         });
 
         const codebuildKubectlRole = new iam.Role(this, "CodebuildKubectlRole", {
-            assumedBy: new iam.ServicePrincipal("codebuild.amazonaws.com")
+            assumedBy: new iam.CompositePrincipal(
+                new iam.ServicePrincipal("codebuild.amazonaws.com"),
+                new iam.AccountRootPrincipal(),
+            )
         });
         codebuildKubectlRole.addToPolicy(new iam.PolicyStatement({
             actions: ["eks:DescribeCluster"],
@@ -121,50 +120,26 @@ export class EKSClusterStack extends Stack {
 
 
         // add nginx-ingress        
-        const ingressControllerName = "saasnginxingressctrl"
         const nginxValues = fs.readFileSync(path.join(__dirname, "..", "resources", "nginx-ingress-config.yaml"), "utf8")
         const nginxValuesAsRecord = YAML.load(nginxValues) as Record<string, any>;
-        if (useCustomDomain) {
-            nginxValuesAsRecord["controller"]["service"]["annotations"]["service.beta.kubernetes.io/aws-load-balancer-ssl-cert"] = apiCertificate!.certificateArn;
-        }
 
         const nginxChart = cluster.addHelmChart('ingress-nginx', {
             chart: 'ingress-nginx',
             repository: 'https://kubernetes.github.io/ingress-nginx',
             values: nginxValuesAsRecord,
-            release: ingressControllerName,
+            release: props.ingressControllerName,
             wait: true,
         });
 
         nginxChart.node.addDependency(nodegroup);
 
-
-        const nlbAddress = cluster.getServiceLoadBalancerAddress(`${ingressControllerName}-ingress-nginx-controller`);
-        this.apiDomain = useCustomDomain ? `api.${props.customDomain!}` : nlbAddress;
-
-        new CfnOutput(this, "APIDomain", {
-            value: this.apiDomain
-        });
-    }
-
-    private createApiCertificate(baseDomain: string, hostedZoneId: string): acm.Certificate {
-        const publicHostedZone = route53.PublicHostedZone.fromHostedZoneAttributes(this, 'CustomDomainPublicHostedZone', {
-            hostedZoneId: hostedZoneId,
-            zoneName: baseDomain
-        });
-
-        const cert = new acm.DnsValidatedCertificate(this, 'ApiCertificate', {
-            domainName: `api.${baseDomain}`,
-            hostedZone: publicHostedZone,
-            region: 'us-east-1',
-        });
-
-        return cert;
+        this.nlbDomain = cluster.getServiceLoadBalancerAddress(`${props.ingressControllerName}-ingress-nginx-controller`);
     }
 
     private addNodeIAMRolePolicies(eksNodeRole: iam.Role): void {
         eksNodeRole.addManagedPolicy(iam.ManagedPolicy.fromManagedPolicyArn(this, "EKSWorkerNodePolicy", "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"));
         eksNodeRole.addManagedPolicy(iam.ManagedPolicy.fromManagedPolicyArn(this, "ECRReadOnlyPolicy", "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"));
+        eksNodeRole.addManagedPolicy(iam.ManagedPolicy.fromManagedPolicyArn(this, "SSMAgentPolicy", "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"));
 
         eksNodeRole.addToPolicy(new iam.PolicyStatement({
             actions: [
@@ -179,8 +154,8 @@ export class EKSClusterStack extends Stack {
 
     private addSharedServicesPermissions(cluster: eks.Cluster, props: EKSClusterStackProps) {
         const sharedServiceAccount = cluster.addServiceAccount("SaaSServiceAccount", {
-            name: "shared-service-account",
-            namespace: "default"
+            name: props.sharedServiceAccountName,
+            namespace: "default",
         });
 
         sharedServiceAccount.addToPrincipalPolicy(new iam.PolicyStatement({
@@ -188,6 +163,7 @@ export class EKSClusterStack extends Stack {
                 "dynamodb:GetItem",
                 "dynamodb:BatchGetItem",
                 "dynamodb:Query",
+                "dynamodb:Scan",
                 "dynamodb:PutItem",
                 "dynamodb:UpdateItem",
                 "dynamodb:DeleteItem",
@@ -195,7 +171,6 @@ export class EKSClusterStack extends Stack {
             ],
             resources: [
                 Arn.format({ service: "dynamodb", resource: "table", resourceName: "Tenant" }, this),
-                Arn.format({ service: "dynamodb", resource: "table", resourceName: "SAAS_PROVIDER_METADATA" }, this),
             ],
             effect: iam.Effect.ALLOW
         }));

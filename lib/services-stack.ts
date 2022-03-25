@@ -7,12 +7,13 @@ import { ApplicationService } from "./constructs/application-service";
 import { TenantOnboarding } from "./constructs/tenant-onboarding";
 
 export interface ServicesStackProps extends StackProps {
-    readonly apiHost: string
+    readonly internalNLBApiDomain: string
     readonly eksClusterName: string
     readonly eksClusterOIDCProviderArn: string
     readonly codebuildKubectlRoleArn: string
     readonly appSiteDistributionId: string
     readonly appSiteCloudFrontDomain: string
+    readonly sharedServiceAccountName: string
     readonly appHostedZoneId?: string
     readonly customDomain?: string
 }
@@ -26,11 +27,12 @@ export class ServicesStack extends Stack {
         // shared services
 
         const tenantMgmtSvc = new SharedService(this, "TenantManagementService", {
-            apiHost: props.apiHost,
+            internalApiDomain: props.internalNLBApiDomain,
             eksClusterName: props.eksClusterName,
             codebuildKubectlRole: role,
             name: "TenantManagement",
             ecrImageName: "tenant-mgmt",
+            sharedServiceAccountName: props.sharedServiceAccountName,
             assetDirectory: path.join(__dirname, "..", "services", "shared-services", "tenant-management-service")
         });
         new CfnOutput(this, "TenantManagementRepository", {
@@ -38,11 +40,12 @@ export class ServicesStack extends Stack {
         });
 
         const tenantRegSvc = new SharedService(this, "TenantRegistrationService", {
-            apiHost: props.apiHost,
+            internalApiDomain: props.internalNLBApiDomain,
             eksClusterName: props.eksClusterName,
             codebuildKubectlRole: role,
             name: "TenantRegistration",
             ecrImageName: "tenant-reg",
+            sharedServiceAccountName: props.sharedServiceAccountName,
             assetDirectory: path.join(__dirname, "..", "services", "shared-services", "tenant-registration-service")
         });
         new CfnOutput(this, "TenantRegistrationRepository", {
@@ -50,11 +53,12 @@ export class ServicesStack extends Stack {
         });
 
         const userMgmtSvc = new SharedService(this, "UserManagementService", {
-            apiHost: props.apiHost,
+            internalApiDomain: props.internalNLBApiDomain,
             eksClusterName: props.eksClusterName,
             codebuildKubectlRole: role,
             name: "UserManagement",
             ecrImageName: "user-mgmt",
+            sharedServiceAccountName: props.sharedServiceAccountName,
             assetDirectory: path.join(__dirname, "..", "services", "shared-services", "user-management-service")
         });
         new CfnOutput(this, "UserManagementRepository", {
@@ -65,7 +69,7 @@ export class ServicesStack extends Stack {
         // application services
 
         const productSvc = new ApplicationService(this, "ProductService", {
-            apiHost: props.apiHost,
+            internalApiDomain: props.internalNLBApiDomain,
             eksClusterName: props.eksClusterName,
             codebuildKubectlRole: role,
             name: "ProductService",
@@ -78,7 +82,7 @@ export class ServicesStack extends Stack {
         });
 
         const orderSvc = new ApplicationService(this, "OrderService", {
-            apiHost: props.apiHost,
+            internalApiDomain: props.internalNLBApiDomain,
             eksClusterName: props.eksClusterName,
             codebuildKubectlRole: role,
             name: "OrderService",
@@ -97,8 +101,9 @@ export class ServicesStack extends Stack {
             appSiteCloudFrontDomain: props.appSiteCloudFrontDomain,
             appSiteDistributionId: props.appSiteDistributionId,
             codebuildKubectlRole: role,
-            eksClusterOIDCProviderArn: "",
+            eksClusterOIDCProviderArn: props.eksClusterOIDCProviderArn,
             eksClusterName: props.eksClusterName,
+            applicationServiceBuildProjectNames: ["ProductService", "OrderService"],
             onboardingProjectName: "TenantOnboardingProject",
             deletionProjectName: "TenantDeletionProject",
             appSiteHostedZoneId: props.appHostedZoneId,

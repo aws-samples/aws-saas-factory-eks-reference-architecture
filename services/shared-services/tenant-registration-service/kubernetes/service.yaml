@@ -12,6 +12,8 @@ spec:
       labels:
         app: tenant-registration
     spec:
+      serviceAccountName: KUSTOMIZE_SHARED_SVC_ACCOUNT_NAME
+      automountServiceAccountToken: true
       containers:
         - name: tenant-registration
           image: KUSTOMIZE_IMAGE

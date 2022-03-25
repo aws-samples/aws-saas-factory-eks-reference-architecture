@@ -105,7 +105,7 @@ export class TenantOnboardingStack extends Stack {
             callbackUrl: `${appSiteBaseUrl}/dashboard`,
             signoutUrl: `${appSiteBaseUrl}/logoff`,
             inviteEmailSubject: `Login for ${companyName.valueAsString}`,
-            inviteEmailBody: `Your username is {username} and temporary password is {####}. Please login here: https://${appSiteBaseUrl}`,
+            inviteEmailBody: `Your username is {username} and temporary password is {####}. Please login here: ${appSiteBaseUrl}`,
             customAttributes: {
                 "tenant-id": { value: tenantId.valueAsString, mutable: false },
             }
@@ -238,17 +238,24 @@ export class TenantOnboardingStack extends Stack {
         networkPolicy["metadata"]["namespace"] = tenantId;
         networkPolicy["metadata"]["name"] = `${tenantId}-policy-deny-other-namespace`;
 
-        // default request spec
-        const defaultRequest = YAML.load(fs.readFileSync(path.join(__dirname, "..", "resources", "default-request.yaml"), "utf8")) as Record<string, any>;
-        defaultRequest["metadata"]["namespace"] = tenantId;
+        const manifestsToDeploy = [ns, networkPolicy];
 
-        // quota
-        const quota = YAML.load(fs.readFileSync(path.join(__dirname, "..", "resources", "quota", `${plan}.yaml`), "utf8")) as Record<string, any>;
-        quota["metadata"]["namespace"] = tenantId;
+        // plan may not be defined from when deleting a tenant
+        if (plan) {
+            // default request spec
+            const defaultRequest = YAML.load(fs.readFileSync(path.join(__dirname, "..", "resources", "default-request.yaml"), "utf8")) as Record<string, any>;
+            defaultRequest["metadata"]["namespace"] = tenantId;
+            manifestsToDeploy.push(defaultRequest);
+
+            // quota
+            const quota = YAML.load(fs.readFileSync(path.join(__dirname, "..", "resources", "quota", `${plan}.yaml`), "utf8")) as Record<string, any>;
+            quota["metadata"]["namespace"] = tenantId;
+            manifestsToDeploy.push(quota);
+        }
 
         new eks.KubernetesManifest(this, "KubernetesResources", {
             cluster: cluster,
-            manifest: [ns, networkPolicy, defaultRequest, quota],
+            manifest: manifestsToDeploy,
             overwrite: true,
         });
     }

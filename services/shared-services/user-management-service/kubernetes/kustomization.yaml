@@ -11,5 +11,11 @@ patchesJson6902:
     version: v1
     kind: Ingress
     name: user-management-service-ingress
+- path: svc-acc-patch.yaml
+  target:
+    group: apps
+    version: v1
+    kind: Deployment
+    name: user-management
 images:
 - name: KUSTOMIZE_IMAGE

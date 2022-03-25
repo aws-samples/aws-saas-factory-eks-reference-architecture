@@ -1,9 +1,7 @@
 import { Construct } from "constructs";
 import { Arn, RemovalPolicy, Stack } from "aws-cdk-lib";
 import * as codecommit from 'aws-cdk-lib/aws-codecommit';
-import * as ecr from 'aws-cdk-lib/aws-ecr';
 import * as codebuild from 'aws-cdk-lib/aws-codebuild';
-import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as iam from 'aws-cdk-lib/aws-iam';
 
 export interface TenantOnboardingProps {
@@ -14,6 +12,8 @@ export interface TenantOnboardingProps {
     readonly eksClusterName: string
     readonly codebuildKubectlRole: iam.IRole
     readonly eksClusterOIDCProviderArn: string
+
+    readonly applicationServiceBuildProjectNames: string[]
 
     readonly appSiteDistributionId: string
     readonly appSiteCloudFrontDomain: string
@@ -49,7 +49,7 @@ export class TenantOnboarding extends Construct {
             "AppDistributionId": `"${props.appSiteDistributionId}"`,
             "DistributionDomain": `"${props.appSiteCloudFrontDomain}"`,
             "EKSClusterName": `"${props.eksClusterName}"`,
-            "KubectlRoleArn": `"${props.codebuildKubectlRole}"`,
+            "KubectlRoleArn": `"${props.codebuildKubectlRole.roleArn}"`,
             "OIDCProviderArn": `"${props.eksClusterOIDCProviderArn}"`,
         };
 
@@ -61,7 +61,6 @@ export class TenantOnboarding extends Construct {
             role: props.codebuildKubectlRole,
             environment: {
                 buildImage: codebuild.LinuxBuildImage.STANDARD_5_0,
-                privileged: true
             },
             environmentVariables: {
                 TENANT_ID: {
@@ -108,12 +107,8 @@ export class TenantOnboarding extends Construct {
                         ],
                     },
                     post_build: {
-                        commands: [
-                            // TODO: think of a better way to deploy the services to the new tenant
-                            // TODO: DO NOT deploy to other tenants
-                            `aws codebuild start-build --project-name ProductService`,
-                            `aws codebuild start-build --project-name OrderService`,
-                        ]
+                        commands: props.applicationServiceBuildProjectNames.map(
+                            x => `aws codebuild start-build --project-name ${x}TenantDeploy --environment-variables-override name=TENANT_ID,value=\"$TENANT_ID\",type=PLAINTEXT`)
                     },
                 },
             }),
@@ -228,5 +223,13 @@ export class TenantOnboarding extends Construct {
             ],
             effect: iam.Effect.ALLOW
         }));
+        projectRole.addToPrincipalPolicy(new iam.PolicyStatement({
+            actions: [
+                "ssm:GetParameter"
+            ],
+            resources: [
+                Arn.format({ service: "ssm", resource: "parameter", resourceName: "cdk-bootstrap/*"}, Stack.of(this))
+            ]
+        }))
     }
 }

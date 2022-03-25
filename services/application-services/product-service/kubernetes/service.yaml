@@ -12,6 +12,8 @@ spec:
       labels:
         app: product
     spec:
+      serviceAccountName: KUSTOMIZE_SVC_ACCOUNT_NAME
+      automountServiceAccountToken: true
       containers:
         - name: product
           image: KUSTOMIZE_IMAGE
