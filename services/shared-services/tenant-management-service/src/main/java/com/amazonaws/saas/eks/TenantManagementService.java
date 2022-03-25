@@ -199,8 +199,7 @@ public class TenantManagementService {
 	 * @return AmazonDynamoDBClient
 	 */
 	private AmazonDynamoDBClient getAmazonDynamoDBLocalClient() {
-		return (AmazonDynamoDBClient) AmazonDynamoDBClientBuilder.standard()
-				.withCredentials(new DefaultAWSCredentialsProviderChain()).build();
+		return (AmazonDynamoDBClient) AmazonDynamoDBClientBuilder.standard().build();
 	}
 
 	/**
