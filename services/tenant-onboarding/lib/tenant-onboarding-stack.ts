@@ -45,8 +45,13 @@ export class TenantOnboardingStack extends Stack {
 
 
         const getNamedUrlForCognito = (pathName?: string) => {
-            if(usingCustomDomain) {
-                return `${appSiteBaseUrl}/${pathName}`;
+            if (usingCustomDomain) {
+                if (pathName) {
+                    return `${appSiteBaseUrl}/${pathName}`;
+                }
+                else {
+                    return appSiteBaseUrl;
+                }
             }
 
             const path = pathName ? `%26path=${pathName!}` : "";
