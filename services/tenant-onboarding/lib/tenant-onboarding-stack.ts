@@ -44,6 +44,17 @@ export class TenantOnboardingStack extends Stack {
             `https://${distributionDomain.valueAsString}/#/${tenantId.valueAsString}`;
 
 
+        const getNamedUrlForCognito = (pathName?: string) => {
+            if(usingCustomDomain) {
+                return `${appSiteBaseUrl}/${pathName}`;
+            }
+
+            const path = pathName ? `%26path=${pathName!}` : "";
+
+            return `https://${distributionDomain.valueAsString}/?tenantId=${tenantId.valueAsString}${path}`;
+        }
+
+
         const provider = eks.OpenIdConnectProvider.fromOpenIdConnectProviderArn(this, "OIDCProvider", eksClusterOIDCProviderArn.valueAsString);
 
         const cluster = eks.Cluster.fromClusterAttributes(this, "EKSCluster", {
@@ -102,8 +113,8 @@ export class TenantOnboardingStack extends Stack {
         const cognito = new Cognito(this, "CognitoResources", {
             adminUserEmailAddress: tenantAdminEmail.valueAsString,
             userPoolName: `${tenantId.valueAsString}-UserPool`,
-            callbackUrl: `${appSiteBaseUrl}/dashboard`,
-            signoutUrl: `${appSiteBaseUrl}/logoff`,
+            callbackUrl: getNamedUrlForCognito(),
+            signoutUrl: getNamedUrlForCognito("logoff"),
             inviteEmailSubject: `Login for ${companyName.valueAsString}`,
             inviteEmailBody: `Your username is {username} and temporary password is {####}. Please login here: ${appSiteBaseUrl}`,
             customAttributes: {
@@ -132,10 +143,10 @@ export class TenantOnboardingStack extends Stack {
                         PLAN: { S: props.plan },
                         AUTH_SERVER: { S: cognito.authServerUrl },
                         AUTH_CLIENT_ID: { S: cognito.appClientId },
-                        AUTH_REDIRECT_URI: { S: `${appSiteBaseUrl}/dashboard` },
+                        AUTH_REDIRECT_URI: { S: getNamedUrlForCognito() },
                         COGNITO_DOMAIN: { S: `https://${cognito.appClientId}.auth.${this.region}.amazoncognito.com` },
                         AUTH_USE_SR: { BOOL: true },
-                        AUTH_SR_REDIRECT_URI: { S: `${appSiteBaseUrl}/silentrefresh` },
+                        AUTH_SR_REDIRECT_URI: { S: getNamedUrlForCognito("silentrefresh") },
                         AUTH_SR_TIMEOUT: { N: "5000" },
                         AUTH_TIMEOUT_FACTOR: { N: "0.25" },
                         AUTH_SESSION_CHECKS_ENABLED: { BOOL: true },

@@ -22,6 +22,7 @@ import {
   EventTypes,
 } from 'angular-auth-oidc-client';
 import { tap, filter } from 'rxjs/operators';
+import { environment } from '../environments/environment';
 
 @Component({
   // tslint:disable-next-line
@@ -33,7 +34,18 @@ export class AppComponent implements OnInit {
     private router: Router,
     public oidcSecurityService: OidcSecurityService,
     private eventService: PublicEventsService
-  ) {}
+  ) {
+    if(!environment.usingCustomDomain) {
+      const query = new URLSearchParams(window.location.search);
+      const tenantId = query.get("tenantId");
+      const path = query.get("path") || "";
+      if(tenantId) {
+        query.delete("tenantId");
+        query.delete("path");
+        window.location.assign(`/?${query.toString()}#/${tenantId}/${path}`);
+      }
+    }
+  }
 
   ngOnInit() {
     this.oidcSecurityService

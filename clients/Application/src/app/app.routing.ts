@@ -24,7 +24,6 @@ import { P404Component } from './views/error/404.component';
 import { P500Component } from './views/error/500.component';
 import { UnauthorizedComponent } from './views/error/unauthorized.component';
 import { LogoffComponent } from './views/logoff/logoff.component';
-import { environment } from '../environments/environment';
 
 const routes: Routes = [
   {

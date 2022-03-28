@@ -117,7 +117,6 @@ import { AuthConfigurationService } from './views/auth/auth-configuration.servic
           return "";
         }
         const parts = window.location.hash.split('/');
-        console.log(parts);
         return `/${parts[1]}`;
       }
     }
