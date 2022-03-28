@@ -26,15 +26,18 @@ export class ServiceHelperService {
 
   getUrl(entity: string) {
     const tenantId = this.getTenantId();
-    const url = `${environment.apiUrl}/${entity}/${tenantId}`;
+    const url = `${environment.apiUrl}/${tenantId}/${entity}`;
     return url;
   }
 
   getTenantId() {
-    let route = this.router.routerState.root;
-    while (route.firstChild) {
-      route = route.firstChild;
+    if(environment.usingCustomDomain) {
+      const hostname = window.location.hostname;
+      const parts = hostname.split('.');
+      return parts[0];
+    } else {
+      const parts = window.location.hash.split('/');
+      return parts[1];
     }
-    return route.snapshot.paramMap.get("tenantId");
   }
 }

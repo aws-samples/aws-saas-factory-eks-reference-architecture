@@ -26,7 +26,7 @@ import { UnauthorizedComponent } from './views/error/unauthorized.component';
 import { LogoffComponent } from './views/logoff/logoff.component';
 import { environment } from '../environments/environment';
 
-const appRoutes: Routes = [
+const routes: Routes = [
   {
     path: '',
     redirectTo: 'dashboard',
@@ -86,38 +86,6 @@ const appRoutes: Routes = [
     path: 'unauthorized',
     component: UnauthorizedComponent,
   },
-];
-
-const parentedRoutes: Routes = [
-  {
-    matcher: (segments) => {
-      if(environment.usingCustomDomain) {
-        const hostname = window.location.hostname;
-        const parts = hostname.split('.');
-        const tenantId = parts.length === 1 ? 'saascoffee' : parts[0];
-        return ({
-          consumed: [],
-          posParams: {
-            tenantId: new UrlSegment(tenantId, {})
-          }
-        });
-      } else if(segments.length > 0) {
-        return ({
-          consumed: segments.slice(0, 1),
-          posParams: {
-            tenantId: new UrlSegment(segments[0].path, {})
-          }
-        });
-      } else {
-        return null;
-      }
-    },
-    children: appRoutes
-  }
-]
-
-export const routes: Routes = [
-  ...parentedRoutes,
   { path: '**', component: P404Component }
 ];
 

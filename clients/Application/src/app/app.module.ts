@@ -16,7 +16,7 @@
  */
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule, APP_INITIALIZER } from '@angular/core';
-import { LocationStrategy, HashLocationStrategy } from '@angular/common';
+import { APP_BASE_HREF, LocationStrategy, HashLocationStrategy } from '@angular/common';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 import { OidcConfigService, AuthModule } from 'angular-auth-oidc-client';
@@ -37,6 +37,7 @@ import { DefaultLayoutComponent } from './containers';
 import { P404Component } from './views/error/404.component';
 import { P500Component } from './views/error/500.component';
 import { LogoffComponent } from './views/logoff/logoff.component';
+import { environment } from '../environments/environment';
 
 const APP_CONTAINERS = [
   DefaultLayoutComponent
@@ -109,6 +110,17 @@ import { AuthConfigurationService } from './views/auth/auth-configuration.servic
         multi: true,
     },
     httpInterceptorProviders,
+    {
+      provide: APP_BASE_HREF,
+      useFactory: () => {
+        if(environment.usingCustomDomain) {
+          return "";
+        }
+        const parts = window.location.hash.split('/');
+        console.log(parts);
+        return `/${parts[1]}`;
+      }
+    }
   ],
   bootstrap: [ AppComponent ]
 })

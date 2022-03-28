@@ -41,7 +41,7 @@ export class TenantOnboardingStack extends Stack {
 
         const appSiteBaseUrl = usingCustomDomain ?
             `https://${tenantId.valueAsString}.${props.customDomain!}` :
-            `https://${distributionDomain.valueAsString}/${tenantId.valueAsString}`;
+            `https://${distributionDomain.valueAsString}/#/${tenantId.valueAsString}`;
 
 
         const provider = eks.OpenIdConnectProvider.fromOpenIdConnectProviderArn(this, "OIDCProvider", eksClusterOIDCProviderArn.valueAsString);
@@ -118,6 +118,7 @@ export class TenantOnboardingStack extends Stack {
             resourceName: TENANT_TABLE
         }, this);
 
+        // TODO: make sure silent referesh works with or without custom domain
         const tenantEntry = new cr.AwsCustomResource(this, 'TenantEntryResource', {
             onCreate: {
                 service: 'DynamoDB',
