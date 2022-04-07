@@ -21,6 +21,7 @@ const sharedServiceAccountName = "shared-service-account";
 const customDomain = process.env.npm_config_domain && process.env.npm_config_domain.length > 0 ? process.env.npm_config_domain : undefined;
 const hostedZoneId = process.env.npm_config_hostedzone && process.env.npm_config_hostedzone.length > 0 ? process.env.npm_config_hostedzone : undefined;
 const saasAdminEmail = process.env.npm_config_email!;
+const kubecostToken = process.env.npm_config_kubecosttoken && process.env.npm_config_kubecosttoken.length > 0 ? process.env.npm_config_kubecosttoken : undefined;
 
 const app = new cdk.App();
 
@@ -31,6 +32,7 @@ const clusterStack = new EKSClusterStack(app, 'EKSSaaSCluster', {
     tenantOnboardingProjectName: tenantOnboardingProjectName,
     tenantDeletionProjectName: tenantDeletionProjectName,
     sharedServiceAccountName: sharedServiceAccountName,
+    kubecostToken: kubecostToken,
     customDomain: customDomain,
     hostedZoneId: hostedZoneId
 });
@@ -51,6 +53,7 @@ const sitesStack = new StaticSitesStack(app, 'StaticSites', {
     saasAdminEmail: saasAdminEmail,
     hostedZoneId: hostedZoneId,
     customBaseDomain: customDomain,
+    usingKubeCost: !!kubecostToken,
 });
 
 const commonResource = new CommonResourcesStack(app, 'CommonResources', {

@@ -1,4 +1,4 @@
-import { Arn, CfnOutput, Fn, Stack, StackProps } from 'aws-cdk-lib';
+import { Arn, CfnJson, Duration, Stack, StackProps } from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
@@ -14,6 +14,8 @@ export interface EKSClusterStackProps extends StackProps {
     readonly tenantDeletionProjectName: string
     readonly ingressControllerName: string
     readonly sharedServiceAccountName: string
+
+    readonly kubecostToken?: string
 
     readonly customDomain?: string
     readonly hostedZoneId?: string
@@ -55,6 +57,7 @@ export class EKSClusterStack extends Stack {
         });
 
         ctrlPlaneSecurityGroup.addIngressRule(nodeSecurityGroup, ec2.Port.tcp(443));
+        ctrlPlaneSecurityGroup.addEgressRule(nodeSecurityGroup, ec2.Port.tcp(443)); // needed for nginx-ingress admission controller
         ctrlPlaneSecurityGroup.addEgressRule(nodeSecurityGroup, ec2.Port.tcpRange(1025, 65535));
 
         nodeSecurityGroup.addIngressRule(nodeSecurityGroup, ec2.Port.allTraffic());
@@ -71,6 +74,25 @@ export class EKSClusterStack extends Stack {
             vpc: this.vpc,
             vpcSubnets: [{ subnetType: ec2.SubnetType.PRIVATE_WITH_NAT }],
             securityGroup: ctrlPlaneSecurityGroup,
+        });
+
+        const vpcCniSvcAccountRole = new iam.Role(this, 'VpcCniSvcAccountRole', {
+            assumedBy: new iam.OpenIdConnectPrincipal(cluster.openIdConnectProvider).withConditions({
+                StringEquals: new CfnJson(this, 'VpcCniSvcAccountRoleCondition', {
+                    value: {
+                        [`${cluster.openIdConnectProvider.openIdConnectProviderIssuer}:aud`]: "sts.amazonaws.com",
+                        [`${cluster.openIdConnectProvider.openIdConnectProviderIssuer}:sub`]: "system:serviceaccount:kube-system:aws-node"
+                    },
+                }),
+            }),
+        });
+        vpcCniSvcAccountRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonEKS_CNI_Policy"));
+
+        const vpcCniPlugin = new eks.CfnAddon(this, "VpcCniPlugin", {
+            addonName: "vpc-cni",
+            clusterName: props.clusterName,
+            resolveConflicts: "OVERWRITE",
+            serviceAccountRoleArn: vpcCniSvcAccountRole.roleArn
         });
 
 
@@ -98,6 +120,7 @@ export class EKSClusterStack extends Stack {
                 id: nodeLaunchTemplate.launchTemplateId!
             },
         });
+        nodegroup.node.addDependency(vpcCniPlugin);
 
         const codebuildKubectlRole = new iam.Role(this, "CodebuildKubectlRole", {
             assumedBy: new iam.CompositePrincipal(
@@ -133,13 +156,19 @@ export class EKSClusterStack extends Stack {
 
         nginxChart.node.addDependency(nodegroup);
 
-        this.nlbDomain = cluster.getServiceLoadBalancerAddress(`${props.ingressControllerName}-ingress-nginx-controller`);
+        this.nlbDomain = cluster.getServiceLoadBalancerAddress(`${props.ingressControllerName}-ingress-nginx-controller`, {
+            namespace: "default",
+        });
+
+        if (props.kubecostToken) {
+            this.installKubecost(cluster, nodegroup, props.kubecostToken!, this.nlbDomain);
+        }
     }
 
     private addNodeIAMRolePolicies(eksNodeRole: iam.Role): void {
-        eksNodeRole.addManagedPolicy(iam.ManagedPolicy.fromManagedPolicyArn(this, "EKSWorkerNodePolicy", "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"));
-        eksNodeRole.addManagedPolicy(iam.ManagedPolicy.fromManagedPolicyArn(this, "ECRReadOnlyPolicy", "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"));
-        eksNodeRole.addManagedPolicy(iam.ManagedPolicy.fromManagedPolicyArn(this, "SSMAgentPolicy", "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"));
+        eksNodeRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonEKSWorkerNodePolicy"));
+        eksNodeRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonEC2ContainerRegistryReadOnly"));
+        eksNodeRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonSSMManagedInstanceCore"));
     }
 
     private addSharedServicesPermissions(cluster: eks.Cluster, props: EKSClusterStackProps) {
@@ -181,5 +210,76 @@ export class EKSClusterStack extends Stack {
             ],
             effect: iam.Effect.ALLOW
         }));
+    }
+
+    private installKubecost(cluster: eks.Cluster, nodegroup: eks.Nodegroup, kubecostToken: string, nlbDomain: string) {
+        const ns = cluster.addManifest("KubeCostNS", {
+            "apiVersion": "v1",
+            "kind": "Namespace",
+            "metadata": {
+                "name": "kubecost",
+                "labels": {
+                    "name": "kubecost",
+                }
+            }
+        });
+        ns.node.addDependency(nodegroup);
+
+        const kubecost = cluster.addHelmChart('KubeCost', {
+            chart: 'cost-analyzer',
+            repository: 'https://kubecost.github.io/cost-analyzer',
+            namespace: "kubecost",
+            release: "kubecost",
+            wait: false,
+            timeout: Duration.minutes(15),
+            values: {
+                "kubecostToken": kubecostToken,
+            },
+        });
+        kubecost.node.addDependency(nodegroup, ns);
+
+        const ingress = new eks.KubernetesManifest(this, "KubeCostIngress", {
+            cluster: cluster,
+            overwrite: true,
+            manifest: [{
+                "apiVersion": "networking.k8s.io/v1",
+                "kind": "Ingress",
+                "metadata": {
+                    "name": "kubecost-ingress",
+                    "namespace": "kubecost",
+                    "annotations": {
+                        "kubernetes.io/ingress.class": "nginx",
+                        "nginx.ingress.kubernetes.io/enable-cors": "true",
+                        "nginx.ingress.kubernetes.io/rewrite-target": "/$2",
+                        "nginx.ingress.kubernetes.io/configuration-snippet": "rewrite ^(/kubecost)$ $1/ permanent;\n"
+                    }
+                },
+                "spec": {
+                    "rules": [
+                        {
+                            "host": nlbDomain,
+                            "http": {
+                                "paths": [
+                                    {
+                                        "path": "/kubecost(/|$)(.*)",
+                                        "pathType": "Prefix",
+                                        "backend": {
+                                            "service": {
+                                                "name": "kubecost-cost-analyzer",
+                                                "port": {
+                                                    "number": 9090
+                                                }
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }]
+        });
+
+        ingress.node.addDependency(kubecost);
     }
 }
