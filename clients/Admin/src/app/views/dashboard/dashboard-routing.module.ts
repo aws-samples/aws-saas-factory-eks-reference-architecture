@@ -16,6 +16,7 @@
  */
 import { NgModule } from '@angular/core';
 import { Routes, RouterModule } from '@angular/router';
+import { CognitoGuard } from '../../cognito.guard';
 
 import { DashboardComponent } from './dashboard.component';
 
@@ -25,7 +26,8 @@ const routes: Routes = [
     component: DashboardComponent,
     data: {
       title: 'Dashboard'
-    }
+    },
+    canActivate: [CognitoGuard],
   }
 ];
 

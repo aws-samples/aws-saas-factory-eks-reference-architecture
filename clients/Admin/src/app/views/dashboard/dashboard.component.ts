@@ -15,8 +15,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 import { Component, OnInit } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { getStyle, hexToRgba } from '@coreui/coreui/dist/js/coreui-utilities';
 import { CustomTooltips } from '@coreui/coreui-plugin-chartjs-custom-tooltips';
+import { environment } from '../../../environments/environment';
+import * as rxjs from 'rxjs';
+import { map } from 'rxjs/operators';
 import { TenantService } from '../../tenants/tenant.service';
 
 interface DataSet {
@@ -33,92 +37,36 @@ interface ChartData {
   templateUrl: 'dashboard.component.html'
 })
 export class DashboardComponent implements OnInit {
-  constructor(private tenantSvc: TenantService) {}
+  constructor(private tenantSvc: TenantService, private http: HttpClient) { }
 
-  data: ChartData[] = [];
-  radioModel: string = 'Month';
-  public lineChart2Data: Array<any> = [
+  public showDummyChart = !environment.usingKubeCost;
+  radioModel: string = environment.usingKubeCost ? '15d' : 'Month';
+
+  // dummyChart
+
+  public dummyChartElements = 27;
+  public dummyChartData1: Array<number> = [];
+  public dummyChartData2: Array<number> = [];
+  public dummyChartData3: Array<number> = [];
+
+  public dummyChartData: Array<any> = [
     {
-      data: [1, 18, 9, 17, 34, 22, 11],
-      label: 'Series A'
-    }
-  ];
-  public lineChart2Labels: Array<any> = ['January', 'February', 'March', 'April', 'May', 'June', 'July'];
-  public lineChart2Options: any = {
-    tooltips: {
-      enabled: false,
-      custom: CustomTooltips
-    },
-    maintainAspectRatio: false,
-    scales: {
-      xAxes: [{
-        gridLines: {
-          color: 'transparent',
-          zeroLineColor: 'transparent'
-        },
-        ticks: {
-          fontSize: 2,
-          fontColor: 'transparent',
-        }
-
-      }],
-      yAxes: [{
-        display: false,
-        ticks: {
-          display: false,
-          min: 1-5,
-          max: 50+5,
-        }
-      }],
-    },
-    elements: {
-      line: {
-        tension: 0.00001,
-        borderWidth: 1
-      },
-      point: {
-        radius: 4,
-        hitRadius: 10,
-        hoverRadius: 4,
-      },
-    },
-    legend: {
-      display: false
-    }
-  };
-  public lineChart2Colours: Array<any> = [
-    { // grey
-      backgroundColor: getStyle('--info'),
-      borderColor: 'rgba(255,255,255,.55)'
-    }
-  ];
-  public lineChart2Legend = false;
-  public lineChart2Type = 'line';
-  // mainChart
-
-  public mainChartElements = 27;
-  public mainChartData1: Array<number> = [];
-  public mainChartData2: Array<number> = [];
-  public mainChartData3: Array<number> = [];
-
-  public mainChartData: Array<any> = [
-    {
-      data: this.mainChartData1,
+      data: this.dummyChartData1,
       label: 'Current'
     },
     {
-      data: this.mainChartData2,
+      data: this.dummyChartData2,
       label: 'Previous'
     },
     {
-      data: this.mainChartData3,
+      data: this.dummyChartData3,
       label: 'BEP'
     }
   ];
   /* tslint:disable:max-line-length */
-  public mainChartLabels: Array<any> = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday', 'Monday', 'Thursday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  public dummyChartLabels: Array<any> = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday', 'Monday', 'Thursday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   /* tslint:enable:max-line-length */
-  public mainChartOptions: any = {
+  public dummyChartOptions: any = {
     tooltips: {
       enabled: false,
       custom: CustomTooltips,
@@ -126,7 +74,7 @@ export class DashboardComponent implements OnInit {
       mode: 'index',
       position: 'nearest',
       callbacks: {
-        labelColor: function(tooltipItem, chart) {
+        labelColor: function (tooltipItem, chart) {
           return { backgroundColor: chart.data.datasets[tooltipItem.datasetIndex].borderColor };
         }
       }
@@ -139,7 +87,7 @@ export class DashboardComponent implements OnInit {
           drawOnChartArea: false,
         },
         ticks: {
-          callback: function(value: any) {
+          callback: function (value: any) {
             return value.charAt(0);
           }
         }
@@ -168,7 +116,7 @@ export class DashboardComponent implements OnInit {
       display: false
     }
   };
-  public mainChartColours: Array<any> = [
+  public dummyChartColours: Array<any> = [
     { // brandInfo
       backgroundColor: hexToRgba(getStyle('--info'), 10),
       borderColor: getStyle('--info'),
@@ -187,8 +135,44 @@ export class DashboardComponent implements OnInit {
       borderDash: [8, 5]
     }
   ];
-  public mainChartLegend = false;
-  public mainChartType = 'line';
+  public dummyChartLegend = false;
+  public dummyChartType = 'line';
+
+
+  public chartData = {
+    perTenantCost: void (0),
+  };
+
+  public chartOptions = {
+    perTenantCost: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        xAxes: [{
+          stacked: true,
+        }],
+        yAxes: [{
+          min: 10,
+          stacked: true,
+          max: 250,
+        }]
+      },
+      tooltips: {
+        callbacks: {
+          label: (tooltipItem, data) => {
+            var label = data.datasets[tooltipItem.datasetIndex].label || '';
+
+            if (label) {
+              label += ': ';
+            }
+            label += '$' + Math.round(tooltipItem.yLabel * 100) / 100;
+            return label;
+          }
+        }
+      }
+    }
+  };
+
 
 
   public random(min: number, max: number) {
@@ -196,31 +180,50 @@ export class DashboardComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // generate random values for mainChart
-    this.tenantSvc.getTenants()
-    .subscribe(val => {
-      val.forEach(tenant => {
-        let simulatedOrders = [];
-        //simulate 7 months of orders
-        for(let j = 0; j < 7; j++) {
-          simulatedOrders.push(this.random(0, 50));
-        }
-        const dataSet: DataSet = {
-          label: 'Monthly Orders',
-          data: simulatedOrders,
-        }
-        this.data.push({
-          tenantId: tenant.tenantId,
-          dataSet: [dataSet],
-          totalOrders: simulatedOrders.reduce((a,b) => a+b, 0)
-        });
+    if (!environment.usingKubeCost) {
+      // generate random values for dummyChart
+      for (let i = 0; i <= this.dummyChartElements; i++) {
+        this.dummyChartData1.push(this.random(50, 200));
+        this.dummyChartData2.push(this.random(80, 100));
+        this.dummyChartData3.push(65);
+      }
+
+      return;
+    }
+
+    // fetch real data from kubecost
+    this.tenantSvc.getTenants().subscribe(val => {
+      const tenantIds = val.map(x => x.tenantId);
+      this.getCostByTenant(tenantIds).subscribe(data => {
+        this.chartData.perTenantCost = data;
       });
+    }); 
+  }
+
+  private getCostByTenant(tenantIds: Array<String>) {
+    const url = `${environment.apiUrl}/kubecost/model/allocation?window=15d&aggregate=namespace&accumulate=true&idle=false`;
+    const data = this.http.get<any>(url);
+    const chartDataTransformer = map(x => {
+      const data = {
+        labels: [],
+        datasets: [
+          { label: 'memory', data: [] },
+          { label: 'cpu', data: [] },
+        ],
+      };
+      const tenantUsageModel = x["data"][0];
+      for (const [key, value] of Object.entries(tenantUsageModel)) {
+        if(tenantIds.indexOf(key) < 0) {
+          continue;
+        }
+        data.labels.push(key);
+        data.datasets[0].data.push(value["ramCost"]);
+        data.datasets[1].data.push(value["cpuCost"]);
+      }
+
+      return data;
     });
 
-    for (let i = 0; i <= this.mainChartElements; i++) {
-      this.mainChartData1.push(this.random(50, 200));
-      this.mainChartData2.push(this.random(80, 100));
-      this.mainChartData3.push(65);
-    }
+    return data.pipe(chartDataTransformer);
   }
 }
