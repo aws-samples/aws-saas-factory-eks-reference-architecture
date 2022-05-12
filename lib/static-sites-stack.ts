@@ -9,7 +9,7 @@ export interface StaticSitesStackProps extends StackProps {
     readonly apiUrl: string
     readonly saasAdminEmail: string
 
-    usingKubeCost: boolean
+    readonly usingKubeCost: boolean
 
     readonly customBaseDomain?: string
     readonly hostedZoneId?: string
@@ -75,6 +75,7 @@ export class StaticSitesStack extends Stack {
                 domain: siteDomain,
                 usingCustomDomain: useCustomDomain,
                 usingKubeCost: props.usingKubeCost,
+                kubecostUI: props.usingKubeCost ? `${props.apiUrl}/kubecost/index.html` : ""
             }),
             customDomain: useCustomDomain ? `admin.${props.customBaseDomain!}` : undefined,
             hostedZone: hostedZone

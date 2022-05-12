@@ -7,4 +7,5 @@ export const environment = {
   domain: '$CUSTOM_DOMAIN',
   usingCustomDomain: true,
   usingKubeCost: false,
+  kubecostUI: "",
 };

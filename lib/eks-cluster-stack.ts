@@ -26,7 +26,7 @@ export class EKSClusterStack extends Stack {
     readonly codebuildKubectlRoleArn: string;
     readonly vpc: ec2.Vpc;
     readonly openIdConnectProviderArn: string;
-    readonly nlbDomain: string
+    readonly nlbDomain: string;
 
     constructor(scope: Construct, id: string, props: EKSClusterStackProps) {
         super(scope, id, props);
