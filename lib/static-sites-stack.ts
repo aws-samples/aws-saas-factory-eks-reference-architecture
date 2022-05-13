@@ -75,7 +75,7 @@ export class StaticSitesStack extends Stack {
                 domain: siteDomain,
                 usingCustomDomain: useCustomDomain,
                 usingKubeCost: props.usingKubeCost,
-                kubecostUI: props.usingKubeCost ? `${props.apiUrl}/kubecost/index.html` : ""
+                kubecostUI: props.usingKubeCost ? `${props.apiUrl}/kubecost` : ""
             }),
             customDomain: useCustomDomain ? `admin.${props.customBaseDomain!}` : undefined,
             hostedZone: hostedZone

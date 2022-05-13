@@ -38,7 +38,7 @@ const navItems: INavData[] = [
 if(environment.usingKubeCost) {
   navItems.push({
     name: 'Kubecost',
-    url: environment.kubecostUI,
+    url: `${environment.kubecostUI}/index.html`,
     icon: 'icon-speedometer',
     attributes: { target: '_blank' },
   })

@@ -157,6 +157,12 @@ export class DashboardComponent implements OnInit {
           max: 250,
         }]
       },
+      onClick: function(evt, ele) {
+        if(ele && ele.length > 0) {
+          const tenantId = ele[0]._model.label;
+          window.open(`${environment.kubecostUI}/details.html?name=${tenantId}&type=namespace`, '_blank');
+        }
+      },
       tooltips: {
         callbacks: {
           label: (tooltipItem, data) => {
