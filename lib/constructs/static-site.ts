@@ -164,7 +164,7 @@ export class StaticSite extends Construct {
         if (useCustomDomain) {
             new route53.ARecord(this, `${id}AliasRecord`, {
                 zone: hostedZone!,
-                recordName: customDomain!,
+                recordName: certDomain ?? customDomain!,
                 target: route53.RecordTarget.fromAlias(new alias.CloudFrontTarget(distribution))
             });
         }
