@@ -169,11 +169,7 @@ export class ApiStack extends Stack {
 
             new route53.ARecord(this, 'CustomDomainAliasRecord', {
                 zone: publicHostedZone!,
-                target: route53.RecordTarget.fromAlias(new targets.ApiGateway(api)
-                /*target: route53.RecordTarget.fromAlias(new targets.ApiGatewayv2DomainProperties(
-                    api.url,
-                    props.hostedZoneId!
-                )*/),
+                target: route53.RecordTarget.fromAlias(new targets.ApiGateway(api)),
                 recordName: `api.${props.customDomain!}`
             });
         }
