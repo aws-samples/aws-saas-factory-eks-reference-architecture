@@ -1,7 +1,7 @@
 # *** **_WARNING_** *** 
 This `vNext` reference architecture is a work-in-progress and not yet ready for any practical use. If you are looking for a reference architecture to start your application on, please refer to the `main` branch for a stable version.
 
-## How to deploy vNExt?
+## How to deploy vNext?
 
 If you don't have a custom domain, it will only require an email address for the SaaS administrator:
 
@@ -15,6 +15,8 @@ However, if you want to you use your custom domain hosted in a Route53 public ho
 npm i
 npm run deploy --email=your@email.com --domain=base.domain.com --hostedzone=hosted-zone-id
 ```
+
+If you have a kubecost token and want to use it to enable kubecost integration, simply add `--kubecosttoken=<TOKEN>` with the above commands.
 
 ## *** **_Note_** ***
 
