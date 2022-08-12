@@ -154,25 +154,9 @@ export class ApiStack extends Stack {
 
         if (useCustomDomain) {
             
-
-            const domain = new apigwv2.CfnDomainName(this, "SaaSApiCustomDomain", {
-                domainName: `api.${props.customDomain!}`,
-                domainNameConfigurations: [
-                    {
-                        certificateArn: apiCertificate!.certificateArn,
-                        certificateName: "saas-api-cert",
-                        endpointType: apigw.EndpointType.REGIONAL,
-                        securityPolicy: apigw.SecurityPolicy.TLS_1_2
-                    }
-                ]
-            });
-
             new route53.ARecord(this, 'CustomDomainAliasRecord', {
                 zone: publicHostedZone!,
-                target: route53.RecordTarget.fromAlias(new targets.ApiGatewayv2DomainProperties(
-                    domain.domainName,
-                    props.hostedZoneId!
-                )),
+                target: route53.RecordTarget.fromAlias(new targets.ApiGateway(api)),
                 recordName: `api.${props.customDomain!}`
             });
         }
