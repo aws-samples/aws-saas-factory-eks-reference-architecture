@@ -39,7 +39,7 @@ export class EKSClusterStack extends Stack {
 
         this.vpc = new ec2.Vpc(this, "EKSVpc", {
             cidr: "192.168.0.0/16",
-            maxAzs: 99,
+            maxAzs: 2,
             vpcName: "EKS SaaS Vpc",
         });
 

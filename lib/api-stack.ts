@@ -3,7 +3,6 @@ import { Construct } from "constructs";
 import * as elb from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as apigw from 'aws-cdk-lib/aws-apigateway';
-import * as apigwv2 from 'aws-cdk-lib/aws-apigatewayv2';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as targets from 'aws-cdk-lib/aws-route53-targets';
@@ -59,52 +58,11 @@ export class ApiStack extends Stack {
             vpc: props.vpc,
         });
 
-        // const nlbHttpListener = elb.NetworkListener.fromLookup(this, "NLBListenerPort80", {
-        //     listenerPort: 80,
-        //     listenerProtocol: elb.Protocol.TCP,
-        //     loadBalancerTags: {
-        //         "kubernetes.io/service-name": `${props.ingressControllerName}-ingress-nginx-controller`,
-        //         [`kubernetes.io/cluster/${props.eksClusterName}`]: "owned"
-        //     },
-        // });
-
-        // const vpcLinkSecurityGroup = new ec2.SecurityGroup(this, "vpc-link-sg", {
-        //     vpc: props.vpc,
-        //     allowAllOutbound: false,
-        //     securityGroupName: "vpc-link-sg"
-        // });
-        // vpcLinkSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(80));
-
-        // const vpcLink = new apigwv2.CfnVpcLink(this, "saas-vpc-link", {
-        //     name: "eks-saas-vpc-link",
-        //     subnetIds: props.vpc.selectSubnets({ subnetType: ec2.SubnetType.PRIVATE_WITH_NAT }).subnetIds,
-        //     securityGroupIds: [vpcLinkSecurityGroup.securityGroupId],
-        // });
-
         const vpcLink = new apigw.VpcLink(this, "eks-saas-vpc-link", {
             description: "VPCLink to connect the API Gateway with the private NLB sitting in front of the EKS cluster",
             targets: [nlb],
             vpcLinkName: "eks-saas-vpc-link",
         });
-
-        // const api = new apigwv2.CfnApi(this, "HttpProxyApi", {
-        //     name: "SaaSApi",
-        //     protocolType: "HTTP",
-        //     corsConfiguration: {
-        //         allowMethods: apigw.Cors.ALL_METHODS,
-        //         allowOrigins: apigw.Cors.ALL_ORIGINS
-        //     },
-        // });
-
-        // const integration = new apigwv2.CfnIntegration(this, "HttpProxyIntegration", {
-        //     apiId: api.ref,
-        //     integrationType: "HTTP_PROXY",
-        //     connectionId: vpcLink.ref,
-        //     connectionType: "VPC_LINK",
-        //     integrationMethod: "ANY",
-        //     integrationUri: nlbHttpListener.listenerArn,
-        //     payloadFormatVersion: "1.0",
-        // });
 
         const domainNameProps = useCustomDomain ?
             { domainName: `api.${props.customDomain!}`, certificate: apiCertificate } as apigw.DomainNameProps :
