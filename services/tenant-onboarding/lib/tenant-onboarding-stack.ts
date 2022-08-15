@@ -68,6 +68,9 @@ export class TenantOnboardingStack extends Stack {
             openIdConnectProvider: provider,
         });
 
+        // create kubernetes resource
+        this.createKubernetesResources(cluster, tenantId.valueAsString, props.plan);
+
 
         // create app site distribution 
         if (usingCustomDomain) {
@@ -174,9 +177,6 @@ export class TenantOnboardingStack extends Stack {
             policy: cr.AwsCustomResourcePolicy.fromSdkCalls({ resources: [tableArn] }),
         });
 
-        // create kubernetes resource
-        this.createKubernetesResources(cluster, tenantId.valueAsString, props.plan);
-
 
         // create order table
         const orderTable = new dynamodb.Table(this, 'OrderTable', {
@@ -205,7 +205,8 @@ export class TenantOnboardingStack extends Stack {
                 "dynamodb:PutItem",
                 "dynamodb:UpdateItem",
                 "dynamodb:DeleteItem",
-                "dynamodb:BatchWriteItem"
+                "dynamodb:BatchWriteItem",
+                "dynamodb:Scan"
             ],
             resources: [
                 orderTable.tableArn
@@ -220,7 +221,8 @@ export class TenantOnboardingStack extends Stack {
                 "dynamodb:PutItem",
                 "dynamodb:UpdateItem",
                 "dynamodb:DeleteItem",
-                "dynamodb:BatchWriteItem"
+                "dynamodb:BatchWriteItem",
+                "dynamodb:Scan"
             ],
             resources: [
                 Arn.format({ service: "dynamodb", resource: "table", resourceName: "Product" }, this)
