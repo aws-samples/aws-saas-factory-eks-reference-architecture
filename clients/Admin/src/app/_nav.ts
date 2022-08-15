@@ -38,7 +38,7 @@ const navItems: INavData[] = [
 if(environment.usingKubeCost) {
   navItems.push({
     name: 'Kubecost',
-    url: `${environment.kubecostUI}/index.html`,
+    url: `${environment.kubecostUI}/index.html`.replace(/([^\:])\/\//g, (_,a) => `${a}/`),
     icon: 'icon-speedometer',
     attributes: { target: '_blank' },
   })
