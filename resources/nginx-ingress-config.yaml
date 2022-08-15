@@ -1,4 +1,7 @@
 controller:
+  enableCustomResources: false
+  appprotect:
+    enable: false
   publishService:
     enabled: true
   service:

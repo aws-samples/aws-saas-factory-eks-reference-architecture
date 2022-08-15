@@ -42,6 +42,7 @@ metadata:
   name: tenant-management-service-ingress
   annotations:
     kubernetes.io/ingress.class: "nginx"
+    nginx.org/mergeable-ingress-type: "minion"
 spec:
   rules:
     - host: KUSTOMIZE_API_HOST

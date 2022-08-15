@@ -146,9 +146,9 @@ export class EKSClusterStack extends Stack {
         const nginxValues = fs.readFileSync(path.join(__dirname, "..", "resources", "nginx-ingress-config.yaml"), "utf8")
         const nginxValuesAsRecord = YAML.load(nginxValues) as Record<string, any>;
 
-        const nginxChart = cluster.addHelmChart('ingress-nginx', {
-            chart: 'ingress-nginx',
-            repository: 'https://kubernetes.github.io/ingress-nginx',
+        const nginxChart = cluster.addHelmChart('nginx-ingress', {
+            chart: 'nginx-ingress',
+            repository: 'https://helm.nginx.com/stable', 
             values: nginxValuesAsRecord,
             release: props.ingressControllerName,
             wait: true,
@@ -156,8 +156,33 @@ export class EKSClusterStack extends Stack {
 
         nginxChart.node.addDependency(nodegroup);
 
-        this.nlbDomain = cluster.getServiceLoadBalancerAddress(`${props.ingressControllerName}-ingress-nginx-controller`, {
+        this.nlbDomain = cluster.getServiceLoadBalancerAddress(`${props.ingressControllerName}-nginx-ingress`, {
             namespace: "default",
+        });
+
+        // add primary mergable ingress (for host collision)
+        new eks.KubernetesManifest(this, "PrimarySameHostMergableIngress", {
+            cluster: cluster,
+            overwrite: true,
+            manifest: [{
+                "apiVersion": "networking.k8s.io/v1",
+                "kind": "Ingress",
+                "metadata": {
+                    "name": "default-primary-mergable-ingress",
+                    "namespace": "default",
+                    "annotations": {
+                        "kubernetes.io/ingress.class": "nginx",
+                        "nginx.org/mergeable-ingress-type": "master"
+                    }
+                },
+                "spec": {
+                    "rules": [
+                        {
+                            "host": this.nlbDomain
+                        }
+                    ]
+                }
+            }]
         });
 
         if (props.kubecostToken) {
@@ -249,9 +274,8 @@ export class EKSClusterStack extends Stack {
                     "namespace": "kubecost",
                     "annotations": {
                         "kubernetes.io/ingress.class": "nginx",
-                        "nginx.ingress.kubernetes.io/enable-cors": "true",
-                        "nginx.ingress.kubernetes.io/rewrite-target": "/$2",
-                        "nginx.ingress.kubernetes.io/configuration-snippet": "rewrite ^(/kubecost)$ $1/ permanent;\n"
+                        "nginx.org/mergeable-ingress-type": "minion",
+                        "nginx.org/rewrites": "serviceName=kubecost-cost-analyzer rewrite=/"
                     }
                 },
                 "spec": {
@@ -261,7 +285,7 @@ export class EKSClusterStack extends Stack {
                             "http": {
                                 "paths": [
                                     {
-                                        "path": "/kubecost(/|$)(.*)",
+                                        "path": "/kubecost/",
                                         "pathType": "Prefix",
                                         "backend": {
                                             "service": {
