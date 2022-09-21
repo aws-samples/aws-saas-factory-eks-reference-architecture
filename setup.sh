@@ -35,7 +35,7 @@ eksctl completion bash >> ~/.bash_completion
 . ~/.bash_completion
 
 echo "Installing helm"
-curl -sSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+curl -L https://git.io/get_helm.sh | bash -s -- --version v3.8.2 | bash
 
 echo 'yq() {
   docker run --rm -i -v "${PWD}":/workdir mikefarah/yq yq "$@"
