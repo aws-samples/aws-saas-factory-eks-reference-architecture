@@ -107,7 +107,7 @@ export class StaticSite extends Construct {
                 region: 'us-east-1',
             });
 
-            domainNamesToUse = new Array<string>(customDomain!);
+            domainNamesToUse = new Array<string>(certDomain!);
         }
 
         const appBucket = new s3.Bucket(this, `${id}Bucket`, {
