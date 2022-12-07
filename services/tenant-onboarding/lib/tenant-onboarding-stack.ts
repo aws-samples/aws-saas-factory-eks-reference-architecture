@@ -96,7 +96,8 @@ export class TenantOnboardingStack extends Stack {
             const distributionArn = Arn.format({
                 service: "cloudfront",
                 resource: "distribution",
-                resourceName: appDistributionId.valueAsString
+                region: "",
+                resourceName: appDistributionId.valueAsString,
             }, this);
 
             new cr.AwsCustomResource(this, 'CloudFrontCustomDomain', {
@@ -105,14 +106,20 @@ export class TenantOnboardingStack extends Stack {
                     action: 'associateAlias',
                     parameters: {
                         Alias: tenantAppDomain,
-                        TargetDistributionId: appDistributionId.valueAsString
+                        TargetDistributionId: appDistributionId.valueAsString,
                     },
                     physicalResourceId: cr.PhysicalResourceId.of(`CloudFrontCustomDomain-${tenantId.valueAsString}`),
                 },
                 // TODO: implement removal of alias later. not a blocker.
-                policy: cr.AwsCustomResourcePolicy.fromSdkCalls({ resources: [distributionArn] }),
+                // policy: cr.AwsCustomResourcePolicy.fromSdkCalls({ resources: [distributionArn] }),
+                policy: cr.AwsCustomResourcePolicy.fromStatements([
+                    new iam.PolicyStatement({
+                        actions: ["cloudfront:AssociateAlias", "cloudfront:UpdateDistribution"],
+                        effect: iam.Effect.ALLOW,
+                        resources: [distributionArn],
+                    })
+                ])
             });
-
         } else {
             // no distribution. app-domain/tenant is the url.
         }
