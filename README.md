@@ -8,8 +8,6 @@ Note that the instructions below are intended to give you step-by-step, how-to i
 
 > :warning: The Cloud9 workspace should be built by an IAM user with Administrator privileges, not the root account user. Please ensure you are logged in as an IAM user, not the root account user.
 
-> :warning: This architecture requires an external domain name for which you control DNS settings. If you don't currently own a domain name, you can purchase usually for under $5. namecheap.com is a great resource for this.
-
 1. Create new Cloud9 Environment
     * Launch Cloud9 in your closest region Ex: `https://us-west-2.console.aws.amazon.com/cloud9/home?region=us-west-2`
     * Select Create environment
@@ -50,8 +48,9 @@ Note that the instructions below are intended to give you step-by-step, how-to i
 
     * However, if you do have a custom domain, follow the below instructions:
 
-    Create a Route53 Hosted Zone
+    > :warning: This option requires an external domain name for which you control DNS settings. If you don't currently own a domain name, you can purchase usually for under $5. namecheap.com is a great resource for this.
     > :warning: If you already have a hosted zone for your domain, just take note of its ID (final step in this block)
+
     * Open the AWS Console and ensure you're using a region where EKS is supported. Consult [this link](https://aws.amazon.com/about-aws/global-infrastructure/regional-product-services/) for more information.
     * Navigate to the `Route53` service and click the `Hosted Zones` link on the left nav
     * Click the orange `Create Hosted Zone` Button
@@ -75,9 +74,22 @@ Note that the instructions below are intended to give you step-by-step, how-to i
     npm run deploy --email=your@email.com --domain=base.domain.com --hostedzone=hosted-zone-id
     ```
 
-    This process will take about 40 minutes to complete.
+    This process will take about 40 - 45 minutes to complete.
 
-8. Once finished, the following websites should be provisioned and ready for you to use:
+8. After the deployment is complete, if you want to inspect the services deployed within the Amazon EKS cluster, you  will need to provide Cloud9 access to the cluster. For this, go to the Cloudformation console, and look for the stack named *EKSSaaSCluster*. Go to the *Outputs* tab and look for the key *SaaSClusterConfigCommand*. Copy the entire value, which should start with "aws eks update-kubeconfig --name EKSSaaS", and then run the command in your Cloud9 terminal. You should see an output that starts with "Updated context.." which means the local Kubeconfig file has the necessary details  to access your EKS clustr
+
+Now, run the below command to access the EKS cluster and the services deployed within the cluster.
+
+    ```
+    kubectl get nodes
+    ```
+
+    To access the deployed pods in the default namespace, run the below command
+    ```
+    kubectl get pods
+    ```
+
+8. Finally, the following websites should be provisioned and ready for you to use:
 
     [https://www.YOURDOMAIN.com](https://www.YOURDOMAIN.com) - This is the "landing page" for your multi-tenant e-Commerce platform. From this page, customers can self-signup for a new account
     [https://admin.YOURDOMAIN.com](https://admin.YOURDOMAIN.com) - This is the "administration" page for your multi-tenant e-Commerce platform. From this page, your tenant administrator can view global statistics for the platform and onboard new tenants. In a normal application, this page would be behind some strict security. We've left this page entirely anonymous for demonstration purposes.
