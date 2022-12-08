@@ -68,14 +68,10 @@ export class TenantOnboardingStack extends Stack {
             openIdConnectProvider: provider,
         });
 
-        // create kubernetes resource
-        this.createKubernetesResources(cluster, tenantId.valueAsString, props.plan);
-
-
         // create app site distribution 
         if (usingCustomDomain) {
             // add alias to existing distribution
-            const tenantAppDomain = `${tenantId}.${props.customDomain}`;
+            const tenantAppDomain = `${tenantId.valueAsString}.${props.customDomain}`;
 
             const hostedZone = route53.PublicHostedZone.fromHostedZoneAttributes(this, 'PublicHostedZone', {
                 hostedZoneId: props.hostedZoneId!,
@@ -93,26 +89,43 @@ export class TenantOnboardingStack extends Stack {
                 target: route53.RecordTarget.fromAlias(new alias.CloudFrontTarget(distribution))
             });
 
-            const distributionArn = Arn.format({
-                service: "cloudfront",
-                resource: "distribution",
-                resourceName: appDistributionId.valueAsString
-            }, this);
 
-            new cr.AwsCustomResource(this, 'CloudFrontCustomDomain', {
-                onCreate: {
-                    service: 'CloudFront',
-                    action: 'associateAlias',
-                    parameters: {
-                        Alias: tenantAppDomain,
-                        TargetDistributionId: appDistributionId.valueAsString
-                    },
-                    physicalResourceId: cr.PhysicalResourceId.of(`CloudFrontCustomDomain-${tenantId.valueAsString}`),
-                },
-                // TODO: implement removal of alias later. not a blocker.
-                policy: cr.AwsCustomResourcePolicy.fromSdkCalls({ resources: [distributionArn] }),
-            });
+            // const distributionArn = Arn.format({
+            //     service: "cloudfront",
+            //     resource: "distribution",
+            //     region: "",
+            //     resourceName: appDistributionId.valueAsString,
+            // }, this);
 
+            // new cr.AwsCustomResource(this, 'CloudFrontCustomDomain', {
+            //     onCreate: {
+            //         service: 'CloudFront',
+            //         action: 'associateAlias',
+            //         parameters: {
+            //             Alias: tenantAppDomain,
+            //             TargetDistributionId: appDistributionId.valueAsString,
+            //         },
+            //         physicalResourceId: cr.PhysicalResourceId.of(`CloudFrontCustomDomain-${tenantId.valueAsString}`),
+            //     },
+            //     onUpdate: {
+            //         service: 'CloudFront',
+            //         action: 'updateDistribution',
+            //         parameters: {
+            //             Alias: tenantAppDomain,
+            //             TargetDistributionId: appDistributionId.valueAsString,
+            //         },
+            //         physicalResourceId: cr.PhysicalResourceId.of(`CloudFrontCustomDomain-${tenantId.valueAsString}`),
+            //     },
+            //     // TODO: implement removal of alias later. not a blocker.
+            //     //policy: cr.AwsCustomResourcePolicy.fromSdkCalls({ resources: [distributionArn] }),
+            //     policy: cr.AwsCustomResourcePolicy.fromStatements([
+            //         new iam.PolicyStatement({
+            //             actions: ["cloudfront:AssociateAlias", "cloudfront:UpdateDistribution"],
+            //             effect: iam.Effect.ALLOW,
+            //             resources: [distributionArn],
+            //         })
+            //     ])
+            // });
         } else {
             // no distribution. app-domain/tenant is the url.
         }
@@ -190,6 +203,19 @@ export class TenantOnboardingStack extends Stack {
             removalPolicy: RemovalPolicy.DESTROY
         });
 
+        //Create Tenant namespace
+        const ns = cluster.addManifest('tenant-namespace', {
+            "apiVersion": "v1",
+            "kind": "Namespace",
+            "metadata": {
+                "name": tenantId.valueAsString,
+                "labels": {
+                    "name": tenantId.valueAsString,
+                    "saas/tenant": "true"
+                }
+            }
+        });
+
         // create service account for tenant
         const tenantServiceAccount = cluster.addServiceAccount(`TenantServiceAccount`, {
             name: `${tenantId.valueAsString}-service-account`,
@@ -236,31 +262,26 @@ export class TenantOnboardingStack extends Stack {
             },
             effect: iam.Effect.ALLOW
         }));
+
+        tenantServiceAccount.node.addDependency(ns);
+
+        // create kubernetes resource
+        //this.createKubernetesResources(cluster, tenantId.valueAsString, props.plan);
+
     }
 
     private createKubernetesResources(cluster: eks.ICluster, tenantId: string, plan: string) {
-        // tenant namespace
-        const ns = {
-            "apiVersion": "v1",
-            "kind": "Namespace",
-            "metadata": {
-                "name": tenantId,
-                "labels": {
-                    "name": tenantId,
-                    "saas/tenant": "true"
-                }
-            }
-        };
 
         // network policy
-        const networkPolicy = YAML.load(fs.readFileSync(path.join(__dirname, "..", "resources", "network-policy.yaml"), "utf8")) as Record<string, any>;
-        networkPolicy["metadata"]["namespace"] = tenantId;
-        networkPolicy["metadata"]["name"] = `${tenantId}-policy-deny-other-namespace`;
+        //const networkPolicy = YAML.load(fs.readFileSync(path.join(__dirname, "..", "resources", "network-policy.yaml"), "utf8")) as Record<string, any>;
+        //networkPolicy["metadata"]["namespace"] = tenantId;
+        //networkPolicy["metadata"]["name"] = `${tenantId}-policy-deny-other-namespace`;
 
-        const manifestsToDeploy = [ns, networkPolicy];
+       // const manifestsToDeploy = [ns, networkPolicy];
+       // const manifestsToDeploy = [ns];
 
         // plan may not be defined from when deleting a tenant
-        if (plan) {
+       /* if (plan) {
             // default request spec
             const defaultRequest = YAML.load(fs.readFileSync(path.join(__dirname, "..", "resources", "default-request.yaml"), "utf8")) as Record<string, any>;
             defaultRequest["metadata"]["namespace"] = tenantId;
@@ -271,11 +292,13 @@ export class TenantOnboardingStack extends Stack {
             quota["metadata"]["namespace"] = tenantId;
             manifestsToDeploy.push(quota);
         }
+        */
 
-        new eks.KubernetesManifest(this, "KubernetesResources", {
+       /* new eks.KubernetesManifest(this, "KubernetesResources", {
             cluster: cluster,
             manifest: manifestsToDeploy,
             overwrite: true,
         });
+        */
     }
 }
