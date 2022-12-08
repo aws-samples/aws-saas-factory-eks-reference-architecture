@@ -134,6 +134,17 @@ export class EKSClusterStack extends Stack {
             effect: iam.Effect.ALLOW
         }));
 
+        codebuildKubectlRole.addToPolicy(new iam.PolicyStatement({
+            actions: ["ecr-public:GetAuthorizationToken"],
+            resources: ['*'],
+            effect: iam.Effect.ALLOW
+        }));
+
+        codebuildKubectlRole.addToPolicy(new iam.PolicyStatement({
+            actions: ["sts:GetServiceBearerToken"],
+            resources: ['*'],
+            effect: iam.Effect.ALLOW
+        }));
         cluster.awsAuth.addMastersRole(codebuildKubectlRole);
 
         this.codebuildKubectlRoleArn = codebuildKubectlRole.roleArn;
