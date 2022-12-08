@@ -1,6 +1,9 @@
-NOTE: Please switch to the vnext branch and follow the steps in that branch. We are in the process of updating this solution with more features, so please check out the solution in the vnext branch, test and let us know your thoughts/feedback. 
+# NOTE:
 
-DO NOT execute the below steps. Switch to the vnext branch
+Please switch to the vnext branch and follow the steps in that branch. We are in the process of updating this solution with more features, so please check out the solution in the vnext branch, test and let us know your thoughts/feedback. 
+
+DO NOT execute the below steps. Switch to the vnext branch.
+
 
 ----------------------------------------------------
 
