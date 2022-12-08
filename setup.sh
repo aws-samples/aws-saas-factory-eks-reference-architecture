@@ -47,15 +47,4 @@ kubectl completion bash >>  ~/.bash_completion
 . /etc/profile.d/bash_completion.sh
 . ~/.bash_completion
 
-echo "Generating a new key. Hit ENTER three times when prompted to accept the defaults"
-ssh-keygen
-
-aws ec2 import-key-pair --key-name "eks-saas" --public-key-material file://~/.ssh/id_rsa.pub
-
-aws kms create-alias --alias-name alias/eks-ref-arch --target-key-id $(aws kms create-key --query KeyMetadata.Arn --output text)
-
-export MASTER_ARN=$(aws kms describe-key --key-id alias/eks-ref-arch --query KeyMetadata.Arn --output text)
-
-echo "export MASTER_ARN=${MASTER_ARN}" | tee -a ~/.bash_profile
-
 aws sts get-caller-identity --query Arn | grep eks-ref-arch-admin -q && echo "IAM role valid. You can continue setting up the EKS Cluster." || echo "IAM role NOT valid. Do not proceed with creating the EKS Cluster or you won't be able to authenticate. Ensure you assigned the role to your EC2 instance as detailed in the README.md of the eks-saas repo"
