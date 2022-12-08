@@ -1,3 +1,9 @@
+NOTE: Please switch to the vnext branch and follow the steps in that branch. We are in the process of updating this solution with more features, so please check out the solution in the vnext branch, test and let us know your thoughts/feedback. 
+
+DO NOT execute the below steps. Switch to the vnext branch
+
+----------------------------------------------------
+
 # EKS SaaS - Reference Solution
 
 The code provide here is intended to provide a sample implementation of a SaaS EKS solution. The goal is to provide SaaS developers and architects with working code that will illustrate how multi-tenant SaaS applications can be design and delivered on AWS. The solution covers a broad range of multi-tenant considerations, including tenant isolation, identity, data partitioning, and deployment. It provides developers with a prescriptive approach the fundamentals of building SaaS solution with EKS. The focus here is more on giving developers a view into the working elements of the solution without going to the extent of making a full, production-ready solution. Instead, we're hoping this can jump start your process and address some of the common challenges that teams must address when delivering a SaaS solution with EKS.
