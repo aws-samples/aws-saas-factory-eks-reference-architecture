@@ -68,6 +68,10 @@ export class TenantOnboardingStack extends Stack {
             openIdConnectProvider: provider,
         });
 
+        // create kubernetes resource
+        //this.createKubernetesResources(cluster, tenantId.valueAsString, props.plan);
+
+
         // create app site distribution 
         if (usingCustomDomain) {
             // add alias to existing distribution
@@ -89,6 +93,11 @@ export class TenantOnboardingStack extends Stack {
                 target: route53.RecordTarget.fromAlias(new alias.CloudFrontTarget(distribution))
             });
 
+            // new route53.TxtRecord(this, `TxtRecord`,{
+            //     zone: hostedZone,
+            //     recordName: tenantAppDomain,
+            //     values: ['Tenant app TXT record']
+            // });
 
             // const distributionArn = Arn.format({
             //     service: "cloudfront",
@@ -264,14 +273,24 @@ export class TenantOnboardingStack extends Stack {
         }));
 
         tenantServiceAccount.node.addDependency(ns);
-
-        // create kubernetes resource
-        //this.createKubernetesResources(cluster, tenantId.valueAsString, props.plan);
-
     }
 
     private createKubernetesResources(cluster: eks.ICluster, tenantId: string, plan: string) {
+        // tenant namespace
+       /* const ns = {
+            "apiVersion": "v1",
+            "kind": "Namespace",
+            "metadata": {
+                "name": tenantId,
+                "labels": {
+                    "name": tenantId,
+                    "saas/tenant": "true"
+                }
+            }
+        } as Record<string, any>;
+        */
 
+        //Deploy the manifests separately to avoid race conditions - Ranjith Raman 12/7/22
         // network policy
         //const networkPolicy = YAML.load(fs.readFileSync(path.join(__dirname, "..", "resources", "network-policy.yaml"), "utf8")) as Record<string, any>;
         //networkPolicy["metadata"]["namespace"] = tenantId;
@@ -292,9 +311,22 @@ export class TenantOnboardingStack extends Stack {
             quota["metadata"]["namespace"] = tenantId;
             manifestsToDeploy.push(quota);
         }
-        */
+        
 
-       /* new eks.KubernetesManifest(this, "KubernetesResources", {
+        cluster.addManifest('tenant-namespace', {
+            "apiVersion": "v1",
+            "kind": "Namespace",
+            "metadata": {
+                "name": tenantId,
+                "labels": {
+                    "name": tenantId,
+                    "saas/tenant": "true"
+                }
+            }
+        });
+        
+
+       new eks.KubernetesManifest(this, "KubernetesResources", {
             cluster: cluster,
             manifest: manifestsToDeploy,
             overwrite: true,
