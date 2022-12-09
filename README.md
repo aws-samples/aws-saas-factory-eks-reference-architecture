@@ -100,6 +100,17 @@ Now, run the below command to access the EKS cluster and the services deployed w
     [https://www.YOURDOMAIN.com](https://www.YOURDOMAIN.com) - This is the "landing page" for your multi-tenant e-Commerce platform. From this page, customers can self-signup for a new account
     [https://admin.YOURDOMAIN.com](https://admin.YOURDOMAIN.com) - This is the "administration" page for your multi-tenant e-Commerce platform. From this page, your tenant administrator can view global statistics for the platform and onboard new tenants. In a normal application, this page would be behind some strict security. We've left this page entirely anonymous for demonstration purposes.
 
+## Cleanup
+
+Since AWS CDK was used to provision all of the required resources in this reference solution, cleaning up is relatively straightforwardf. CD in to the directory `aws-saas-factory-eks-reference-architecture` and then execute the command `cdk destroy --all`. 
+
+Go to Cloud9 terminal and run the below commands:
+
+    ```
+    cd aws-saas-factory-eks-reference-architecture
+    cdk destroy --all
+    ```
+
 ## License
 
 This library is licensed under the MIT-0 License. See the LICENSE file.
