@@ -1,6 +1,6 @@
 # NOTE:
 
-Please switch to the vnext branch and follow the steps in that branch. We are in the process of updating this solution with more features, so please check out the solution in the vnext branch, test and let us know your thoughts/feedback. 
+Please switch to the `vnext branch` and follow the steps in that branch. We are in the process of updating this solution with more features, so please check out the solution in the vnext branch, test and let us know your thoughts/feedback. 
 
 DO NOT execute the below steps. Switch to the vnext branch.
 
@@ -13,7 +13,7 @@ The code provide here is intended to provide a sample implementation of a SaaS E
 
 Note that the instructions below are intended to give you step-by-step, how-to instructions for getting this solution up and running in your own AWS account. For a general description and overview of the solution, please see the [developer's guide here](GUIDE.md).
 
-## Setting up the environment
+## Setting up the environment - DEPRECATED, DO NOT RUN.
 
 > :warning: The Cloud9 workspace should be built by an IAM user with Administrator privileges, not the root account user. Please ensure you are logged in as an IAM user, not the root account user.
 
