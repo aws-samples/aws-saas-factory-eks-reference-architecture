@@ -29,7 +29,7 @@ Note that the instructions below are intended to give you step-by-step, how-to i
     * Enter the following in the terminal window
 
     ```bash
-    git clone https://github.com/aws-samples/aws-saas-factory-eks-reference-architecture
+    git clone -b vnext  https://github.com/aws-samples/aws-saas-factory-eks-reference-architecture
     cd aws-saas-factory-eks-reference-architecture
     chmod +x setup.sh
     ./setup.sh
@@ -39,6 +39,8 @@ Note that the instructions below are intended to give you step-by-step, how-to i
 
 
 5. Deploying the solution
+
+    *OPTION 1: Without custom domain*
     * If you don't have a custom domain, execute the below command by providing an email Id. This email address will be used by the SaaS administrator to login to the "Admin" application. A temporary password will be sent to this email address.
 
     ```
@@ -46,9 +48,11 @@ Note that the instructions below are intended to give you step-by-step, how-to i
     npm run deploy --email=your@email.com
     ```
 
+    *OPTION 2: With domain*
     * However, if you do have a custom domain, follow the below instructions:
 
     > :warning: This option requires an external domain name for which you control DNS settings. If you don't currently own a domain name, you can purchase usually for under $5. namecheap.com is a great resource for this.
+    
     > :warning: If you already have a hosted zone for your domain, just take note of its ID (final step in this block)
 
     * Open the AWS Console and ensure you're using a region where EKS is supported. Consult [this link](https://aws.amazon.com/about-aws/global-infrastructure/regional-product-services/) for more information.
@@ -76,7 +80,7 @@ Note that the instructions below are intended to give you step-by-step, how-to i
 
     This process will take about 40 - 45 minutes to complete.
 
-    *NOTE:* An issue has been reported where the SaaSApi stack is failing due to the NLB not in an active state. If you see this issue and to workaround it, please navigate to the Cloud9 console and run the same npm run deploy command that you used previously to create the stack. It is important to ensure you use the same command that you ran previously with the same parameters, it could be either the option 1/ with domain or 2/ without the domain. After you execute the command, the stack creation will continue from where it left off at the SaaSApi stack and will complete successfully. Meanwhile, we are working on a better solution to this specific issue.
+    *NOTE:* An issue has been reported where the SaaSApi stack is failing due to the NLB not in an active state. If you see this issue and to workaround it, please navigate to the Cloud9 console and run the same npm run deploy command that you used previously to create the stack. It is important to ensure you use the same command that you ran previously with the same parameters, it could be either the option 1/ with domain or 2/ without the domain. After you execute the command, the stack creation will continue from where it left off at the SaaSApi stack and will complete successfully. Meanwhile, we are working on a better solution to address this issue.
 
 8. After the deployment is complete, if you want to inspect the services deployed within the Amazon EKS cluster, you  will need to provide Cloud9 access to the cluster. For this, go to the Cloudformation console, and look for the stack named *EKSSaaSCluster*. Go to the *Outputs* tab and look for the key *SaaSClusterConfigCommand*. Copy the entire value, which should start with "aws eks update-kubeconfig --name EKSSaaS", and then run the command in your Cloud9 terminal. You should see an output that starts with "Updated context.." which means the local Kubeconfig file has the necessary details  to access your EKS clustr
 
