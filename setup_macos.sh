@@ -9,7 +9,7 @@ echo "Upgrading AWS CLI"
 sudo pip install --upgrade awscli && hash -r
 
 echo "Installing helper tools"
-sudo yum -y install jq gettext bash-completion moreutils
+sudo brew install jq gettext bash-completion moreutils
 
 export ACCOUNT_ID=$(aws sts get-caller-identity --output text --query Account)
 export AWS_REGION=$(aws configure get default.region)
@@ -47,4 +47,4 @@ kubectl completion bash >>  ~/.bash_completion
 . /opt/homebrew/etc/bash_completion
 . ~/.bash_completion
 
-aws sts get-caller-identity --query Arn | grep eks-ref-arch-admin -q && echo "IAM role valid. You can continue setting up the EKS Cluster." || echo "IAM role NOT valid. Do not proceed with creating the EKS Cluster or you won't be able to authenticate. Ensure you assigned the role to your EC2 instance as detailed in the README.md of the eks-saas repo"
+# aws sts get-caller-identity --query Arn | grep eks-ref-arch-admin -q && echo "IAM role valid. You can continue setting up the EKS Cluster." || echo "IAM role NOT valid. Do not proceed with creating the EKS Cluster or you won't be able to authenticate. Ensure you assigned the role to your EC2 instance as detailed in the README.md of the eks-saas repo"

@@ -87,7 +87,7 @@ Execute the following commands:
 
     ```
     npm i
-    npm run deploy --email=linh+saasfactory@kubecost.com --kubecosttoken=bGluaCtpbnRlcm5hbHRlc3RAa3ViZWNvc3QuY29txm343yadf98
+    npm run deploy --email=youremail@example.com --kubecosttoken=bGluaCtpbnRlcm5hbHRlc3RAa3ViZWNvc3QuY29txm343yadf98
     ```
 This process will take about 40 - 45 minutes to complete.
 
