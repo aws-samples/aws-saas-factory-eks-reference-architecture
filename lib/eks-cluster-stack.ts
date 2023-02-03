@@ -261,16 +261,17 @@ export class EKSClusterStack extends Stack {
         });
         ns.node.addDependency(nodegroup);
 
+        const kubecostValues = fs.readFileSync(path.join(__dirname, "..", "resources", "values-eks-cost-monitoring.yaml"), "utf8")
+        const kubecostValuesAsRecord = YAML.load(kubecostValues) as Record<string, any>;
         const kubecost = cluster.addHelmChart('KubeCost', {
             chart: 'cost-analyzer',
             repository: 'https://kubecost.github.io/cost-analyzer',
-            namespace: "kubecost",
-            release: "kubecost",
+            namespace: 'kubecost',
+            release: 'kubecost',
+            version: '1.99.0',
             wait: false,
             timeout: Duration.minutes(15),
-            values: {
-                "kubecostToken": kubecostToken,
-            },
+            values: kubecostValuesAsRecord,
         });
         kubecost.node.addDependency(nodegroup, ns);
 
