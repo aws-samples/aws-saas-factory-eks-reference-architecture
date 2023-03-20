@@ -1,24 +1,9 @@
-"""
-Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this
-software and associated documentation files (the "Software"), to deal in the Software
-without restriction, including without limitation the rights to use, copy, modify,
-merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so.
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-"""
 import boto3
 import random
 import string
 import logging
 import threading
-from botocore.vendored import requests
+import requests
 import json
 from botocore.credentials import (
     AssumeRoleCredentialFetcher,
@@ -115,26 +100,22 @@ def timeout(event, context, logger):
 
 # Handler function
 def cfn_handler(event, context, create_func, update_func, delete_func, logger, init_failed):
-    print("**3**")
+
     logger.info("Lambda RequestId: %s CloudFormation RequestId: %s" %
                 (context.aws_request_id, event['RequestId']))
 
     # Define an object to place any response information you would like to send
     # back to CloudFormation (these keys can then be used by Fn::GetAttr)
     response_data = {}
-    print("**4**")
 
     # Define a physicalId for the resource, if the event is an update and the
     # returned phyiscalid changes, cloudformation will then issue a delete
     # against the old id
     physical_resource_id = None
-    print("**4**")
 
     logger.debug("EVENT: " + json.dumps(event))
-    print("**5**")
     # handle init failures
     if init_failed:
-        print("**6**")
         send(event, context, "FAILED", response_data, physical_resource_id, init_failed, logger)
         raise init_failed
 
@@ -145,9 +126,7 @@ def cfn_handler(event, context, create_func, update_func, delete_func, logger, i
 
     try:
         # Execute custom resource handlers
-        print("**7**")
         logger.info("Received a %s Request" % event['RequestType'])
-        print("Received a %s Request" % event['RequestType'])
         if 'Poll' in event.keys():
             physical_resource_id, response_data = poll(event, context)
         elif event['RequestType'] == 'Create':
@@ -324,7 +303,7 @@ def create(event, context):
     """
     Create a cfn stack using an assumed role
     """
-    print("**8**")
+
     cfn_capabilities = []
     if 'capabilities' in event['ResourceProperties'].keys():
         cfn_capabilities = event['ResourceProperties']['Capabilities']
@@ -342,9 +321,6 @@ def create(event, context):
     capabilities = []
     if 'Capabilities' in parent_properties.keys():
         capabilities = parent_properties['Capabilities']
-    print("**9**")
-    print(event['ResourceProperties']['TemplateURL'])
-    print(parent_properties)
     response = cfn_client.create_stack(
         StackName=stack_name,
         TemplateURL=event['ResourceProperties']['TemplateURL'],
@@ -475,7 +451,5 @@ def lambda_handler(event, context):
     # update the logger with event info
     global loga
     print(json.dumps(event))
-    print("**1**")
     loga = log_config(event)
-    print("**2**")
     return cfn_handler(event, context, create, update, delete, loga, init_fail)
