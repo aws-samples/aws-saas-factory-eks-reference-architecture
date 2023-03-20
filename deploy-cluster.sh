@@ -19,7 +19,7 @@ kind: ClusterConfig
 metadata:
   name: eks-saas
   region: ${AWS_REGION}
-  version: "1.21"
+  version: "1.24"
 
 availabilityZones: ["${AWS_REGION}a", "${AWS_REGION}b", "${AWS_REGION}c"]
 
