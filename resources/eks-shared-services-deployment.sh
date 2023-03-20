@@ -25,6 +25,8 @@ TENANT_MGMT_ECR=$(aws cloudformation list-exports --query "Exports[?Name=='${STA
 TENANT_REG_ECR=$(aws cloudformation list-exports --query "Exports[?Name=='${STACK_NAME}-TenantRegistrationECR'].Value" --output text)
 USER_MGMT_ECR=$(aws cloudformation list-exports --query "Exports[?Name=='${STACK_NAME}-UserManagementECR'].Value" --output text)
 
+aws eks update-kubeconfig --name eks-saas
+
 echo "Install Nginx controller"
 cd resources/templates
 ACM_CERT=$(aws acm list-certificates  --query "CertificateSummaryList[?DomainName=='*.$DOMAIN_NAME'].CertificateArn" --output text)
@@ -33,11 +35,8 @@ sed -i -e 's,ACM_CERT,'$ACM_CERT',g' nginx-ingress-config.yaml
 helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 helm install nginx-eks-saas --values nginx-ingress-config.yaml ingress-nginx/ingress-nginx
 
-echo "Helm external-dns installation"
-sed -i -e 's,DOMAIN_NAME,'$DOMAIN_NAME',g' external-dns-config.yaml
-
-helm repo add "bitnami" "https://charts.bitnami.com/bitnami"
-helm install extdns --values external-dns-config.yaml bitnami/external-dns
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm install extdns bitnami/external-dns
 
 echo "Waiting for the NLB to be created. This will be converted to an if exists condition check"
 sleep 180
