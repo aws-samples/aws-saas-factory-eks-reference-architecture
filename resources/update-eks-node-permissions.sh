@@ -22,7 +22,7 @@ aws iam attach-role-policy --role-name $NODE_INSTANCE_ROLE_NAME --policy-arn arn
 
 echo "Creating a new role which will be used by our CodeBuild project to describe our EKS Instances"
 TRUST="{ \"Version\": \"2012-10-17\", \"Statement\": [ { \"Effect\": \"Allow\", \"Principal\": { \"AWS\": \"arn:aws:iam::${AWS_ACCOUNT_ID}:root\" }, \"Action\": \"sts:AssumeRole\" } ] }"
-echo '{ "Version": "2012-10-17", "Statement": [ { "Effect": "Allow", "Action": "eks:Describe*", "Resource": "*" }, { "Effect": "Allow", "Action": "iam:*", "Resource": "*" }, { "Effect": "Allow", "Action": "cloudformation:*", "Resource": "*" }, { "Effect": "Allow", "Action": "dynamodb:*", "Resource": "*" } ] }' > /tmp/iam-role-policy
+echo '{ "Version": "2012-10-17", "Statement": [ { "Effect": "Allow", "Action": "eks:*", "Resource": "*" }, { "Effect": "Allow", "Action": "iam:*", "Resource": "*" }, { "Effect": "Allow", "Action": "cloudformation:*", "Resource": "*" }, { "Effect": "Allow", "Action": "dynamodb:*", "Resource": "*" } ] }' > /tmp/iam-role-policy
 aws iam create-role --role-name EksSaasCodeBuildRole --assume-role-policy-document "$TRUST" --output text --query 'Role.Arn'
 aws iam put-role-policy --role-name EksSaasCodeBuildRole --policy-name eks-saas-code-build-policy --policy-document file:///tmp/iam-role-policy
 
