@@ -68,7 +68,7 @@ export class EKSClusterStack extends Stack {
 
 
         const cluster = new eks.Cluster(this, "SaaSCluster", {
-            version: eks.KubernetesVersion.V1_21,
+            version: eks.KubernetesVersion.V1_24,
             clusterName: props.clusterName,
             defaultCapacity: 0,
             vpc: this.vpc,
