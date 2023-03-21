@@ -84,7 +84,7 @@ Note that the instructions below are intended to give you step-by-step, how-to i
 
     This stack may take up to an hour to complete.
 
-    Once the CloudFormation stack completes, this script initiates various other scripts to do the following:
+    Once the CloudFormation stack completes, switch back to the Cloud9 terminal to track the progress of the remaining steps. The ./deploy.sh script initiates various other scripts to do the following:
 
     1. Build the tenant application and tenant administration websites, and upload them to their corresponding S3 Bucket fronted by a CloudFront distribution
 
