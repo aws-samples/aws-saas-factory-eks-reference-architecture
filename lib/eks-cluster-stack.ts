@@ -268,7 +268,7 @@ export class EKSClusterStack extends Stack {
             repository: 'https://kubecost.github.io/cost-analyzer',
             namespace: 'kubecost',
             release: 'kubecost',
-            version: '1.99.0',
+            version: '1.102.2',
             wait: false,
             timeout: Duration.minutes(15),
             values: kubecostValuesAsRecord,
