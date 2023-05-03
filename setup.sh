@@ -1,12 +1,14 @@
 #!/bin/bash
 echo "Installing kubectl"
 sudo curl --silent --location -o /usr/local/bin/kubectl \
-  https://amazon-eks.s3.us-west-2.amazonaws.com/1.21.2/2021-07-05/bin/linux/amd64/kubectl
+  https://s3.us-west-2.amazonaws.com/amazon-eks/1.24.11/2023-03-17/bin/linux/amd64/kubectl
 
 sudo chmod +x /usr/local/bin/kubectl
 
-echo "Upgrading AWS CLI"
-sudo pip install --upgrade awscli && hash -r
+echo "Installing AWS CLI"
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
 
 echo "Installing helper tools"
 sudo yum -y install jq gettext bash-completion moreutils
