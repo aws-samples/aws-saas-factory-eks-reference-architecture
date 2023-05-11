@@ -31,6 +31,8 @@ export class EKSClusterStack extends Stack {
     constructor(scope: Construct, id: string, props: EKSClusterStackProps) {
         super(scope, id, props);
 
+        const ingressControllerReleaseName = 'controller';
+
         const useCustomDomain = props.customDomain ? true : false;
 
         if (useCustomDomain && !props.hostedZoneId) {
@@ -157,19 +159,43 @@ export class EKSClusterStack extends Stack {
         const nginxValues = fs.readFileSync(path.join(__dirname, "..", "resources", "nginx-ingress-config.yaml"), "utf8")
         const nginxValuesAsRecord = YAML.load(nginxValues) as Record<string, any>;
 
-        const nginxChart = cluster.addHelmChart('nginx-ingress', {
+
+        const nginxChart = cluster.addHelmChart('IngressController', {
             chart: 'nginx-ingress',
-            repository: 'https://helm.nginx.com/stable', 
-            values: nginxValuesAsRecord,
-            release: props.ingressControllerName,
-            wait: true,
-        });
+            repository: 'https://helm.nginx.com/stable',
+            release: ingressControllerReleaseName,
+            values: {
+              controller: {
+                publishService: {
+                  enabled: true,
+                },
+                service: {
+                  annotations: {
+                    'service.beta.kubernetes.io/aws-load-balancer-type': 'nlb',
+                    'service.beta.kubernetes.io/aws-load-balancer-backend-protocol': 'http',
+                    'service.beta.kubernetes.io/aws-load-balancer-ssl-ports': '443',
+                    'service.beta.kubernetes.io/aws-load-balancer-connection-idle-timeout': '3600',
+                  },
+                  targetPorts: {
+                    https: 'http',
+                  },
+                },
+              },
+            },
+          });
 
         nginxChart.node.addDependency(nodegroup);
 
-        this.nlbDomain = cluster.getServiceLoadBalancerAddress(`${props.ingressControllerName}-nginx-ingress`, {
+        /*this.nlbDomain = cluster.getServiceLoadBalancerAddress(`${props.ingressControllerName}-nginx-ingress`, {
             namespace: "default",
-        });
+        });*/
+
+         this.nlbDomain = new eks.KubernetesObjectValue(this, 'elbAddress', {
+            cluster,
+            objectType: 'Service',
+            objectName: `${ingressControllerReleaseName}-nginx-ingress-controller`,
+            jsonPath: '.status.loadBalancer.ingress[0].hostname',
+          }).value;
 
         // add primary mergable ingress (for host collision)
         new eks.KubernetesManifest(this, "PrimarySameHostMergableIngress", {
@@ -189,16 +215,16 @@ export class EKSClusterStack extends Stack {
                 "spec": {
                     "rules": [
                         {
-                            "host": this.nlbDomain
+                            "host": this.nlbDomain,
                         }
                     ]
                 }
             }]
         });
 
-        if (props.kubecostToken) {
+       /* if (props.kubecostToken) {
             this.installKubecost(cluster, nodegroup, props.kubecostToken!, this.nlbDomain);
-        }
+        } */
     }
 
     private addNodeIAMRolePolicies(eksNodeRole: iam.Role): void {
@@ -246,76 +272,5 @@ export class EKSClusterStack extends Stack {
             ],
             effect: iam.Effect.ALLOW
         }));
-    }
-
-    private installKubecost(cluster: eks.Cluster, nodegroup: eks.Nodegroup, kubecostToken: string, nlbDomain: string) {
-        const ns = cluster.addManifest("KubeCostNS", {
-            "apiVersion": "v1",
-            "kind": "Namespace",
-            "metadata": {
-                "name": "kubecost",
-                "labels": {
-                    "name": "kubecost",
-                }
-            }
-        });
-        ns.node.addDependency(nodegroup);
-
-        const kubecostValues = fs.readFileSync(path.join(__dirname, "..", "resources", "values-eks-cost-monitoring.yaml"), "utf8")
-        const kubecostValuesAsRecord = YAML.load(kubecostValues) as Record<string, any>;
-        const kubecost = cluster.addHelmChart('KubeCost', {
-            chart: 'cost-analyzer',
-            repository: 'https://kubecost.github.io/cost-analyzer',
-            namespace: 'kubecost',
-            release: 'kubecost',
-            version: '1.102.2',
-            wait: false,
-            timeout: Duration.minutes(15),
-            values: kubecostValuesAsRecord,
-        });
-        kubecost.node.addDependency(nodegroup, ns);
-
-        const ingress = new eks.KubernetesManifest(this, "KubeCostIngress", {
-            cluster: cluster,
-            overwrite: true,
-            manifest: [{
-                "apiVersion": "networking.k8s.io/v1",
-                "kind": "Ingress",
-                "metadata": {
-                    "name": "kubecost-ingress",
-                    "namespace": "kubecost",
-                    "annotations": {
-                        "kubernetes.io/ingress.class": "nginx",
-                        "nginx.org/mergeable-ingress-type": "minion",
-                        "nginx.org/rewrites": "serviceName=kubecost-cost-analyzer rewrite=/"
-                    }
-                },
-                "spec": {
-                    "rules": [
-                        {
-                            "host": nlbDomain,
-                            "http": {
-                                "paths": [
-                                    {
-                                        "path": "/kubecost/",
-                                        "pathType": "Prefix",
-                                        "backend": {
-                                            "service": {
-                                                "name": "kubecost-cost-analyzer",
-                                                "port": {
-                                                    "number": 9090
-                                                }
-                                            }
-                                        }
-                                    }
-                                ]
-                            }
-                        }
-                    ]
-                }
-            }]
-        });
-
-        ingress.node.addDependency(kubecost);
     }
 }
