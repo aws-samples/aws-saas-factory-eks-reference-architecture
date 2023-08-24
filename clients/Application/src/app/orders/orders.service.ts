@@ -29,17 +29,17 @@ export class OrdersService {
               private svcHelper: ServiceHelperService) { }
 
   fetch(): Observable<Order[]> {
-    const url = `${this.svcHelper.getUrl('order')}/orders`;
+    const url = `${this.svcHelper.getUrl('orders')}`;
     return this.http.get<Order[]>(url);
   }
 
   get(orderId: string): Observable<Order> {
-    const url = `${this.svcHelper.getUrl('order')}/order/${orderId}`;
+    const url = `${this.svcHelper.getUrl('orders')}/${orderId}`;
     return this.http.get<Order>(url);
   }
 
   create(order: Order): Observable<Order> {
-    const url = `${this.svcHelper.getUrl('order')}/order`;
+    const url = `${this.svcHelper.getUrl('orders')}`;
     return this.http.post<Order>(url, order);
   }
 

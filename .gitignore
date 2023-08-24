@@ -1,1 +1,15 @@
 .DS_Store
+
+*.js
+!jest.config.js
+*.d.ts
+node_modules
+
+# CDK asset staging directory
+.cdk.staging
+cdk.out
+.idea/aws-saas-factory-eks-reference-architecture.iml
+.idea/modules.xml
+.idea/runConfigurations.xml
+.idea/vcs.xml
+.idea/.gitignore

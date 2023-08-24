@@ -29,6 +29,7 @@ import { OrdersService } from '../orders.service';
   styleUrls: [ './orders-detail.component.scss'  ]
 })
 export class OrdersDetailComponent implements OnInit {
+  tenantId$: Observable<string>;
   orderId$: Observable<string>;
   order$: Observable<Order>;
   orderProducts$: Observable<OrderProduct[]>;
@@ -38,7 +39,10 @@ export class OrdersDetailComponent implements OnInit {
               private helperSvc: ServiceHelperService) { }
 
   ngOnInit(): void {
-
+    this.tenantId$ = this.route.paramMap.pipe(
+      map(p => p.get("tenantId"))
+    );
+    
     this.orderId$ = this.route.params.pipe(
       map(o => o.orderId)
     );
@@ -54,10 +58,6 @@ export class OrdersDetailComponent implements OnInit {
 
   today() {
     return new Date();
-  }
-
-  tenantName() {
-    return this.helperSvc.getTenantName();
   }
 
   sum(op: OrderProduct) {

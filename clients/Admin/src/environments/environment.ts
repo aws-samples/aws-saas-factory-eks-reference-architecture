@@ -5,4 +5,7 @@ export const environment = {
   customDomain: '$AUTHCUSTOMDOMAIN',
   apiUrl: 'https://api.$CUSTOM_DOMAIN',
   domain: '$CUSTOM_DOMAIN',
+  usingCustomDomain: true,
+  usingKubeCost: false,
+  kubecostUI: "",
 };

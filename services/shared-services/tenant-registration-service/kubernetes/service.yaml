@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tenant-registration
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tenant-registration
+  template:
+    metadata:
+      labels:
+        app: tenant-registration
+    spec:
+      serviceAccountName: KUSTOMIZE_SHARED_SVC_ACCOUNT_NAME
+      automountServiceAccountToken: true
+      containers:
+        - name: tenant-registration
+          image: KUSTOMIZE_IMAGE
+          ports:
+            - containerPort: 8000
+              name: "http"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tenant-registration-service
+spec:
+  selector:
+    app: tenant-registration
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 8000
+  type: NodePort
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tenant-registration-service-ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.org/mergeable-ingress-type: "minion"
+spec:
+  rules:
+    - host: KUSTOMIZE_API_HOST
+      http:
+        paths:
+          - backend:
+              service:
+                name: tenant-registration-service
+                port:
+                  number: 80
+            path: /register
+            pathType: Prefix
+          - backend:
+              service:
+                name: tenant-registration-service
+                port:
+                  number: 80
+            path: /amIUp
+            pathType: Prefix

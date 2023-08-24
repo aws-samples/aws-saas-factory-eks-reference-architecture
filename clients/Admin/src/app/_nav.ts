@@ -15,8 +15,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 import { INavData } from '@coreui/angular';
+import { environment } from '../environments/environment';
 
-export const navItems: INavData[] = [
+const navItems: INavData[] = [
   {
     name: 'Dashboard',
     url: '/dashboard',
@@ -33,3 +34,14 @@ export const navItems: INavData[] = [
     icon: 'icon-user',
   },
 ];
+
+if(environment.usingKubeCost) {
+  navItems.push({
+    name: 'Kubecost',
+    url: `${environment.kubecostUI}/index.html`.replace(/([^\:])\/\//g, (_,a) => `${a}/`),
+    icon: 'icon-speedometer',
+    attributes: { target: '_blank' },
+  })
+}
+
+export { navItems };

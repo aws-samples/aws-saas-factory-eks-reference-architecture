@@ -5,10 +5,10 @@ sudo curl --silent --location -o /usr/local/bin/kubectl \
 
 sudo chmod +x /usr/local/bin/kubectl
 
-echo "Installing AWS CLI"
+echo "Upgrading AWS CLI"
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 unzip awscliv2.zip
-sudo ./aws/install
+sudo ./aws/install --update
 
 echo "Installing helper tools"
 sudo yum -y install jq gettext bash-completion moreutils
@@ -22,9 +22,6 @@ echo "export AWS_REGION=${AWS_REGION}" | tee -a ~/.bash_profile
 echo "export AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}" | tee -a ~/.bash_profile
 aws configure set default.region ${AWS_REGION}
 aws configure get default.region
-
-echo Resizing Cloud9 instance EBS Volume
-sh resources/resize-cloud9-ebs-vol.sh
 
 echo "Installing eksctl"
 curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
@@ -52,26 +49,4 @@ kubectl completion bash >>  ~/.bash_completion
 . /etc/profile.d/bash_completion.sh
 . ~/.bash_completion
 
-echo 'export ALB_INGRESS_VERSION="v1.1.8"' >>  ~/.bash_profile
-.  ~/.bash_profile
-
-rm -vf ${HOME}/.aws/credentials
-
-echo "Installing Node and Angular"
-nvm install 12.16
-nvm use 12.16
-npm install -g @angular/cli@9.1.0
-
-echo "Generating a new key. Hit ENTER three times when prompted to accept the defaults"
-ssh-keygen
-
-aws ec2 import-key-pair --key-name "eks-saas" --public-key-material file://~/.ssh/id_rsa.pub
-
-aws kms create-alias --alias-name alias/eks-ref-arch --target-key-id $(aws kms create-key --query KeyMetadata.Arn --output text)
-
-export MASTER_ARN=$(aws kms describe-key --key-id alias/eks-ref-arch --query KeyMetadata.Arn --output text)
-
-echo "export MASTER_ARN=${MASTER_ARN}" | tee -a ~/.bash_profile
-
 aws sts get-caller-identity --query Arn | grep eks-ref-arch-admin -q && echo "IAM role valid. You can continue setting up the EKS Cluster." || echo "IAM role NOT valid. Do not proceed with creating the EKS Cluster or you won't be able to authenticate. Ensure you assigned the role to your EC2 instance as detailed in the README.md of the eks-saas repo"
-

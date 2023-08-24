@@ -15,24 +15,29 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 import { Injectable } from '@angular/core';
+import { Router } from '@angular/router';
 import { environment } from '../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ServiceHelperService {
-  constructor() {}
+  constructor(private router: Router) {}
 
   getUrl(entity: string) {
-    const tenantId = this.getTenantName();
-    const url = `${environment.apiUrl}/${tenantId}/${entity}/api`;
+    const tenantId = this.getTenantId();
+    const url = `${environment.apiUrl}/${tenantId}/${entity}`;
     return url;
   }
 
-  getTenantName() {
-    const hostname = window.location.hostname;
-    const parts = hostname.split('.');
-    const tenantId = parts.length === 1 ? 'saascoffee' : parts[0];
-    return tenantId;
+  getTenantId() {
+    if(environment.usingCustomDomain) {
+      const hostname = window.location.hostname;
+      const parts = hostname.split('.');
+      return parts[0];
+    } else {
+      const parts = window.location.hash.split('/');
+      return parts[1];
+    }
   }
 }

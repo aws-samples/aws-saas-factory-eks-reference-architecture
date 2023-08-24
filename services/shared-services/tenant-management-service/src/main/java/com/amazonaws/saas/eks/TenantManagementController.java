@@ -91,24 +91,9 @@ public class TenantManagementController {
 	 */
 	@RequestMapping(path = "/auth-info", method = RequestMethod.GET)
 	public AuthConfig getAuthInfo(HttpServletRequest request) {
-		String tenantId = "";
 		AuthConfig result = null;
-
-		String origin = request.getHeader("origin");
-		logger.info("Origin name => " + origin);
-
-		if (origin == null || origin.equals("http://localhost:4200")) {
-			// TODO this is test code and should be deleted unless we create a test tenant
-			// with every install
-			origin = "http://testcompany4.foo.com";
-		}
-
 		try {
-			logger.info("Host name => " + origin);
-			URI uri = new URI(origin);
-			String domain = uri.getHost();
-			String[] parts = domain.split("\\.");
-			tenantId = parts[0];
+			String tenantId = getTenantId(request);
 			logger.info("Tenant Id => " + tenantId);
 
 			TenantManagementService mgmt = new TenantManagementService();
@@ -118,6 +103,20 @@ public class TenantManagementController {
 		}
 
 		return result;
+	}
+
+	private String getTenantId(HttpServletRequest request) throws URISyntaxException {
+		String tenantId = request.getParameter("tenantId");
+		if (tenantId != null) {
+			return tenantId;
+		}
+
+		String origin = request.getHeader("origin");
+		logger.info("Origin name => " + origin);
+		URI uri = new URI(origin);
+		String domain = uri.getHost();
+		String[] parts = domain.split("\\.");
+		return parts[0];
 	}
 
 }
