@@ -1,6 +1,14 @@
+
+# NOTE:
+
+We are working on a new version of this project which is currently in the vNext branch. Please check out the solution, let us know your thoughts/feedback. 
+
+
 # EKS SaaS - Reference Solution
 
-The code provide here is intended to provide a sample implementation of a SaaS EKS solution. The goal is to provide SaaS developers and architects with working code that will illustrate how multi-tenant SaaS applications can be design and delivered on AWS. The solution covers a broad range of multi-tenant considerations, including tenant isolation, identity, data partitioning, and deployment. It provides developers with a prescriptive approach the the fundamentals of building SaaS solution with EKS. The focus here is more on giving developers a view into the working elements of the solution without going to the extent of making a full, production-ready solution. Instead, we're hoping this can jump start your process and address some of the common challenges that teams must address when delivering a SaaS solution with EKS.
+**[Feedback & Feature request](https://www.pulse.aws/survey/XHZBD2KH)** 
+
+The code provide here is intended to provide a sample implementation of a SaaS EKS solution. The goal is to provide SaaS developers and architects with working code that will illustrate how multi-tenant SaaS applications can be design and delivered on AWS. The solution covers a broad range of multi-tenant considerations, including tenant isolation, identity, data partitioning, and deployment. It provides developers with a prescriptive approach the fundamentals of building SaaS solution with EKS. The focus here is more on giving developers a view into the working elements of the solution without going to the extent of making a full, production-ready solution. Instead, we're hoping this can jump start your process and address some of the common challenges that teams must address when delivering a SaaS solution with EKS.
 
 Note that the instructions below are intended to give you step-by-step, how-to instructions for getting this solution up and running in your own AWS account. For a general description and overview of the solution, please see the [developer's guide here](GUIDE.md).
 
@@ -60,7 +68,6 @@ Note that the instructions below are intended to give you step-by-step, how-to i
     * Click the orange `Create Hosted Zone` Button
     * In the Domain Name input, enter your domain name. Ex: example.com. Note, do not include any subdomains (i.e. www. or app.) and click the orange `Create hosted Zone` button
     * In the Hosted Zone details page, take note of the four name servers for your domain in the NS row of the details. They will look something like this:
-
         ```code
             ns-111.awsdns-11.com.
             ns-222.awsdns-22.net.
