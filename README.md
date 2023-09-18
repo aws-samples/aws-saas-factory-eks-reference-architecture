@@ -37,7 +37,7 @@ Note that the instructions below are intended to give you step-by-step, how-to i
     * Enter the following in the terminal window
 
     ```bash
-    git clone -b vnext  https://github.com/aws-samples/aws-saas-factory-eks-reference-architecture
+    git clone https://github.com/aws-samples/aws-saas-factory-eks-reference-architecture
     cd aws-saas-factory-eks-reference-architecture
     chmod +x setup.sh
     ./setup.sh
