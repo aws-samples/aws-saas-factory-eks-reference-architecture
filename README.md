@@ -93,14 +93,12 @@ Note that the instructions below are intended to give you step-by-step, how-to i
 
 Now, run the below command to access the EKS cluster and the services deployed within the cluster.
 
-    ```bash
-    kubectl get nodes
-    ```
+    ***kubectl get nodes***
 
     To access the deployed pods in the default namespace, run the below command
-    ```bash
-    kubectl get pods
-    ```
+
+    ***kubectl get pods***
+   
 
 8. Finally, the following websites should be provisioned and ready for you to use:
 
