@@ -15,7 +15,7 @@
     "@types/jest": "^26.0.10",
     "@types/js-yaml": "^4.0.5",
     "@types/node": "10.17.27",
-    "aws-cdk": "2.62.2",
+    "aws-cdk": "2.80.0",
     "jest": "^26.4.2",
     "js-yaml": "^4.1.0",
     "ts-jest": "^26.2.0",
@@ -23,7 +23,7 @@
     "typescript": "~3.9.7"
   },
   "dependencies": {
-    "aws-cdk-lib": "2.62.2",
+    "aws-cdk-lib": "2.80.0",
     "constructs": "^10.0.0",
     "source-map-support": "^0.5.16"
   }

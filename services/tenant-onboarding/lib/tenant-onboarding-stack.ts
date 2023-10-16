@@ -16,6 +16,7 @@ const TENANT_TABLE = "Tenant";
 
 export interface TenantOnboardingStackProps extends StackProps {
     readonly plan: string
+    readonly tenantid: string
     readonly customDomain?: string
     readonly hostedZoneId?: string
 }
@@ -40,8 +41,8 @@ export class TenantOnboardingStack extends Stack {
         }
 
         const appSiteBaseUrl = usingCustomDomain ?
-            `https://${tenantId.valueAsString}.${props.customDomain!}` :
-            `https://${distributionDomain.valueAsString}/#/${tenantId.valueAsString}`;
+            `https://${props.tenantid}.${props.customDomain!}` :
+            `https://${distributionDomain.valueAsString}/#/${props.tenantid}`;
 
 
         const getNamedUrlForCognito = (pathName?: string) => {
@@ -56,7 +57,7 @@ export class TenantOnboardingStack extends Stack {
 
             const path = pathName ? `%26path=${pathName!}` : "";
 
-            return `https://${distributionDomain.valueAsString}/?tenantId=${tenantId.valueAsString}${path}`;
+            return `https://${distributionDomain.valueAsString}/?tenantId=${props.tenantid}${path}`;
         }
 
 
@@ -69,13 +70,13 @@ export class TenantOnboardingStack extends Stack {
         });
 
         // create kubernetes resource
-        //this.createKubernetesResources(cluster, tenantId.valueAsString, props.plan);
+        //this.createKubernetesResources(cluster, props.tenantid, props.plan);
 
 
         // create app site distribution 
         if (usingCustomDomain) {
             // add alias to existing distribution
-            const tenantAppDomain = `${tenantId.valueAsString}.${props.customDomain}`;
+            const tenantAppDomain = `${props.tenantid}.${props.customDomain}`;
 
             const hostedZone = route53.PublicHostedZone.fromHostedZoneAttributes(this, 'PublicHostedZone', {
                 hostedZoneId: props.hostedZoneId!,
@@ -114,7 +115,7 @@ export class TenantOnboardingStack extends Stack {
             //             Alias: tenantAppDomain,
             //             TargetDistributionId: appDistributionId.valueAsString,
             //         },
-            //         physicalResourceId: cr.PhysicalResourceId.of(`CloudFrontCustomDomain-${tenantId.valueAsString}`),
+            //         physicalResourceId: cr.PhysicalResourceId.of(`CloudFrontCustomDomain-${props.tenantid}`),
             //     },
             //     onUpdate: {
             //         service: 'CloudFront',
@@ -123,7 +124,7 @@ export class TenantOnboardingStack extends Stack {
             //             Alias: tenantAppDomain,
             //             TargetDistributionId: appDistributionId.valueAsString,
             //         },
-            //         physicalResourceId: cr.PhysicalResourceId.of(`CloudFrontCustomDomain-${tenantId.valueAsString}`),
+            //         physicalResourceId: cr.PhysicalResourceId.of(`CloudFrontCustomDomain-${props.tenantid}`),
             //     },
             //     // TODO: implement removal of alias later. not a blocker.
             //     //policy: cr.AwsCustomResourcePolicy.fromSdkCalls({ resources: [distributionArn] }),
@@ -142,13 +143,13 @@ export class TenantOnboardingStack extends Stack {
         // create cognito resources
         const cognito = new Cognito(this, "CognitoResources", {
             adminUserEmailAddress: tenantAdminEmail.valueAsString,
-            userPoolName: `${tenantId.valueAsString}-UserPool`,
+            userPoolName: `${props.tenantid}-UserPool`,
             callbackUrl: getNamedUrlForCognito(),
             signoutUrl: getNamedUrlForCognito("logoff"),
             inviteEmailSubject: `Login for ${companyName.valueAsString}`,
             inviteEmailBody: `Your username is {username} and temporary password is {####}. Please login here: ${appSiteBaseUrl}`,
             customAttributes: {
-                "tenant-id": { value: tenantId.valueAsString, mutable: false },
+                "tenant-id": { value: props.tenantid, mutable: false },
             }
         });
 
@@ -167,7 +168,7 @@ export class TenantOnboardingStack extends Stack {
                 parameters: {
                     TableName: TENANT_TABLE,
                     Item: {
-                        TENANT_ID: { S: tenantId.valueAsString },
+                        TENANT_ID: { S: props.tenantid },
                         COMPANY_NAME: { S: companyName.valueAsString },
                         TENANT_EMAIL: { S: tenantAdminEmail.valueAsString },
                         PLAN: { S: props.plan },
@@ -184,7 +185,7 @@ export class TenantOnboardingStack extends Stack {
                         AUTH_CLEAR_HASH_AFTER_LOGIN: { BOOL: false }
                     }
                 },
-                physicalResourceId: cr.PhysicalResourceId.of(`TenantEntry-${tenantId.valueAsString}`),
+                physicalResourceId: cr.PhysicalResourceId.of(`TenantEntry-${props.tenantid}`),
             },
             onDelete: {
                 service: 'DynamoDB',
@@ -192,7 +193,7 @@ export class TenantOnboardingStack extends Stack {
                 parameters: {
                     TableName: TENANT_TABLE,
                     Key: {
-                        TENANT_ID: { S: tenantId.valueAsString }
+                        TENANT_ID: { S: props.tenantid }
                     }
                 },
             },
@@ -202,7 +203,7 @@ export class TenantOnboardingStack extends Stack {
 
         // create order table
         const orderTable = new dynamodb.Table(this, 'OrderTable', {
-            tableName: `Order-${tenantId.valueAsString}`,
+            tableName: `Order-${props.tenantid}`,
             partitionKey: {
                 name: "OrderId",
                 type: dynamodb.AttributeType.STRING
@@ -217,9 +218,9 @@ export class TenantOnboardingStack extends Stack {
             "apiVersion": "v1",
             "kind": "Namespace",
             "metadata": {
-                "name": tenantId.valueAsString,
+                "name": props.tenantid,
                 "labels": {
-                    "name": tenantId.valueAsString,
+                    "name": props.tenantid,
                     "saas/tenant": "true"
                 }
             }
@@ -227,8 +228,8 @@ export class TenantOnboardingStack extends Stack {
 
         // create service account for tenant
         const tenantServiceAccount = cluster.addServiceAccount(`TenantServiceAccount`, {
-            name: `${tenantId.valueAsString}-service-account`,
-            namespace: tenantId.valueAsString
+            name: `${props.tenantid}-service-account`,
+            namespace: props.tenantid
         });
 
         // permission for order and product tables
@@ -265,7 +266,7 @@ export class TenantOnboardingStack extends Stack {
             conditions: {
                 "ForAllValues:StringEquals": {
                     "dynamodb:LeadingKeys": [
-                        tenantId.valueAsString
+                        props.tenantid
                     ]
                 }
             },

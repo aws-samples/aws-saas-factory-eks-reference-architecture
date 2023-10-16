@@ -17,6 +17,7 @@ const app = new cdk.App();
 new TenantOnboardingStack(app, `TenantStack-${process.env.TENANT_ID}`, {
   env,
   plan: process.env.PLAN!,
+  tenantid: process.env.TENANT_ID!,
   customDomain: appCustomDomain,
   hostedZoneId: appHostedZoneId,
 });
