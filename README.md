@@ -1,9 +1,3 @@
-
-# NOTE:
-
-We are working on a new version of this project which is currently in the vNext branch. Please check out the solution, let us know your thoughts/feedback. 
-
-
 # SaaS Amazon EKS Reference Architecture
 
 **[Feedback & Feature request](https://www.pulse.aws/survey/XHZBD2KH)** 
