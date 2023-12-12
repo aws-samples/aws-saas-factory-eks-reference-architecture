@@ -68,9 +68,13 @@ export class EKSClusterStack extends Stack {
 
         nodeSecurityGroup.addIngressRule(ec2.Peer.ipv4(this.vpc.vpcCidrBlock), ec2.Port.tcpRange(1025, 65535), "Needed for the NLB target group health checks");
 
+        const clusterAdmin = new iam.Role(this, 'AdminRole', {
+            assumedBy: new iam.AccountRootPrincipal(),
+          });
 
         const cluster = new eks.Cluster(this, "SaaSCluster", {
-            version: eks.KubernetesVersion.V1_24,
+            version: eks.KubernetesVersion.V1_27,
+            mastersRole: clusterAdmin,
             clusterName: props.clusterName,
             defaultCapacity: 0,
             vpc: this.vpc,
