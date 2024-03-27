@@ -172,12 +172,12 @@ export class EKSClusterStack extends Stack {
 
     this.addSharedServicesPermissions(cluster, props);
 
-    // add nginx-ingress
-    const nginxValues = fs.readFileSync(
-      path.join(__dirname, '..', 'resources', 'nginx-ingress-config.yaml'),
-      'utf8'
-    );
-    const nginxValuesAsRecord = YAML.load(nginxValues) as Record<string, any>;
+    // // add nginx-ingress
+    // const nginxValues = fs.readFileSync(
+    //   path.join(__dirname, '..', 'resources', 'nginx-ingress-config.yaml'),
+    //   'utf8'
+    // );
+    // const nginxValuesAsRecord = YAML.load(nginxValues) as Record<string, any>;
 
     const nginxChart = cluster.addHelmChart('IngressController', {
       chart: 'nginx-ingress',
@@ -220,31 +220,31 @@ export class EKSClusterStack extends Stack {
     // }).value;
 
     // add primary mergable ingress (for host collision)
-    new eks.KubernetesManifest(this, 'PrimarySameHostMergableIngress', {
-      cluster: cluster,
-      overwrite: true,
-      manifest: [
-        {
-          apiVersion: 'networking.k8s.io/v1',
-          kind: 'Ingress',
-          metadata: {
-            name: 'default-primary-mergable-ingress',
-            namespace: 'default',
-            annotations: {
-              'kubernetes.io/ingress.class': 'nginx',
-              'nginx.org/mergeable-ingress-type': 'master',
-            },
-          },
-          spec: {
-            rules: [
-              {
-                host: this.nlbDomain,
-              },
-            ],
-          },
-        },
-      ],
-    });
+    // new eks.KubernetesManifest(this, 'PrimarySameHostMergableIngress', {
+    //   cluster: cluster,
+    //   overwrite: true,
+    //   manifest: [
+    //     {
+    //       apiVersion: 'networking.k8s.io/v1',
+    //       kind: 'Ingress',
+    //       metadata: {
+    //         name: 'default-primary-mergable-ingress',
+    //         namespace: 'default',
+    //         annotations: {
+    //           'kubernetes.io/ingress.class': 'nginx',
+    //           'nginx.org/mergeable-ingress-type': 'master',
+    //         },
+    //       },
+    //       spec: {
+    //         rules: [
+    //           {
+    //             host: this.nlbDomain,
+    //           },
+    //         ],
+    //       },
+    //     },
+    //   ],
+    // });
 
     /* if (props.kubecostToken) {
             this.installKubecost(cluster, nodegroup, props.kubecostToken!, this.nlbDomain);
