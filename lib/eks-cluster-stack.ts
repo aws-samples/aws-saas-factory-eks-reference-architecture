@@ -1,11 +1,12 @@
-import { Arn, CfnJson, Duration, Stack, StackProps } from 'aws-cdk-lib';
+import { KubectlV29Layer } from '@aws-cdk/lambda-layer-kubectl-v29';
+import { Arn, CfnJson, Stack, StackProps } from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as eks from 'aws-cdk-lib/aws-eks';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
-import * as eks from 'aws-cdk-lib/aws-eks';
 
-import * as YAML from 'js-yaml';
 import * as fs from 'fs';
+import * as YAML from 'js-yaml';
 import * as path from 'path';
 
 export interface EKSClusterStackProps extends StackProps {
@@ -39,7 +40,7 @@ export class EKSClusterStack extends Stack {
     }
 
     this.vpc = new ec2.Vpc(this, 'EKSVpc', {
-      cidr: '192.168.0.0/16',
+      ipAddresses: ec2.IpAddresses.cidr('192.168.0.0/16'),
       maxAzs: 2,
       vpcName: 'EKS SaaS Vpc',
     });
@@ -77,13 +78,14 @@ export class EKSClusterStack extends Stack {
     });
 
     const cluster = new eks.Cluster(this, 'SaaSCluster', {
-      version: eks.KubernetesVersion.V1_29,
-      mastersRole: clusterAdmin,
       clusterName: props.clusterName,
       defaultCapacity: 0,
-      vpc: this.vpc,
-      vpcSubnets: [{ subnetType: ec2.SubnetType.PRIVATE_WITH_NAT }],
+      kubectlLayer: new KubectlV29Layer(this, 'kubectl'),
+      mastersRole: clusterAdmin,
       securityGroup: ctrlPlaneSecurityGroup,
+      version: eks.KubernetesVersion.V1_29,
+      vpc: this.vpc,
+      vpcSubnets: [{ subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS }],
     });
 
     const vpcCniSvcAccountRole = new iam.Role(this, 'VpcCniSvcAccountRole', {
@@ -127,7 +129,7 @@ export class EKSClusterStack extends Stack {
       desiredSize: 2,
       maxSize: 4,
       instanceTypes: [new ec2.InstanceType('m5.large')],
-      subnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_NAT },
+      subnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
       launchTemplateSpec: {
         id: nodeLaunchTemplate.launchTemplateId!,
       },
