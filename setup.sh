@@ -1,7 +1,7 @@
 #!/bin/bash
 echo "Installing kubectl"
 sudo curl --silent --location -o /usr/local/bin/kubectl \
-  https://s3.us-west-2.amazonaws.com/amazon-eks/1.24.11/2023-03-17/bin/linux/amd64/kubectl
+ https://dl.k8s.io/release/v1.29.2/bin/linux/amd64/kubectl 
 
 sudo chmod +x /usr/local/bin/kubectl
 
