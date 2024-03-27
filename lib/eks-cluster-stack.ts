@@ -1,5 +1,5 @@
 import { KubectlV29Layer } from '@aws-cdk/lambda-layer-kubectl-v29';
-import { Arn, CfnJson, Stack, StackProps } from 'aws-cdk-lib';
+import { Arn, CfnJson, CfnOutput, Stack, StackProps } from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as eks from 'aws-cdk-lib/aws-eks';
 import * as iam from 'aws-cdk-lib/aws-iam';
@@ -30,8 +30,6 @@ export class EKSClusterStack extends Stack {
 
   constructor(scope: Construct, id: string, props: EKSClusterStackProps) {
     super(scope, id, props);
-
-    const ingressControllerReleaseName = 'controller';
 
     const useCustomDomain = props.customDomain ? true : false;
 
@@ -182,7 +180,7 @@ export class EKSClusterStack extends Stack {
     const nginxChart = cluster.addHelmChart('IngressController', {
       chart: 'nginx-ingress',
       repository: 'https://helm.nginx.com/stable',
-      release: ingressControllerReleaseName,
+      release: props.ingressControllerName,
       values: {
         controller: {
           publishService: {
@@ -205,46 +203,36 @@ export class EKSClusterStack extends Stack {
 
     nginxChart.node.addDependency(nodegroup);
 
-    /*this.nlbDomain = cluster.getServiceLoadBalancerAddress(`${props.ingressControllerName}-nginx-ingress`, {
-            namespace: "default",
-        });*/
-
-    // const foo = cluster.getIngressLoadBalancerAddress();
-
-    this.nlbDomain = 'http://blank';
-    // new eks.KubernetesObjectValue(this, 'elbAddress', {
-    //   cluster,
-    //   objectType: 'Service',
-    //   objectName: `${ingressControllerReleaseName}-nginx-ingress-controller`,
-    //   jsonPath: '.status.loadBalancer.ingress[0].hostname',
-    // }).value;
+    this.nlbDomain = cluster.getServiceLoadBalancerAddress(
+      `${props.ingressControllerName}-nginx-ingress-controller`
+    );
 
     // add primary mergable ingress (for host collision)
-    // new eks.KubernetesManifest(this, 'PrimarySameHostMergableIngress', {
-    //   cluster: cluster,
-    //   overwrite: true,
-    //   manifest: [
-    //     {
-    //       apiVersion: 'networking.k8s.io/v1',
-    //       kind: 'Ingress',
-    //       metadata: {
-    //         name: 'default-primary-mergable-ingress',
-    //         namespace: 'default',
-    //         annotations: {
-    //           'kubernetes.io/ingress.class': 'nginx',
-    //           'nginx.org/mergeable-ingress-type': 'master',
-    //         },
-    //       },
-    //       spec: {
-    //         rules: [
-    //           {
-    //             host: this.nlbDomain,
-    //           },
-    //         ],
-    //       },
-    //     },
-    //   ],
-    // });
+    new eks.KubernetesManifest(this, 'PrimarySameHostMergableIngress', {
+      cluster: cluster,
+      overwrite: true,
+      manifest: [
+        {
+          apiVersion: 'networking.k8s.io/v1',
+          kind: 'Ingress',
+          metadata: {
+            name: 'default-primary-mergable-ingress',
+            namespace: 'default',
+            annotations: {
+              'kubernetes.io/ingress.class': 'nginx',
+              'nginx.org/mergeable-ingress-type': 'master',
+            },
+          },
+          spec: {
+            rules: [
+              {
+                host: this.nlbDomain,
+              },
+            ],
+          },
+        },
+      ],
+    });
 
     /* if (props.kubecostToken) {
             this.installKubecost(cluster, nodegroup, props.kubecostToken!, this.nlbDomain);
