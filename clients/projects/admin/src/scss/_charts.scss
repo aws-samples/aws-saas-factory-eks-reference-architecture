@@ -1,0 +1,7 @@
+// custom .chartjs-tooltip-body-item
+
+.chartjs-tooltip-body-item > td {
+  padding-bottom: 0 !important;
+  padding-top: 0 !important;
+  font-size: smaller;
+}
