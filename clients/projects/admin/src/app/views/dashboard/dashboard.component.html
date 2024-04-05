@@ -1,4 +1,3 @@
-<app-widgets-dropdown />
 <c-card class="my-4">
   <c-card-body>
     <c-row>
@@ -12,12 +11,7 @@
         </button>
         <form [formGroup]="trafficRadioGroup">
           <c-button-group class="float-end me-3" role="group">
-            <input
-              class="btn-check"
-              formControlName="trafficRadio"
-              type="radio"
-              value="Day"
-            />
+            <input class="btn-check" formControlName="trafficRadio" type="radio" value="Day" />
             <label
               (click)="setTrafficPeriod('Day')"
               cButton
@@ -27,12 +21,7 @@
             >
               Day
             </label>
-            <input
-              class="btn-check"
-              formControlName="trafficRadio"
-              type="radio"
-              value="Month"
-            />
+            <input class="btn-check" formControlName="trafficRadio" type="radio" value="Month" />
             <label
               (click)="setTrafficPeriod('Month')"
               cButton
@@ -42,12 +31,7 @@
             >
               Month
             </label>
-            <input
-              class="btn-check"
-              formControlName="trafficRadio"
-              type="radio"
-              value="Year"
-            />
+            <input class="btn-check" formControlName="trafficRadio" type="radio" value="Year" />
             <label
               (click)="setTrafficPeriod('Year')"
               cButton
@@ -103,12 +87,10 @@
   </c-card-footer>
 </c-card>
 
-<app-widgets-brand [withCharts]="true" />
-
 <c-row class="mt-4">
   <c-col xs>
     <c-card class="mb-4">
-      <c-card-header>Traffic {{ "&" }} Sales</c-card-header>
+      <c-card-header>Traffic {{ '&' }} Sales</c-card-header>
       <c-card-body>
         <c-row>
           <c-col md="6" xl="6" xs="12">
@@ -121,9 +103,7 @@
               </c-col>
               <c-col xs="6">
                 <div class="border-start border-start-4 border-start-danger py-1 px-3 mb-3">
-                  <div class="text-body-secondary text-truncate small">
-                    Recurring Clients
-                  </div>
+                  <div class="text-body-secondary text-truncate small">Recurring Clients</div>
                   <div class="fs-5 fw-semibold">22,643</div>
                 </div>
               </c-col>
@@ -307,81 +287,6 @@
             </div>
           </c-col>
         </c-row>
-      </c-card-body>
-    </c-card>
-  </c-col>
-</c-row>
-<c-row>
-  <c-col xs>
-    <c-card class="mb-4">
-      <c-card-body>
-        <table
-          [hover]="true"
-          [responsive]="true"
-          [striped]="true"
-          align="middle"
-          cTable
-          class="mb-0 border"
-        >
-          <thead class="text-nowrap text-truncate">
-          <tr>
-            <th class="bg-body-tertiary text-center ">
-              <svg cIcon name="cilPeople"></svg>
-            </th>
-            <th class="bg-body-tertiary">User</th>
-            <th class="bg-body-tertiary text-center">Country</th>
-            <th class="bg-body-tertiary">Usage</th>
-            <th class="bg-body-tertiary text-center">Payment Method</th>
-            <th class="bg-body-tertiary">Activity</th>
-          </tr>
-          </thead>
-          <tbody>
-            @for (user of users; track user.name; let i = $index) {
-              <tr>
-                <td class="text-center">
-                  <c-avatar [size]="'md'" src="{{ user.avatar }}" status="{{ user.status }}" />
-                </td>
-                <td>
-                  <div>{{ user.name }}</div>
-                  <div class="small text-body-secondary text-nowrap">
-                  <span>
-                    {{ user.state }} | Registered: {{ user.registered }}
-                  </span>
-                  </div>
-                </td>
-                <td class="text-center">
-                  <svg
-                    cIcon
-                    id="{{ user.country + user.name }}"
-                    name="cif{{ user.country }}"
-                    size="xl"
-                    title="{{ user.country }}"
-                  ></svg>
-                </td>
-                <td>
-                  <div class="d-flex justify-content-between">
-                    <div class="float-start">
-                      <strong>{{ user.usage }}%</strong>
-                    </div>
-                    <div class="float-end ms-1 text-nowrap">
-                      <small class="text-body-secondary">
-                        {{ user.period }}
-                      </small>
-                    </div>
-                  </div>
-                  <c-progress thin [value]="user.usage" color="{{ user.color }}" />
-                </td>
-                <td class="text-center">
-                  <svg cIcon name="cibCc{{ user.payment }}" size="xl"></svg>
-                </td>
-                <td>
-                  <div class="small text-body-secondary">Last login</div>
-                  <div class="fw-semibold text-nowrap">{{ user.activity }}</div>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
       </c-card-body>
     </c-card>
   </c-col>
