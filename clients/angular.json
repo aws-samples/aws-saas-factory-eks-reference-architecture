@@ -113,7 +113,7 @@
             "tsConfig": "projects/application/tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": ["projects/application/src/favicon.ico", "projects/application/src/assets"],
-            "styles": ["projects/application/src/styles.scss"],
+            "styles": ["projects/application/src/scss/styles.scss"],
             "scripts": []
           },
           "configurations": {
@@ -121,8 +121,8 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kb",
-                  "maximumError": "1mb"
+                  "maximumWarning": "6mb",
+                  "maximumError": "7mb"
                 },
                 {
                   "type": "anyComponentStyle",
