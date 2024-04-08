@@ -21,6 +21,7 @@ export const DummyHttpConfigLoaderFactory = () => {
 };
 
 export const HttpConfigLoaderFactory = (http: HttpClient, svcHelper: ServiceHelperService) => {
+  console.log('**********HttpConfigLoaderFactory**********');
   const url =
     `${environment.apiUrl}/auth-info` +
     (environment.usingCustomDomain ? '' : `?tenantId=${svcHelper.getTenantId()}`);

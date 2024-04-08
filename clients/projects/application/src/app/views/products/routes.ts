@@ -14,8 +14,7 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import { NgModule } from '@angular/core';
-import { Routes, RouterModule } from '@angular/router';
+import { Routes } from '@angular/router';
 import { CognitoGuard } from '../../cognito.guard';
 import { ProductCreateComponent } from './product-create/product-create.component';
 import { ProductEditComponent } from './product-edit/product-edit.component';
@@ -25,6 +24,7 @@ export const routes: Routes = [
   {
     path: '',
     redirectTo: 'list',
+    pathMatch: 'full',
   },
   {
     path: 'list',

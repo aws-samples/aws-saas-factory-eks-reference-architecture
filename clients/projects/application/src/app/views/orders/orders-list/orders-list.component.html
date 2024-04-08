@@ -1,9 +1,7 @@
 <div class="row">
   <div class="col-lg-12">
     <div class="card">
-      <div class="card-header">
-        <i class="fa fa-align-justify"></i> Orders Table
-      </div>
+      <div class="card-header"><i class="fa fa-align-justify"></i> Orders Table</div>
       <div class="card-body">
         <table class="table table-sm">
           <thead>
@@ -15,14 +13,18 @@
           </thead>
           <tbody>
             <tr *ngFor="let order of orders | async">
-              <td><a popover="ID: {{order.id}}"
-                     [outsideClick]="true"
-                     triggers="mouseenter"
-                     class="link"
-                     routerLink="/orders/detail/{{order.id}}"
-                  >{{order.name}}</a></td>
-              <td>{{order.orderProduct?.length || 0}}</td>
-              <td>{{sum(order) | currency}}</td>
+              <td>
+                <a
+                  popover="ID: {{ order.id }}"
+                  [outsideClick]="true"
+                  triggers="mouseenter"
+                  class="link"
+                  routerLink="/orders/detail/{{ order.id }}"
+                  >{{ order.name }}</a
+                >
+              </td>
+              <td>{{ order.orderProduct.length || 0 }}</td>
+              <td>{{ sum(order) | currency }}</td>
             </tr>
           </tbody>
         </table>

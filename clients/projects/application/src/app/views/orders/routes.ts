@@ -24,6 +24,7 @@ export const routes: Routes = [
   {
     path: '',
     redirectTo: 'list',
+    pathMatch: 'full',
   },
   {
     path: 'list',
