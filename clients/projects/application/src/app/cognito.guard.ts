@@ -29,12 +29,6 @@ export const CognitoGuard: CanActivateFn = (
   route: ActivatedRouteSnapshot,
   state: RouterStateSnapshot
 ) => {
-  function getResolvedUrl(route: ActivatedRouteSnapshot): string {
-    return route.pathFromRoot
-      .map((v) => v.url.map((segment) => segment.toString()).join(''))
-      .join('/');
-  }
-  console.log('AuthorizationGuard, canActivate called');
   const router = inject(Router);
   try {
     const secSvc = inject(OidcSecurityService);

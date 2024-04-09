@@ -14,43 +14,11 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
-import { NgModule } from '@angular/core';
-import { Routes, RouterModule } from '@angular/router';
-// import { CognitoGuard } from '../cognito.guard';
-import { UserCreateComponent } from './user-create/user-create.component';
-import { UserDetailComponent } from './user-detail/user-detail.component';
-import { UserListComponent } from './user-list/user-list.component';
-import { CognitoGuard } from '../../cognito.guard';
-
-export const routes: Routes = [
-  {
-    path: '',
-    redirectTo: 'list',
-    pathMatch: 'full',
-  },
-  {
-    path: 'list',
-    data: {
-      title: 'All Users',
-    },
-    component: UserListComponent,
-    canActivate: [CognitoGuard],
-  },
-  {
-    path: 'create',
-    data: {
-      title: 'Create User',
-    },
-    component: UserCreateComponent,
-    canActivate: [CognitoGuard],
-  },
-  {
-    path: 'detail/:userId',
-    data: {
-      title: 'View User Detail',
-    },
-    component: UserDetailComponent,
-    canActivate: [CognitoGuard],
-  },
-];
+.center-screen {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  min-height: 100vh;
+}

@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { TenantListComponent } from './tenant-list.component';
 import { CreateComponent } from './create.component';
 import { TenantDetailComponent } from './tenant-detail.component';
+import { CognitoGuard } from '../../cognito.guard';
 
 export const routes: Routes = [
   {
@@ -16,7 +17,7 @@ export const routes: Routes = [
         data: {
           title: 'Tenant List',
         },
-        // canActivate: [CognitoGuard],
+        canActivate: [CognitoGuard],
       },
       {
         path: 'create',
@@ -24,7 +25,7 @@ export const routes: Routes = [
         data: {
           title: 'Create New Tenant',
         },
-        // canActivate: [CognitoGuard],
+        canActivate: [CognitoGuard],
       },
       {
         path: ':id',
@@ -32,7 +33,7 @@ export const routes: Routes = [
         data: {
           title: 'Tenant Detail',
         },
-        // canActivate: [CognitoGuard],
+        canActivate: [CognitoGuard],
       },
     ],
   },

@@ -14,43 +14,22 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+import { Component, OnInit } from '@angular/core';
+import { OidcSecurityService } from 'angular-auth-oidc-client';
 
-import { NgModule } from '@angular/core';
-import { Routes, RouterModule } from '@angular/router';
-// import { CognitoGuard } from '../cognito.guard';
-import { UserCreateComponent } from './user-create/user-create.component';
-import { UserDetailComponent } from './user-detail/user-detail.component';
-import { UserListComponent } from './user-list/user-list.component';
-import { CognitoGuard } from '../../cognito.guard';
+@Component({
+  selector: 'app-unauthorized',
+  templateUrl: './unauthorized.component.html',
+  styleUrls: ['./unauthorized.component.scss'],
+  standalone: true,
+})
+export class UnauthorizedComponent implements OnInit {
+  constructor(private oidcSecurityService: OidcSecurityService) {}
 
-export const routes: Routes = [
-  {
-    path: '',
-    redirectTo: 'list',
-    pathMatch: 'full',
-  },
-  {
-    path: 'list',
-    data: {
-      title: 'All Users',
-    },
-    component: UserListComponent,
-    canActivate: [CognitoGuard],
-  },
-  {
-    path: 'create',
-    data: {
-      title: 'Create User',
-    },
-    component: UserCreateComponent,
-    canActivate: [CognitoGuard],
-  },
-  {
-    path: 'detail/:userId',
-    data: {
-      title: 'View User Detail',
-    },
-    component: UserDetailComponent,
-    canActivate: [CognitoGuard],
-  },
-];
+  ngOnInit(): void {}
+
+  login() {
+    this.oidcSecurityService.authorize();
+    return false;
+  }
+}
