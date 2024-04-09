@@ -240,7 +240,7 @@ export class StaticSite extends Construct {
               `echo 'export const environment = ${JSON.stringify(
                 siteConfig
               )}' > ./projects/${project.toLowerCase()}/src/environments/environment.ts`,
-              'npm run build ${project}',
+              `npm run build ${project}`,
             ],
           },
         },
