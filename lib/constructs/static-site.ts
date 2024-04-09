@@ -15,6 +15,7 @@ import { Cognito } from './cognito';
 
 export interface StaticSiteProps {
   readonly name: string;
+  readonly project: string;
   readonly assetDirectory: string;
   readonly allowedMethods: string[];
   readonly createCognitoUserPool: boolean;
@@ -98,6 +99,7 @@ export class StaticSite extends Construct {
 
     this.createCICDForStaticSite(
       id,
+      props.project,
       repository,
       defaultBranchName,
       distribution.distributionId,
@@ -191,6 +193,7 @@ export class StaticSite extends Construct {
 
   private createCICDForStaticSite(
     id: string,
+    project: string,
     repo: codecommit.Repository,
     branchName: string,
     cloudfrontDistributionId: string,
@@ -233,17 +236,17 @@ export class StaticSite extends Construct {
             commands: [
               `echo 'export const environment = ${JSON.stringify(
                 siteConfig
-              )}' > ./src/environments/environment.prod.ts`,
+              )}' > ./projects/${project.toLowerCase()}/src/environments/environment.development.ts`,
               `echo 'export const environment = ${JSON.stringify(
                 siteConfig
-              )}' > ./src/environments/environment.ts`,
-              'npm run build',
+              )}' > ./projects/${project.toLowerCase()}/src/environments/environment.ts`,
+              'npm run build ${project}',
             ],
           },
         },
         artifacts: {
           files: ['**/*'],
-          'base-directory': 'dist',
+          'base-directory': `dist/${project}`,
         },
       }),
 
