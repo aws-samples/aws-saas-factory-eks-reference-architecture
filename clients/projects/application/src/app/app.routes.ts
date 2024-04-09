@@ -30,6 +30,10 @@ export const routes: Routes = [
         path: 'users',
         loadChildren: () => import('./views/users/routes').then((m) => m.routes),
       },
+      {
+        path: 'error',
+        loadChildren: () => import('./views/pages/routes').then((m) => m.routes),
+      },
     ],
   },
   { path: '**', redirectTo: 'dashboard' },

@@ -14,33 +14,43 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import { Injectable } from '@angular/core';
-import { ActivatedRouteSnapshot, CanActivate, Router, RouterStateSnapshot } from '@angular/router';
+import { Injectable, inject } from '@angular/core';
+import {
+  ActivatedRouteSnapshot,
+  CanActivateFn,
+  Router,
+  RouterStateSnapshot,
+} from '@angular/router';
 import { OidcSecurityService } from 'angular-auth-oidc-client';
 import { Observable, of } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, switchMap } from 'rxjs/operators';
 
-@Injectable({ providedIn: 'root' })
-export class CognitoGuard implements CanActivate {
-  constructor(private oidcSecurityService: OidcSecurityService, private router: Router) {}
-
-  canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<boolean> {
-    function getResolvedUrl(route: ActivatedRouteSnapshot): string {
-      return route.pathFromRoot
-        .map((v) => v.url.map((segment) => segment.toString()).join(''))
-        .join('/');
-    }
-    // return of(true);
-    return this.oidcSecurityService.isAuthenticated$.pipe(
+export const CognitoGuard: CanActivateFn = (
+  route: ActivatedRouteSnapshot,
+  state: RouterStateSnapshot
+) => {
+  function getResolvedUrl(route: ActivatedRouteSnapshot): string {
+    return route.pathFromRoot
+      .map((v) => v.url.map((segment) => segment.toString()).join(''))
+      .join('/');
+  }
+  console.log('AuthorizationGuard, canActivate called');
+  const router = inject(Router);
+  try {
+    const secSvc = inject(OidcSecurityService);
+    return secSvc.isAuthenticated$.pipe(
       map((result) => {
-        console.log('AuthorizationGuard, canActivate isAuthorized: ' + result.isAuthenticated);
-        if (!result.isAuthenticated) {
-          this.router.navigate(['/unauthorized']);
-          return false;
+        if (result.isAuthenticated) {
+          return true;
         }
-
-        return true;
+        return router.parseUrl('/error/unauthorized');
       })
     );
+  } catch (e) {
+    console.error(
+      'THERE WAS A PROBLEM AUTHENTICATING. NAVIGATION PROBLEMS AHEAD. CHECK Cognito.guard.ts',
+      e
+    );
+    return router.parseUrl('/error/unauthorized');
   }
-}
+};
