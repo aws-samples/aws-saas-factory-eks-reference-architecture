@@ -5,6 +5,7 @@ import { Title } from '@angular/platform-browser';
 import { IconSetService } from '@coreui/icons-angular';
 import { iconSubset } from './icons/icon-subset';
 import { OidcSecurityService } from 'angular-auth-oidc-client';
+import { environment } from '../environments/environment';
 
 @Component({
   selector: 'app-root',
@@ -24,6 +25,16 @@ export class AppComponent implements OnInit {
     this.titleService.setTitle(this.title);
     // iconSet singleton
     this.iconSetService.icons = { ...iconSubset };
+    if (!environment.usingCustomDomain) {
+      const query = new URLSearchParams(window.location.search);
+      const tenantId = query.get('tenantId');
+      const path = query.get('path') || '';
+      if (tenantId) {
+        query.delete('tenantId');
+        query.delete('path');
+        window.location.assign(`/?${query.toString()}#/${tenantId}/${path}`);
+      }
+    }
   }
 
   ngOnInit(): void {

@@ -21,6 +21,8 @@ import { AuthModule, StsConfigLoader } from 'angular-auth-oidc-client';
 import { HttpConfigLoaderFactory } from './auth-configuration';
 import { ServiceHelperService } from './service-helper.service';
 import { AuthInterceptor } from './auth.interceptor';
+import { APP_BASE_HREF } from '@angular/common';
+import { environment } from '../environments/environment';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -52,5 +54,15 @@ export const appConfig: ApplicationConfig = {
     provideAnimations(),
     provideHttpClient(withInterceptorsFromDi()),
     { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
+    {
+      provide: APP_BASE_HREF,
+      useFactory: () => {
+        if (environment.usingCustomDomain) {
+          return '';
+        }
+        const parts = window.location.hash.split('/');
+        return `/${parts[1]}`;
+      },
+    },
   ],
 };
