@@ -13,6 +13,7 @@ export interface StaticSitesStackProps extends StackProps {
 
   readonly customBaseDomain?: string;
   readonly hostedZoneId?: string;
+  readonly defaultBranchName: string;
 }
 
 export class StaticSitesStack extends Stack {
@@ -81,6 +82,7 @@ export class StaticSitesStack extends Stack {
       }),
       customDomain: useCustomDomain ? `admin.${props.customBaseDomain!}` : undefined,
       hostedZone: hostedZone,
+      defaultBranchName: props.defaultBranchName,
     });
     new CfnOutput(this, `AdminSiteRepository`, {
       value: adminSite.repositoryUrl,
@@ -105,6 +107,7 @@ export class StaticSitesStack extends Stack {
       customDomain: useCustomDomain ? `app.${props.customBaseDomain!}` : undefined,
       certDomain: useCustomDomain ? `*.app.${props.customBaseDomain!}` : undefined,
       hostedZone: hostedZone,
+      defaultBranchName: props.defaultBranchName,
     });
 
     this.applicationSiteDistribution = applicationSite.cloudfrontDistribution;

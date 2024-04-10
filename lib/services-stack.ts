@@ -16,6 +16,7 @@ export interface ServicesStackProps extends StackProps {
   readonly sharedServiceAccountName: string;
   readonly appHostedZoneId?: string;
   readonly customDomain?: string;
+  readonly defaultBranchName: string;
 }
 
 export class ServicesStack extends Stack {
@@ -137,7 +138,7 @@ export class ServicesStack extends Stack {
       appSiteHostedZoneId: props.appHostedZoneId,
       appSiteCustomDomain: props.customDomain ? `app.${props.customDomain!}` : undefined,
       assetDirectory: path.join(__dirname, '..', 'services', 'tenant-onboarding'),
-      defaultBranchName: 'fix/update-dependencies',
+      defaultBranchName: props.defaultBranchName,
     });
 
     new CfnOutput(this, 'TenantOnboardingRepository', {

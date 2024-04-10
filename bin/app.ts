@@ -17,6 +17,7 @@ const ingressControllerName = 'controller';
 const tenantOnboardingProjectName = 'TenantOnboardingProject';
 const tenantDeletionProjectName = 'TenantDeletionProject';
 const sharedServiceAccountName = 'shared-service-account';
+const defaultBranchName = 'fix/update-dependencies';
 
 const customDomain =
   process.env.npm_config_domain && process.env.npm_config_domain.length > 0
@@ -63,6 +64,7 @@ const sitesStack = new StaticSitesStack(app, 'StaticSites', {
   hostedZoneId: hostedZoneId,
   customBaseDomain: customDomain,
   usingKubeCost: !!kubecostToken,
+  defaultBranchName,
 });
 
 const commonResource = new CommonResourcesStack(app, 'CommonResources', {
@@ -80,4 +82,5 @@ const svcStack = new ServicesStack(app, 'Services', {
   sharedServiceAccountName: sharedServiceAccountName,
   appHostedZoneId: hostedZoneId,
   customDomain: customDomain,
+  defaultBranchName,
 });
