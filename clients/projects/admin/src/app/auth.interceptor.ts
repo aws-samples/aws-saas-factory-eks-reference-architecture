@@ -11,7 +11,7 @@ export class AuthInterceptor implements HttpInterceptor {
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     const url = req.url;
 
-    if (url.includes('amazoncognito') || url.includes('auth-info')) {
+    if (url.includes('amazoncognito')) {
       return next.handle(req);
     }
 
