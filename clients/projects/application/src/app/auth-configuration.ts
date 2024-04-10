@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
-import { LogLevel } from 'angular-auth-oidc-client';
-import { map } from 'rxjs/operators';
+import { LogLevel, OpenIdConfiguration } from 'angular-auth-oidc-client';
+import { distinct, map, take } from 'rxjs/operators';
 import { environment } from '../environments/environment';
 import { ServiceHelperService } from './service-helper.service';
 import { ConfigParams } from './views/auth/models/config-params';
@@ -21,11 +21,13 @@ export const DummyHttpConfigLoaderFactory = () => {
 };
 
 export const HttpConfigLoaderFactory = (http: HttpClient, svcHelper: ServiceHelperService) => {
-  console.log('**********HttpConfigLoaderFactory**********');
+  // console.log('Configuring Auth');
+
   const url =
     `${environment.apiUrl}/auth-info` +
     (environment.usingCustomDomain ? '' : `?tenantId=${svcHelper.getTenantId()}`);
   const config$ = http.get<ConfigParams>(url).pipe(
+    distinct(),
     map((customConfig) => {
       return {
         authority: customConfig.issuer,
@@ -34,20 +36,11 @@ export const HttpConfigLoaderFactory = (http: HttpClient, svcHelper: ServiceHelp
         responseType: customConfig.responseType,
         scope: customConfig.scope,
         postLogoutRedirectUri: `${customConfig.redirectUri}/logoff`,
-        startCheckSession: customConfig.start_checksession,
-        silentRenew: false, // customConfig.useSilentRefresh,
-        silentRenewUrl: customConfig.silentRefreshRedirectUri,
         postLoginRoute: '',
         forbiddenRoute: '/forbidden',
         unauthorizedRoute: '/unauthorized',
         logLevel: LogLevel.Debug,
-        maxIdTokenIatOffsetAllowedInSeconds: 10,
-        historyCleanupOff: true,
-        autoUserinfo: false,
-        cognitoDomain:
-          customConfig.cognitoDomain ||
-          'https://saascoffeekincorqobl.auth.us-east-1.amazoncognito.com',
-      };
+      } as OpenIdConfiguration;
     })
   );
   return new StsConfigHttpLoader(config$);

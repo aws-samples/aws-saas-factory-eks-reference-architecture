@@ -32,12 +32,15 @@ export class AppComponent implements OnInit {
       if (tenantId) {
         query.delete('tenantId');
         query.delete('path');
-        window.location.assign(`/?${query.toString()}#/${tenantId}/${path}`);
+        const url = `/#/${tenantId}/${path}?${query.toString()}`;
+        console.log('Rewriting URL. Result: ', url);
+        window.location.assign(url);
       }
     }
   }
 
   ngOnInit(): void {
+    // console.log('Starting Auth Flow');
     this.oidcSecurityService.checkAuth().subscribe(({ isAuthenticated, userData }) => {
       console.log('isAuthenticated: ', isAuthenticated);
       console.log('userData: ', userData);

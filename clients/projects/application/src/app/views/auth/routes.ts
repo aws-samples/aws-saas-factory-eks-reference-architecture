@@ -14,20 +14,12 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import { NgModule } from '@angular/core';
-import { Routes, RouterModule } from '@angular/router';
+import { Routes } from '@angular/router';
 import { LoginInfoComponent } from './login-info/login-info.component';
 
-
-const routes: Routes = [
+export const routes: Routes = [
   {
     path: 'info',
-    component: LoginInfoComponent
-  }
+    component: LoginInfoComponent,
+  },
 ];
-
-@NgModule({
-  imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule]
-})
-export class AuthRoutingModule { }

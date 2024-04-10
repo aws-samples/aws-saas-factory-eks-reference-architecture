@@ -17,12 +17,19 @@ import {
   withInterceptorsFromDi,
   HTTP_INTERCEPTORS,
 } from '@angular/common/http';
-import { AuthModule, StsConfigLoader } from 'angular-auth-oidc-client';
+import {
+  AbstractLoggerService,
+  AuthModule,
+  LogLevel,
+  StsConfigLoader,
+  provideAuth,
+} from 'angular-auth-oidc-client';
 import { HttpConfigLoaderFactory } from './auth-configuration';
 import { ServiceHelperService } from './service-helper.service';
 import { AuthInterceptor } from './auth.interceptor';
 import { APP_BASE_HREF } from '@angular/common';
 import { environment } from '../environments/environment';
+import { AuthLoggerService } from './auth-logger';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -40,19 +47,33 @@ export const appConfig: ApplicationConfig = {
       withHashLocation()
     ),
     importProvidersFrom(
+      SidebarModule,
+      DropdownModule,
       AuthModule.forRoot({
         loader: {
           provide: StsConfigLoader,
           useFactory: HttpConfigLoaderFactory,
           deps: [HttpClient, ServiceHelperService],
         },
-      }),
-      SidebarModule,
-      DropdownModule
+      })
     ),
     IconSetService,
     provideAnimations(),
     provideHttpClient(withInterceptorsFromDi()),
+    // provideAuth({
+    //   config: {
+    //     authority: 'https://cognito-idp.us-west-2.amazonaws.com/us-west-2_upmWHO9G7',
+    //     redirectUrl: 'http://localhost:4200/?tenantId=tenantone',
+    //     clientId: '321gk7aphr8imgp0skouiar9ln',
+    //     responseType: 'code',
+    //     scope: 'phone email openid profile',
+    //     postLogoutRedirectUri: 'http://localhost:4200/?tenantId=tenantone/logoff',
+    //     postLoginRoute: '',
+    //     forbiddenRoute: '/forbidden',
+    //     unauthorizedRoute: '/unauthorized',
+    //     logLevel: LogLevel.Debug,
+    //   },
+    // }),
     { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
     {
       provide: APP_BASE_HREF,
@@ -64,5 +85,6 @@ export const appConfig: ApplicationConfig = {
         return `/${parts[1]}`;
       },
     },
+    { provide: AbstractLoggerService, useClass: AuthLoggerService },
   ],
 };

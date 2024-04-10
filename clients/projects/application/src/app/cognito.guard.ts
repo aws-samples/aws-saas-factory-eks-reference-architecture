@@ -23,28 +23,21 @@ import {
 } from '@angular/router';
 import { OidcSecurityService } from 'angular-auth-oidc-client';
 import { Observable, of } from 'rxjs';
-import { map, switchMap } from 'rxjs/operators';
+import { map, switchMap, take } from 'rxjs/operators';
 
 export const CognitoGuard: CanActivateFn = (
   route: ActivatedRouteSnapshot,
   state: RouterStateSnapshot
 ) => {
   const router = inject(Router);
-  try {
-    const secSvc = inject(OidcSecurityService);
-    return secSvc.isAuthenticated$.pipe(
-      map((result) => {
-        if (result.isAuthenticated) {
-          return true;
-        }
-        return router.parseUrl('/error/unauthorized');
-      })
-    );
-  } catch (e) {
-    console.error(
-      'THERE WAS A PROBLEM AUTHENTICATING. NAVIGATION PROBLEMS AHEAD. CHECK Cognito.guard.ts',
-      e
-    );
-    return router.parseUrl('/error/unauthorized');
-  }
+  const secSvc = inject(OidcSecurityService);
+  return secSvc.isAuthenticated$.pipe(
+    take(1),
+    map(({ isAuthenticated }) => {
+      if (isAuthenticated) {
+        return true;
+      }
+      return router.parseUrl('/error/unauthorized');
+    })
+  );
 };

@@ -31,13 +31,22 @@ export class ServiceHelperService {
   }
 
   getTenantId() {
-    if(environment.usingCustomDomain) {
-      const hostname = window.location.hostname;
-      const parts = hostname.split('.');
-      return parts[0];
-    } else {
-      const parts = window.location.hash.split('/');
-      return parts[1];
+    let tenantId = window.localStorage.getItem('tenantId');
+    if (!tenantId) {
+      if (environment.usingCustomDomain) {
+        const hostname = window.location.hostname;
+        const parts = hostname.split('.');
+        tenantId = parts[0];
+      } else {
+        const parts = window.location.hash.split('/');
+        tenantId = parts[1];
+        if (!tenantId) {
+          const query = new URLSearchParams(window.location.search);
+          tenantId = query.get('tenantId') || '';
+        }
+      }
+      window.localStorage.setItem('tenantId', tenantId);
     }
+    return tenantId;
   }
 }

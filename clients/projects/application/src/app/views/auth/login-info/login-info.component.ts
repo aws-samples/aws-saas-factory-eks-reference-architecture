@@ -14,44 +14,53 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { OidcClientNotification, OidcSecurityService, PublicConfiguration } from 'angular-auth-oidc-client';
-import { Observable } from 'rxjs';
+import {
+  OidcClientNotification,
+  OidcSecurityService,
+  ConfigurationService,
+} from 'angular-auth-oidc-client';
+import { Observable, map, of, tap } from 'rxjs';
 
 @Component({
   selector: 'app-login-info',
   templateUrl: './login-info.component.html',
-  styleUrls: ['login-info.component.scss']
+  styleUrls: ['login-info.component.scss'],
+  standalone: true,
+  imports: [CommonModule],
 })
 export class LoginInfoComponent implements OnInit {
-  configuration: PublicConfiguration;
-  userDataChanged$: Observable<OidcClientNotification<any>>;
-  userData$: Observable<any>;
-  isAuthenticated$: Observable<boolean>;
-  checkSessionChanged$: Observable<boolean>;
-  checkSessionChanged: any;
-  idToken: any;
-  accessToken: any;
+  configuration: string = '';
+  userData$: Observable<any> = of('');
+  isAuthenticated$: Observable<boolean> = of(false);
+  idToken$: Observable<string> = of('');
+  accessToken$: Observable<string> = of('');
 
-  constructor(public oidcSecurityService: OidcSecurityService) {}
+  constructor(
+    public oidcSecurityService: OidcSecurityService,
+    public configService: ConfigurationService
+  ) {}
 
   ngOnInit() {
-      this.configuration = this.oidcSecurityService.configuration;
-      this.userData$ = this.oidcSecurityService.userData$;
-      this.isAuthenticated$ = this.oidcSecurityService.isAuthenticated$;
-      this.checkSessionChanged$ = this.oidcSecurityService.checkSessionChanged$;
-      this.idToken = this.oidcSecurityService.getIdToken()?.trim();
-      this.accessToken = this.oidcSecurityService.getToken()?.trim();
-    }
+    console.log(this.configService.getAllConfigurations());
+
+    const authInfo$ = this.oidcSecurityService.checkAuth();
+    this.isAuthenticated$ = authInfo$.pipe(map((result) => result.isAuthenticated));
+    this.userData$ = authInfo$.pipe(map((result) => result.userData));
+    this.accessToken$ = authInfo$.pipe(map((result) => result.accessToken));
+    this.idToken$ = authInfo$.pipe(map((result) => result.idToken));
+  }
 
   login() {
-      this.oidcSecurityService.authorize();
+    this.oidcSecurityService.authorize();
   }
 
   forceRefreshSession() {
-      this.oidcSecurityService.forceRefreshSession().subscribe((result) => console.warn(result));
+    this.oidcSecurityService.forceRefreshSession().subscribe((result) => console.warn(result));
   }
+
   logout() {
-      this.oidcSecurityService.logoff();
+    this.oidcSecurityService.logoff();
   }
 }
