@@ -1,15 +1,27 @@
 # Clients
 
-This folder holds the various web clients included in the EKS Reference Architecture.
+This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 17.3.2.
 
-## [Admin](./Admin/README.md)
+## Development server
 
-Provides an example web application for what the SaaS Administration experience might look like. This application includes a set of sample (fake) graphs and charts for the operational monitoring of all tenants across the system. It also includes the ability to provision new tenants and perform basic CRUD operations.
+Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
 
-## [Application](./Application/README.md)
+## Code scaffolding
 
-A sample e-Commerce supply/order management web application that's provided for each provisioned. It allows tenant users to create new Products and Orders (based on those products). The storage story for Products is pooled in that all tenants share the same DynamoDB table. Orders, on the other hand, are siloed--that is, each tenant gets their own individual DynamoDB table. The Product and Order services are secured by with JWT credentials. The application retrieves access tokens by way of OIDC and the standard [OAuth Authorization Code](https://oauth.net/2/grant-types/authorization-code/) grant type using Cognito as an OIDC provider.
+Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
 
-## [Landing](./Landing/README.md)
+## Build
 
-A simple signup form. This application represents the "marketing" page for our SaaS e-Commerce application. From here, tenants can self-signup using the registration form. The registration process provisions the first user as well as all the infrastructure/services to support the newly provisioned tenant.
+Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+
+## Running unit tests
+
+Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+
+## Running end-to-end tests
+
+Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
+
+## Further help
+
+To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.

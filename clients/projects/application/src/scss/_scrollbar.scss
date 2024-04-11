@@ -1,0 +1,48 @@
+// scrollbar tinkering
+
+@supports (scrollbar-width: thin) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #444 transparent;
+  }
+}
+
+//::-webkit-scrollbar {
+//  width: .7em;
+//  height: .7em;
+//}
+
+::-webkit-scrollbar-track {
+  background: var(--cui-body-bg, #fff);
+  border-radius: 100vw;
+  margin-block: .2em;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #999;
+  border: .15em solid var(--cui-body-bg, #fff);
+  border-radius: 100vw;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #444;
+}
+
+.dark-theme::-webkit-scrollbar-thumb {
+  background: var(--cui-gray-600, #444);
+}
+
+.dark-theme::-webkit-scrollbar-thumb:hover {
+  background: var(--cui-gray-400, #999);
+}
+
+.ng-scroll-content {
+  display: flex !important;
+}
+
+.ng-scrollbar:not(.overflow) .ng-scrollbar-wrapper[verticalused="false"] {
+  //background-color: #e797a5;
+    .ng-scroll-viewport {
+      display: flex;
+    }
+}
