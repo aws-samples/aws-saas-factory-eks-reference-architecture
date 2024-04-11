@@ -22,8 +22,6 @@ import { AbstractLoggerService, AuthModule, StsConfigLoader } from 'angular-auth
 import { ConfigLoaderFactory } from './auth-configuration';
 import { AuthInterceptor } from './auth.interceptor';
 import { AuthLoggerService } from './auth-logger';
-import { ServiceHelperService } from '../../../application/src/app/service-helper.service';
-import { HttpConfigLoaderFactory } from '../../../application/src/app/auth-configuration';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -33,8 +31,7 @@ export const appConfig: ApplicationConfig = {
       AuthModule.forRoot({
         loader: {
           provide: StsConfigLoader,
-          useFactory: HttpConfigLoaderFactory,
-          deps: [HttpClient, ServiceHelperService],
+          useFactory: ConfigLoaderFactory,
         },
       })
     ),
