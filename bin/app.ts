@@ -6,6 +6,8 @@ import { StaticSitesStack } from '../lib/static-sites-stack';
 import { ServicesStack } from '../lib/services-stack';
 import { CommonResourcesStack } from '../lib/common-resources-stack';
 import { ApiStack } from '../lib/api-stack';
+import { ControlPlaneStack } from '../lib/control-plane-stack';
+import { AppPlaneStack } from '../lib/app-plane-stack';
 
 const env = {
   account: process.env.AWS_ACCOUNT,
@@ -60,7 +62,7 @@ const apiStack = new ApiStack(app, 'SaaSApi', {
 const sitesStack = new StaticSitesStack(app, 'StaticSites', {
   env,
   apiUrl: apiStack.apiUrl,
-  saasAdminEmail: saasAdminEmail,
+  // saasAdminEmail: saasAdminEmail,
   hostedZoneId: hostedZoneId,
   customBaseDomain: customDomain,
   usingKubeCost: !!kubecostToken,
@@ -83,4 +85,12 @@ const svcStack = new ServicesStack(app, 'Services', {
   appHostedZoneId: hostedZoneId,
   customDomain: customDomain,
   defaultBranchName,
+});
+
+const controlPlaneStack = new ControlPlaneStack(app, 'ControlPlane', {
+  systemAdminEmail: saasAdminEmail,
+});
+
+const applicationPlaneStack = new AppPlaneStack(app, 'ApplicationPlane', {
+  eventBusArn: controlPlaneStack.eventBusArn,
 });

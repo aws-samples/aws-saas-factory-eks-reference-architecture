@@ -7,7 +7,7 @@ import { Distribution } from 'aws-cdk-lib/aws-cloudfront';
 
 export interface StaticSitesStackProps extends StackProps {
   readonly apiUrl: string;
-  readonly saasAdminEmail: string;
+  // readonly saasAdminEmail: string;
 
   readonly usingKubeCost: boolean;
 
@@ -60,36 +60,36 @@ export class StaticSitesStack extends Stack {
     // });
 
     // Admin site
-    const adminSite = new StaticSite(this, 'AdminSite', {
-      name: 'AdminSite',
-      project: 'Admin',
-      assetDirectory: path.join(path.dirname(__filename), '..', 'clients'),
-      allowedMethods: ['GET', 'HEAD', 'OPTIONS'],
-      createCognitoUserPool: true,
-      cognitoProps: {
-        adminUserEmail: props.saasAdminEmail,
-      },
-      siteConfigurationGenerator: (siteDomain, cognito) => ({
-        production: true,
-        clientId: cognito!.appClientId,
-        issuer: cognito!.authServerUrl,
-        customDomain: cognito!.appClientId,
-        apiUrl: props.apiUrl,
-        domain: siteDomain,
-        usingCustomDomain: useCustomDomain,
-        usingKubeCost: props.usingKubeCost,
-        kubecostUI: props.usingKubeCost ? `${props.apiUrl}/kubecost` : '',
-      }),
-      customDomain: useCustomDomain ? `admin.${props.customBaseDomain!}` : undefined,
-      hostedZone: hostedZone,
-      defaultBranchName: props.defaultBranchName,
-    });
-    new CfnOutput(this, `AdminSiteRepository`, {
-      value: adminSite.repositoryUrl,
-    });
-    new CfnOutput(this, `AdminSiteUrl`, {
-      value: `https://${adminSite.siteDomain}`,
-    });
+    // const adminSite = new StaticSite(this, 'AdminSite', {
+    //   name: 'AdminSite',
+    //   project: 'Admin',
+    //   assetDirectory: path.join(path.dirname(__filename), '..', 'clients'),
+    //   allowedMethods: ['GET', 'HEAD', 'OPTIONS'],
+    //   createCognitoUserPool: true,
+    //   cognitoProps: {
+    //     adminUserEmail: props.saasAdminEmail,
+    //   },
+    //   siteConfigurationGenerator: (siteDomain, cognito) => ({
+    //     production: true,
+    //     clientId: cognito!.appClientId,
+    //     issuer: cognito!.authServerUrl,
+    //     customDomain: cognito!.appClientId,
+    //     apiUrl: props.apiUrl,
+    //     domain: siteDomain,
+    //     usingCustomDomain: useCustomDomain,
+    //     usingKubeCost: props.usingKubeCost,
+    //     kubecostUI: props.usingKubeCost ? `${props.apiUrl}/kubecost` : '',
+    //   }),
+    //   customDomain: useCustomDomain ? `admin.${props.customBaseDomain!}` : undefined,
+    //   hostedZone: hostedZone,
+    //   defaultBranchName: props.defaultBranchName,
+    // });
+    // new CfnOutput(this, `AdminSiteRepository`, {
+    //   value: adminSite.repositoryUrl,
+    // });
+    // new CfnOutput(this, `AdminSiteUrl`, {
+    //   value: `https://${adminSite.siteDomain}`,
+    // });
 
     // Application site
     const applicationSite = new StaticSite(this, 'ApplicationSite', {

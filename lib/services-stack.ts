@@ -3,11 +3,19 @@ import { Construct } from 'constructs';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as path from 'path';
 import { ApplicationService } from './constructs/application-service';
+import { TenantOnboarding } from './constructs/tenant-onboarding';
 
 export interface ServicesStackProps extends StackProps {
+  readonly eksClusterOIDCProviderArn: string;
   readonly internalNLBApiDomain: string;
   readonly eksClusterName: string;
   readonly codebuildKubectlRoleArn: string;
+  readonly appSiteDistributionId: string;
+  readonly appSiteCloudFrontDomain: string;
+  readonly sharedServiceAccountName: string;
+  readonly appHostedZoneId?: string;
+  readonly customDomain?: string;
+  readonly defaultBranchName: string;
 }
 
 export class ServicesStack extends Stack {
@@ -53,6 +61,25 @@ export class ServicesStack extends Stack {
     });
     new CfnOutput(this, 'OrderServiceRepository', {
       value: orderSvc.codeRepositoryUrl,
+    });
+
+    const onboardingSvc = new TenantOnboarding(this, 'TenantOnboarding', {
+      appSiteCloudFrontDomain: props.appSiteCloudFrontDomain,
+      appSiteDistributionId: props.appSiteDistributionId,
+      codebuildKubectlRole: role,
+      eksClusterOIDCProviderArn: props.eksClusterOIDCProviderArn,
+      eksClusterName: props.eksClusterName,
+      applicationServiceBuildProjectNames: ['ProductService', 'OrderService'],
+      onboardingProjectName: 'TenantOnboardingProject',
+      deletionProjectName: 'TenantDeletionProject',
+      appSiteHostedZoneId: props.appHostedZoneId,
+      appSiteCustomDomain: props.customDomain ? `app.${props.customDomain!}` : undefined,
+      assetDirectory: path.join(__dirname, '..', 'services', 'tenant-onboarding'),
+      defaultBranchName: props.defaultBranchName,
+    });
+
+    new CfnOutput(this, 'TenantOnboardingRepository', {
+      value: onboardingSvc.repositoryUrl,
     });
   }
 }

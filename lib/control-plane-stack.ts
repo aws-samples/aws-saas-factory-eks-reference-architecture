@@ -1,12 +1,14 @@
 import { Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { CognitoAuth, ControlPlane } from '@cdklabs/sbt-aws';
+import { EventBus } from 'aws-cdk-lib/aws-events';
 
 export interface ControlPlaneStackProps extends StackProps {
   readonly systemAdminEmail: string;
 }
 
 export class ControlPlaneStack extends Stack {
+  eventBusArn: string;
   constructor(scope: Construct, id: string, props: ControlPlaneStackProps) {
     super(scope, id, props);
 
@@ -22,5 +24,7 @@ export class ControlPlaneStack extends Stack {
     const controlPlane = new ControlPlane(this, 'ControlPlane', {
       auth: cognitoAuth,
     });
+
+    this.eventBusArn = controlPlane.eventBusArn;
   }
 }
