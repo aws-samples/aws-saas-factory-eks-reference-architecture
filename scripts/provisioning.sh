@@ -23,8 +23,16 @@ aws cloudformation wait stack-exists --stack-name $STACK_NAME
 
 aws cloudformation wait stack-create-complete --stack-name $STACK_NAME
 
-SAAS_APP_USERPOOL_ID=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='userPoolId'].OutputValue" --output text)
-SAAS_APP_CLIENT_ID=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='appClientId'].OutputValue" --output text)
+SAAS_TENANT_ID=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='TenantId'].OutputValue" --output text)
+SAAS_APP_CLIENT_ID=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='ClientId'].OutputValue" --output text)
+SAAS_AUTH_SERVER=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='AuthServer'].OutputValue" --output text)
+SAAS_REDIRECT_URL=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='RedirectUri'].OutputValue" --output text)
+
 
 #Export variables
 export tenantStatus="Complete"
+export tenantConfig=$(jq --arg SAAS_TENANT_ID "$SAAS_APP_USERPOOL_ID" \
+  --arg SAAS_APP_CLIENT_ID "$SAAS_APP_CLIENT_ID" \
+  --arg SAAS_AUTH_SERVER "$API_GATEWAY_URL" \
+  --arg SAAS_REDIRECT_URL "$SAAS_REDIRECT_URL" \
+  -n '{"tenantId":$SAAS_TENANT_ID,"appClientId":$SAAS_APP_CLIENT_ID,"authServer":$SAAS_AUTH_SERVER,"redirectUrl":$SAAS_REDIRECT_URL}')
