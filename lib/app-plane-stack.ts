@@ -36,7 +36,6 @@ export class AppPlaneStack extends Stack {
         'email',
         'tenantStatus',
       ],
-      environmentJSONVariablesFromIncomingEvent: ['prices'],
       environmentVariablesToOutgoingEvent: ['tenantConfig', 'tenantStatus'],
       outgoingEvent: DetailType.PROVISION_SUCCESS,
       incomingEvent: DetailType.ONBOARDING_REQUEST,

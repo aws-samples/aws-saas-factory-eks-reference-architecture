@@ -9,6 +9,9 @@ export interface ControlPlaneStackProps extends StackProps {
 
 export class ControlPlaneStack extends Stack {
   eventBusArn: string;
+  controlPlaneUrl: string;
+  clientId: string;
+  authorizationServer: string;
   constructor(scope: Construct, id: string, props: ControlPlaneStackProps) {
     super(scope, id, props);
 
@@ -25,6 +28,9 @@ export class ControlPlaneStack extends Stack {
       auth: cognitoAuth,
     });
 
+    this.controlPlaneUrl = controlPlane.controlPlaneAPIGatewayUrl;
     this.eventBusArn = controlPlane.eventBusArn;
+    this.clientId = cognitoAuth.clientId;
+    this.authorizationServer = cognitoAuth.authorizationServer;
   }
 }

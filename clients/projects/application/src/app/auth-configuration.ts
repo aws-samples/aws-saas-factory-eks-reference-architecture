@@ -23,12 +23,12 @@ export const DummyHttpConfigLoaderFactory = () => {
 export const HttpConfigLoaderFactory = (http: HttpClient, svcHelper: ServiceHelperService) => {
   // console.log('Configuring Auth');
 
-  const url =
-    `${environment.apiUrl}/auth-info` +
-    (environment.usingCustomDomain ? '' : `?tenantId=${svcHelper.getTenantId()}`);
+  const tenantName = environment.usingCustomDomain ? '' : svcHelper.getTenantId();
+  const url = `${environment.controlPlaneUrl}/tenant-config/${tenantName}`;
+
   const config$ = http.get<ConfigParams>(url).pipe(
     distinct(),
-    map((customConfig) => {
+    map((customConfig: ConfigParams) => {
       return {
         authority: customConfig.issuer,
         redirectUrl: customConfig.redirectUri,

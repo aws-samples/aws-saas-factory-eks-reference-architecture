@@ -49,6 +49,16 @@ const clusterStack = new EKSClusterStack(app, 'EKSSaaSCluster', {
   hostedZoneId: hostedZoneId,
 });
 
+const controlPlaneStack = new ControlPlaneStack(app, 'ControlPlane', {
+  env,
+  systemAdminEmail: saasAdminEmail,
+});
+
+new AppPlaneStack(app, 'ApplicationPlane', {
+  env,
+  eventBusArn: controlPlaneStack.eventBusArn,
+});
+
 const apiStack = new ApiStack(app, 'SaaSApi', {
   env,
   eksClusterName: clusterName,
@@ -62,7 +72,9 @@ const apiStack = new ApiStack(app, 'SaaSApi', {
 const sitesStack = new StaticSitesStack(app, 'StaticSites', {
   env,
   apiUrl: apiStack.apiUrl,
-  // saasAdminEmail: saasAdminEmail,
+  controlPlaneUrl: controlPlaneStack.controlPlaneUrl,
+  authorizationServer: controlPlaneStack.authorizationServer,
+  clientId: controlPlaneStack.clientId,
   hostedZoneId: hostedZoneId,
   customBaseDomain: customDomain,
   usingKubeCost: !!kubecostToken,
@@ -85,12 +97,4 @@ const svcStack = new ServicesStack(app, 'Services', {
   appHostedZoneId: hostedZoneId,
   customDomain: customDomain,
   defaultBranchName,
-});
-
-const controlPlaneStack = new ControlPlaneStack(app, 'ControlPlane', {
-  systemAdminEmail: saasAdminEmail,
-});
-
-const applicationPlaneStack = new AppPlaneStack(app, 'ApplicationPlane', {
-  eventBusArn: controlPlaneStack.eventBusArn,
 });

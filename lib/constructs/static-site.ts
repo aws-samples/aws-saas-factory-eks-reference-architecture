@@ -11,17 +11,14 @@ import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as alias from 'aws-cdk-lib/aws-route53-targets';
-import { Cognito } from './cognito';
 
 export interface StaticSiteProps {
   readonly name: string;
   readonly project: string;
   readonly assetDirectory: string;
   readonly allowedMethods: string[];
-  readonly createCognitoUserPool: boolean;
   readonly siteConfigurationGenerator: (
-    siteDomain: string,
-    cognitoResources?: Cognito
+    siteDomain: string
   ) => Record<string, string | number | boolean>;
 
   readonly customDomain?: string;
@@ -54,11 +51,6 @@ export class StaticSite extends Construct {
     if (useCustomDomain && !props.hostedZone) {
       throw new Error(`HostedZone cannot be empty for the custom domain '${props.customDomain}'`);
     }
-    if (props.createCognitoUserPool && !props.cognitoProps) {
-      throw new Error(
-        `Cognito configuration is required when creating Cognito UserPool for the site '${props.name}'`
-      );
-    }
 
     const repository = new codecommit.Repository(this, `${id}Repository`, {
       repositoryName: props.name,
@@ -80,22 +72,7 @@ export class StaticSite extends Construct {
     this.siteBucket = appBucket;
     this.siteDomain = useCustomDomain ? props.customDomain! : distribution.domainName;
 
-    const cognitoResources = props.createCognitoUserPool
-      ? new Cognito(this, 'Cognito', {
-          adminUserEmailAddress: props.cognitoProps!.adminUserEmail,
-          userPoolName: `${props.name}UserPool`,
-          callbackUrl: `https://${this.siteDomain}`,
-          signoutUrl: `https://${this.siteDomain}/signout`,
-          inviteEmailSubject: (
-            props.cognitoProps!.emailSubjectGenerator || defaultEmailSubjectGenerator
-          )(props.name),
-          inviteEmailBody: (props.cognitoProps?.emailBodyGenerator || defaultEmailBodyGenerator)(
-            this.siteDomain
-          ),
-        })
-      : undefined;
-
-    const siteConfig = props.siteConfigurationGenerator(this.siteDomain, cognitoResources);
+    const siteConfig = props.siteConfigurationGenerator(this.siteDomain);
 
     this.createCICDForStaticSite(
       id,
@@ -157,13 +134,7 @@ export class StaticSite extends Construct {
         cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD_OPTIONS,
         compress: true,
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
-        // cachePolicy: new cloudfront.CachePolicy(this, 'CachePolicy', {
-        //     cookieBehavior: cloudfront.CacheCookieBehavior.none(),
-        //     defaultTtl: cdk.Duration.hours(1),
-        //     minTtl: cdk.Duration.minutes(1),
-        //     maxTtl: cdk.Duration.days(1),
-        //     queryStringBehavior: cloudfront.CacheQueryStringBehavior.none(),
-        // }),
+
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
       },
       certificate: siteCertificate,
