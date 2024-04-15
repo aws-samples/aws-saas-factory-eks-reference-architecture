@@ -19,7 +19,7 @@ const ingressControllerName = 'controller';
 const tenantOnboardingProjectName = 'TenantOnboardingProject';
 const tenantDeletionProjectName = 'TenantDeletionProject';
 const sharedServiceAccountName = 'shared-service-account';
-const defaultBranchName = 'fix/update-dependencies';
+const defaultBranchName = 'feat/sbt-merge';
 
 const customDomain =
   process.env.npm_config_domain && process.env.npm_config_domain.length > 0
