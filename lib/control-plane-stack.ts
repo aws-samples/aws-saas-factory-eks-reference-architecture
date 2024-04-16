@@ -31,9 +31,10 @@ export class ControlPlaneStack extends Stack {
     this.controlPlaneUrl = controlPlane.controlPlaneAPIGatewayUrl;
     this.eventBusArn = controlPlane.eventBusArn;
     this.clientId = cognitoAuth.clientId;
-    this.authorizationServer = cognitoAuth.wellKnownEndpointUrl.replace(
+    const issuer = cognitoAuth.wellKnownEndpointUrl.replace(
       '/.well-known/openid-configuration',
       ''
     );
+    this.authorizationServer = issuer;
   }
 }

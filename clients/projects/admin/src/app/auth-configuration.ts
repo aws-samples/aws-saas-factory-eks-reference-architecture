@@ -8,7 +8,7 @@ export const ConfigLoaderFactory = () => {
     redirectUrl: window.location.origin,
     postLogoutRedirectUri: `${window.location.origin}/signout`,
     clientId: environment.clientId,
-    scope: 'openid profile email phone',
+    scope: 'openid profile email',
     responseType: 'code',
     useRefreshToken: true,
     logLevel: LogLevel.Debug,
