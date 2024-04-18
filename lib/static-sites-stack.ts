@@ -13,6 +13,7 @@ export interface StaticSitesStackProps extends StackProps {
   readonly usingKubeCost: boolean;
   readonly clientId?: string;
   readonly authorizationServer?: string;
+  readonly wellKnownEndpointUrl?: string;
   readonly customBaseDomain?: string;
   readonly hostedZoneId?: string;
   readonly defaultBranchName: string;
@@ -47,7 +48,8 @@ export class StaticSitesStack extends Stack {
       siteConfigurationGenerator: (siteDomain) => ({
         production: true,
         clientId: props.clientId!,
-        issuer: props.authorizationServer!,
+        authServer: props.authorizationServer!,
+        wellKnownEndpointUrl: props.wellKnownEndpointUrl!,
         apiUrl: props.controlPlaneUrl,
         domain: siteDomain,
         usingCustomDomain: useCustomDomain,

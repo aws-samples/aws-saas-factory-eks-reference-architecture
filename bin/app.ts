@@ -74,6 +74,7 @@ const sitesStack = new StaticSitesStack(app, 'StaticSites', {
   apiUrl: apiStack.apiUrl,
   controlPlaneUrl: controlPlaneStack.controlPlaneUrl,
   authorizationServer: controlPlaneStack.authorizationServer,
+  wellKnownEndpointUrl: controlPlaneStack.wellKnownEndpointUrl,
   clientId: controlPlaneStack.clientId,
   hostedZoneId: hostedZoneId,
   customBaseDomain: customDomain,

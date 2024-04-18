@@ -12,6 +12,7 @@ export class ControlPlaneStack extends Stack {
   controlPlaneUrl: string;
   clientId: string;
   authorizationServer: string;
+  wellKnownEndpointUrl: string;
   constructor(scope: Construct, id: string, props: ControlPlaneStackProps) {
     super(scope, id, props);
 
@@ -31,10 +32,7 @@ export class ControlPlaneStack extends Stack {
     this.controlPlaneUrl = controlPlane.controlPlaneAPIGatewayUrl;
     this.eventBusArn = controlPlane.eventBusArn;
     this.clientId = cognitoAuth.clientId;
-    const issuer = cognitoAuth.wellKnownEndpointUrl.replace(
-      '/.well-known/openid-configuration',
-      ''
-    );
-    this.authorizationServer = issuer;
+    this.wellKnownEndpointUrl = cognitoAuth.wellKnownEndpointUrl;
+    this.authorizationServer = cognitoAuth.authorizationServer;
   }
 }
