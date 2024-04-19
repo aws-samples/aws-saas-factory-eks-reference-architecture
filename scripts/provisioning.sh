@@ -22,11 +22,16 @@ echo Waiting
 aws cloudformation wait stack-exists --stack-name $STACK_NAME
 
 aws cloudformation wait stack-create-complete --stack-name $STACK_NAME
-
+STACKS=$(aws cloudformation describe-stacks)
+echo "Stacks: $STACKS"
 SAAS_TENANT_ID=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='TenantId'].OutputValue" --output text)
+echo "TenantId: $SAAS_TENANT_ID"
 SAAS_APP_CLIENT_ID=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='ClientId'].OutputValue" --output text)
+echo "ClientId: $SAAS_APP_CLIENT_ID"
 SAAS_AUTH_SERVER=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='AuthServer'].OutputValue" --output text)
+echo "AuthServer: $SAAS_AUTH_SERVER"
 SAAS_REDIRECT_URL=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='RedirectUri'].OutputValue" --output text)
+echo "RedirectUri: $SAAS_REDIRECT_URL"
 
 
 #Export variables
