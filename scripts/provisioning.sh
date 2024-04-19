@@ -22,7 +22,7 @@ echo Waiting
 aws cloudformation wait stack-exists --stack-name $STACK_NAME
 
 aws cloudformation wait stack-create-complete --stack-name $STACK_NAME
-STACKS=$(aws cloudformation describe-stacks)
+STACKS=$(aws cloudformation describe-stacks--stack-name $STACK_NAME)
 echo "Stacks: $STACKS"
 SAAS_TENANT_ID=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='TenantId'].OutputValue" --output text)
 echo "TenantId: $SAAS_TENANT_ID"
