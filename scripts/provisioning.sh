@@ -22,7 +22,7 @@ echo Waiting
 aws cloudformation wait stack-exists --stack-name $STACK_NAME
 
 aws cloudformation wait stack-create-complete --stack-name $STACK_NAME
-STACKS=$(aws cloudformation describe-stacks--stack-name $STACK_NAME)
+STACKS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME)
 echo "Stacks: $STACKS"
 SAAS_TENANT_ID=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='TenantId'].OutputValue" --output text)
 echo "TenantId: $SAAS_TENANT_ID"
@@ -36,8 +36,8 @@ echo "RedirectUri: $SAAS_REDIRECT_URL"
 
 #Export variables
 export tenantStatus="Complete"
-export tenantConfig=$(jq --arg SAAS_TENANT_ID "$SAAS_APP_USERPOOL_ID" \
+export tenantConfig=$(jq --arg SAAS_TENANT_ID "$SAAS_TENANT_ID" \
   --arg SAAS_APP_CLIENT_ID "$SAAS_APP_CLIENT_ID" \
-  --arg SAAS_AUTH_SERVER "$API_GATEWAY_URL" \
+  --arg SAAS_AUTH_SERVER "$SAAS_AUTH_SERVER" \
   --arg SAAS_REDIRECT_URL "$SAAS_REDIRECT_URL" \
   -n '{"tenantId":$SAAS_TENANT_ID,"appClientId":$SAAS_APP_CLIENT_ID,"authServer":$SAAS_AUTH_SERVER,"redirectUrl":$SAAS_REDIRECT_URL}')
