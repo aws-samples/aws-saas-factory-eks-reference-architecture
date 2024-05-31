@@ -1,3 +1,10 @@
+import { APP_BASE_HREF } from '@angular/common';
+import {
+  HTTP_INTERCEPTORS,
+  HttpClient,
+  provideHttpClient,
+  withInterceptorsFromDi,
+} from '@angular/common/http';
 import { ApplicationConfig, importProvidersFrom } from '@angular/core';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import {
@@ -10,26 +17,13 @@ import {
 } from '@angular/router';
 import { DropdownModule, SidebarModule } from '@coreui/angular';
 import { IconSetService } from '@coreui/icons-angular';
-import { routes } from './app.routes';
-import {
-  provideHttpClient,
-  HttpClient,
-  withInterceptorsFromDi,
-  HTTP_INTERCEPTORS,
-} from '@angular/common/http';
-import {
-  AbstractLoggerService,
-  AuthModule,
-  LogLevel,
-  StsConfigLoader,
-  provideAuth,
-} from 'angular-auth-oidc-client';
-import { HttpConfigLoaderFactory } from './auth-configuration';
-import { ServiceHelperService } from './service-helper.service';
-import { AuthInterceptor } from './auth.interceptor';
-import { APP_BASE_HREF } from '@angular/common';
+import { AbstractLoggerService, AuthModule, StsConfigLoader } from 'angular-auth-oidc-client';
 import { environment } from '../environments/environment';
+import { routes } from './app.routes';
+import { HttpConfigLoaderFactory } from './auth-configuration';
 import { AuthLoggerService } from './auth-logger';
+import { AuthInterceptor } from './auth.interceptor';
+import { ServiceHelperService } from './service-helper.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -59,21 +53,8 @@ export const appConfig: ApplicationConfig = {
     ),
     IconSetService,
     provideAnimations(),
-    provideHttpClient(withInterceptorsFromDi()),
-    // provideAuth({
-    //   config: {
-    //     authority: 'https://cognito-idp.us-west-2.amazonaws.com/us-west-2_upmWHO9G7',
-    //     redirectUrl: 'http://localhost:4200/?tenantId=tenantone',
-    //     clientId: '321gk7aphr8imgp0skouiar9ln',
-    //     responseType: 'code',
-    //     scope: 'phone email openid profile',
-    //     postLogoutRedirectUri: 'http://localhost:4200/?tenantId=tenantone/logoff',
-    //     postLoginRoute: '',
-    //     forbiddenRoute: '/forbidden',
-    //     unauthorizedRoute: '/unauthorized',
-    //     logLevel: LogLevel.Debug,
-    //   },
-    // }),
+    // provideHttpClient(withInterceptorsFromDi()),
+
     { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
     {
       provide: APP_BASE_HREF,

@@ -40,7 +40,7 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // console.log('Starting Auth Flow');
+    console.log('Starting Auth Flow');
     this.oidcSecurityService.checkAuth().subscribe(({ isAuthenticated, userData }) => {
       console.log('isAuthenticated: ', isAuthenticated);
       console.log('userData: ', userData);

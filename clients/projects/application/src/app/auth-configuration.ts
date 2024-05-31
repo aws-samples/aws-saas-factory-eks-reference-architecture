@@ -21,21 +21,20 @@ export const DummyHttpConfigLoaderFactory = () => {
 };
 
 export const HttpConfigLoaderFactory = (http: HttpClient, svcHelper: ServiceHelperService) => {
-  // console.log('Configuring Auth');
+  console.log('Configuring Auth');
 
-  const tenantName = environment.usingCustomDomain ? '' : svcHelper.getTenantId();
-  const url = `${environment.controlPlaneUrl}/tenant-config/${tenantName}`;
+  const tenantId = environment.usingCustomDomain ? '' : svcHelper.getTenantId();
+  const url = `${environment.controlPlaneUrl}/tenant-config?tenantId=${tenantId}`;
 
   const config$ = http.get<ConfigParams>(url).pipe(
-    distinct(),
     map((customConfig: ConfigParams) => {
       return {
-        authority: customConfig.issuer,
-        redirectUrl: customConfig.redirectUri,
-        clientId: customConfig.clientId,
-        responseType: customConfig.responseType,
-        scope: customConfig.scope,
-        postLogoutRedirectUri: `${customConfig.redirectUri}/logoff`,
+        authority: customConfig.authServer,
+        redirectUrl: customConfig.redirectUrl,
+        clientId: customConfig.appClientId,
+        responseType: 'code',
+        scope: 'openid profile email',
+        postLogoutRedirectUri: `${customConfig.redirectUrl}/logoff`,
         postLoginRoute: '',
         forbiddenRoute: '/forbidden',
         unauthorizedRoute: '/unauthorized',
