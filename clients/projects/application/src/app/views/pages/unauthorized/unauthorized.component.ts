@@ -15,7 +15,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 import { Component, OnInit } from '@angular/core';
-import { OidcSecurityService } from 'angular-auth-oidc-client';
+import { OAuthService } from 'angular-oauth2-oidc';
 
 @Component({
   selector: 'app-unauthorized',
@@ -24,12 +24,12 @@ import { OidcSecurityService } from 'angular-auth-oidc-client';
   standalone: true,
 })
 export class UnauthorizedComponent implements OnInit {
-  constructor(private oidcSecurityService: OidcSecurityService) {}
+  constructor(private oauthService: OAuthService) {}
 
   ngOnInit(): void {}
 
   login() {
-    this.oidcSecurityService.authorize();
+    this.oauthService.initLoginFlow();
     return false;
   }
 }

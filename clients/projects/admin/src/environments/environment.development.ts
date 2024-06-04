@@ -1,10 +1,12 @@
 export const environment = {
   production: true,
-  clientId: '1guqr8gsf69k112uadhcfnbr0f',
-  issuer: 'https://cognito-idp.us-west-2.amazonaws.com/us-west-2_o9z2AQljX',
-  customDomain: '1guqr8gsf69k112uadhcfnbr0f',
-  apiUrl: 'https://7xcu0rofj3.execute-api.us-west-2.amazonaws.com/prod/',
-  domain: 'd198ruhw8anexv.cloudfront.net',
+  clientId: '4o2smrr112pss35hgpbsiat3cj',
+  authServer:
+    'https://saascontrolplanea8e91ea119f511ef8728afe0761b1cbb.auth.us-west-2.amazoncognito.com',
+  wellKnownEndpointUrl:
+    'https://cognito-idp.us-west-2.amazonaws.com/us-west-2_60qMpfSwC/.well-known/openid-configuration',
+  apiUrl: 'https://mxo42pp8ng.execute-api.us-west-2.amazonaws.com/prod/',
+  domain: 'de4zbmlrkbzak.cloudfront.net',
   usingCustomDomain: false,
   usingKubeCost: false,
   kubecostUI: '',

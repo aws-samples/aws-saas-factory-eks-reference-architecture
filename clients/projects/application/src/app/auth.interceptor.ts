@@ -1,32 +1,31 @@
 import { Injectable } from '@angular/core';
 import { HttpEvent, HttpInterceptor, HttpHandler, HttpRequest } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { switchMap, tap } from 'rxjs/operators';
-import { OidcSecurityService } from 'angular-auth-oidc-client';
+import { OAuthStorage } from 'angular-oauth2-oidc';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
-  constructor(private auth: OidcSecurityService) {}
+  constructor(private authStorage: OAuthStorage) {}
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    // console.log('INTERCEPTOR Called');
     const url = req.url;
+    console.log('INTERCEPTOR url', url);
 
-    if (url.includes('amazoncognito') || url.includes('auth-info')) {
-      // console.log('INTERCEPTOR bypassed');
+    if (url.includes('cognito') || url.includes('auth-config')) {
+      console.log('INTERCEPTOR bypassed');
       return next.handle(req);
     }
+    console.log('fetching token');
+    let token = this.authStorage.getItem('id_token');
 
-    return this.auth.getIdToken().pipe(
-      switchMap((token) => {
-        const newRequest = req.clone({
-          setHeaders: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        // console.log('INTERCEPTOR adding token');
-        return next.handle(newRequest);
-      })
-    );
+    if (!token) {
+      console.log("Supposed to attached a token, but it's null");
+      return next.handle(req);
+    }
+    let header = 'Bearer ' + token;
+
+    let headers = req.headers.set('Authorization', header);
+    const newReq = req.clone({ headers });
+    return next.handle(newReq);
   }
 }

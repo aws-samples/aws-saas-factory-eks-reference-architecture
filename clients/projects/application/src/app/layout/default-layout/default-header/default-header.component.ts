@@ -27,7 +27,7 @@ import { ActivatedRoute, RouterLink, RouterLinkActive } from '@angular/router';
 import { IconDirective } from '@coreui/icons-angular';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { delay, filter, map, tap } from 'rxjs/operators';
-import { OidcSecurityService } from 'angular-auth-oidc-client';
+import { OAuthService } from 'angular-oauth2-oidc';
 
 @Component({
   selector: 'app-default-header',
@@ -66,7 +66,7 @@ export class DefaultHeaderComponent extends HeaderComponent {
   readonly colorMode = this.#colorModeService.colorMode;
   readonly #destroyRef: DestroyRef = inject(DestroyRef);
 
-  constructor() {
+  constructor(private oauthService: OAuthService) {
     super();
     this.#colorModeService.localStorageItemName.set(
       'coreui-free-angular-admin-template-theme-default'
@@ -90,6 +90,6 @@ export class DefaultHeaderComponent extends HeaderComponent {
 
   logout() {
     console.log('logout!');
-    inject(OidcSecurityService).logoff();
+    this.oauthService.logOut();
   }
 }

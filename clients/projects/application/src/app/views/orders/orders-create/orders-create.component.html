@@ -31,24 +31,33 @@
             </thead>
             <tbody>
               <tr *ngFor="let op of orderProducts">
-                <td><span
-                     popover="ID: {{op.product.productId}}"
-                     [outsideClick]="true"
-                     triggers="mouseenter" class="dottedUnderline"
-                  >{{op.product.name}}</span></td>
-                <td>{{op.product.price | currency}}</td>
-                <td>{{op.quantity || 0}}</td>
                 <td>
-                  <button class="btn btn-primary" (click)="add(op)"><i class="fa fa-plus"></i></button>
-                  <button class="ml-3 btn btn-danger" (click)="remove(op)"><i class ="fa fa-minus"></i></button>
+                  <span
+                    popover="ID: {{ op.product.productId }}"
+                    [outsideClick]="true"
+                    triggers="mouseenter"
+                    class="dottedUnderline"
+                    >{{ op.product.name }}</span
+                  >
+                </td>
+                <td>{{ op.product.price | currency }}</td>
+                <td>{{ op.quantity || 0 }}</td>
+                <td>
+                  <button class="btn btn-primary" (click)="add(op)">+</button>
+                  <button class="ml-3 btn btn-danger" (click)="remove(op)">-</button>
                 </td>
               </tr>
             </tbody>
           </table>
-          </form>
+        </form>
       </div>
       <div class="card-footer">
-        <button type="edit" (click)="submit()" [disabled]="!orderForm.valid" class="btn btn-sm btn-primary">
+        <button
+          type="edit"
+          (click)="submit()"
+          [disabled]="!orderForm.valid"
+          class="btn btn-sm btn-primary"
+        >
           <i class="fa fa-dot-circle-o"></i> Submit
         </button>
         <button type="cancel" (click)="cancel()" class="btn btn-sm btn-secondary">

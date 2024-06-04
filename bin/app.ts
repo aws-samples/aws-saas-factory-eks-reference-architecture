@@ -6,6 +6,8 @@ import { StaticSitesStack } from '../lib/static-sites-stack';
 import { ServicesStack } from '../lib/services-stack';
 import { CommonResourcesStack } from '../lib/common-resources-stack';
 import { ApiStack } from '../lib/api-stack';
+import { ControlPlaneStack } from '../lib/control-plane-stack';
+import { AppPlaneStack } from '../lib/app-plane-stack';
 
 const env = {
   account: process.env.AWS_ACCOUNT,
@@ -17,7 +19,7 @@ const ingressControllerName = 'controller';
 const tenantOnboardingProjectName = 'TenantOnboardingProject';
 const tenantDeletionProjectName = 'TenantDeletionProject';
 const sharedServiceAccountName = 'shared-service-account';
-const defaultBranchName = 'fix/update-dependencies';
+const defaultBranchName = 'feat/sbt-merge';
 
 const customDomain =
   process.env.npm_config_domain && process.env.npm_config_domain.length > 0
@@ -47,6 +49,16 @@ const clusterStack = new EKSClusterStack(app, 'EKSSaaSCluster', {
   hostedZoneId: hostedZoneId,
 });
 
+const controlPlaneStack = new ControlPlaneStack(app, 'ControlPlane', {
+  env,
+  systemAdminEmail: saasAdminEmail,
+});
+
+new AppPlaneStack(app, 'ApplicationPlane', {
+  env,
+  eventBusArn: controlPlaneStack.eventBusArn,
+});
+
 const apiStack = new ApiStack(app, 'SaaSApi', {
   env,
   eksClusterName: clusterName,
@@ -60,7 +72,10 @@ const apiStack = new ApiStack(app, 'SaaSApi', {
 const sitesStack = new StaticSitesStack(app, 'StaticSites', {
   env,
   apiUrl: apiStack.apiUrl,
-  saasAdminEmail: saasAdminEmail,
+  controlPlaneUrl: controlPlaneStack.controlPlaneUrl,
+  authorizationServer: controlPlaneStack.authorizationServer,
+  wellKnownEndpointUrl: controlPlaneStack.wellKnownEndpointUrl,
+  clientId: controlPlaneStack.clientId,
   hostedZoneId: hostedZoneId,
   customBaseDomain: customDomain,
   usingKubeCost: !!kubecostToken,
