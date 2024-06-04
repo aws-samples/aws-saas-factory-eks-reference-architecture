@@ -16,12 +16,9 @@
  */
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import {
-  OidcClientNotification,
-  OidcSecurityService,
-  ConfigurationService,
-} from 'angular-auth-oidc-client';
-import { Observable, map, of, tap } from 'rxjs';
+import { OAuthService } from 'angular-oauth2-oidc';
+
+import { Observable, from } from 'rxjs';
 
 @Component({
   selector: 'app-login-info',
@@ -32,35 +29,26 @@ import { Observable, map, of, tap } from 'rxjs';
 })
 export class LoginInfoComponent implements OnInit {
   configuration: string = '';
-  userData$: Observable<any> = of('');
-  isAuthenticated$: Observable<boolean> = of(false);
-  idToken$: Observable<string> = of('');
-  accessToken$: Observable<string> = of('');
+  userData$ = new Observable<any>();
+  isAuthenticated = false;
+  idToken = '';
+  accessToken = '';
 
-  constructor(
-    public oidcSecurityService: OidcSecurityService,
-    public configService: ConfigurationService
-  ) {}
+  constructor(private oauthService: OAuthService) {}
 
   ngOnInit() {
-    console.log(this.configService.getAllConfigurations());
-
-    const authInfo$ = this.oidcSecurityService.checkAuth();
-    this.isAuthenticated$ = authInfo$.pipe(map((result) => result.isAuthenticated));
-    this.userData$ = authInfo$.pipe(map((result) => result.userData));
-    this.accessToken$ = authInfo$.pipe(map((result) => result.accessToken));
-    this.idToken$ = authInfo$.pipe(map((result) => result.idToken));
+    this.userData$ = from(this.oauthService.loadUserProfile());
+    this.idToken = this.oauthService.getIdToken();
+    this.accessToken = this.oauthService.getAccessToken();
+    this.isAuthenticated = this.oauthService.hasValidIdToken();
   }
 
   login() {
-    this.oidcSecurityService.authorize();
+    console.log('initializing login');
+    this.oauthService.initLoginFlow();
   }
 
-  forceRefreshSession() {
-    this.oidcSecurityService.forceRefreshSession().subscribe((result) => console.warn(result));
-  }
+  forceRefreshSession() {}
 
-  logout() {
-    this.oidcSecurityService.logoff();
-  }
+  logout() {}
 }

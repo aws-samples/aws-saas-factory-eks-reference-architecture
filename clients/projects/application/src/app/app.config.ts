@@ -5,7 +5,7 @@ import {
   provideHttpClient,
   withInterceptorsFromDi,
 } from '@angular/common/http';
-import { ApplicationConfig, importProvidersFrom } from '@angular/core';
+import { APP_INITIALIZER, ApplicationConfig, importProvidersFrom } from '@angular/core';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import {
   provideRouter,
@@ -17,13 +17,12 @@ import {
 } from '@angular/router';
 import { DropdownModule, SidebarModule } from '@coreui/angular';
 import { IconSetService } from '@coreui/icons-angular';
-import { AbstractLoggerService, AuthModule, StsConfigLoader } from 'angular-auth-oidc-client';
 import { environment } from '../environments/environment';
 import { routes } from './app.routes';
 import { HttpConfigLoaderFactory } from './auth-configuration';
-import { AuthLoggerService } from './auth-logger';
 import { AuthInterceptor } from './auth.interceptor';
 import { ServiceHelperService } from './service-helper.service';
+import { OAuthService, provideOAuthClient } from 'angular-oauth2-oidc';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -40,20 +39,10 @@ export const appConfig: ApplicationConfig = {
       withViewTransitions(),
       withHashLocation()
     ),
-    importProvidersFrom(
-      SidebarModule,
-      DropdownModule,
-      AuthModule.forRoot({
-        loader: {
-          provide: StsConfigLoader,
-          useFactory: HttpConfigLoaderFactory,
-          deps: [HttpClient, ServiceHelperService],
-        },
-      })
-    ),
+    importProvidersFrom(SidebarModule, DropdownModule),
     IconSetService,
     provideAnimations(),
-    // provideHttpClient(withInterceptorsFromDi()),
+    provideHttpClient(withInterceptorsFromDi()),
 
     { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
     {
@@ -66,6 +55,12 @@ export const appConfig: ApplicationConfig = {
         return `/${parts[1]}`;
       },
     },
-    { provide: AbstractLoggerService, useClass: AuthLoggerService },
+    provideOAuthClient(),
+    {
+      provide: APP_INITIALIZER,
+      useFactory: HttpConfigLoaderFactory,
+      multi: true,
+      deps: [HttpClient, OAuthService, ServiceHelperService],
+    },
   ],
 };

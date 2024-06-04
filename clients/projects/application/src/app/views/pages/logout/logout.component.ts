@@ -15,7 +15,7 @@ import {
   FormControlDirective,
   ButtonDirective,
 } from '@coreui/angular';
-import { OidcSecurityService } from 'angular-auth-oidc-client';
+import { OAuthService } from 'angular-oauth2-oidc';
 
 @Component({
   selector: 'app-logout',
@@ -39,10 +39,10 @@ import { OidcSecurityService } from 'angular-auth-oidc-client';
   ],
 })
 export class LoginComponent implements OnInit {
-  constructor() {}
+  constructor(private oauthService: OAuthService) {}
 
   ngOnInit(): void {
     console.log('logging out');
-    inject(OidcSecurityService).logoff();
+    this.oauthService.logOut();
   }
 }
