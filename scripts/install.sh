@@ -44,7 +44,7 @@ export CDK_PARAM_COMMIT_ID=$(git log --format="%H" -n 1)
 # npx cdk deploy --all --require-approval never
 
 # Preprovision pooled infrastructure
-cd ../server
+# cd ../server
 npm install
 
 export CDK_PARAM_CONTROL_PLANE_SOURCE='sbt-control-plane-api'

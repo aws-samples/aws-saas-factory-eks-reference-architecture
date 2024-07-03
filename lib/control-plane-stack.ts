@@ -1,7 +1,6 @@
 import { Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-import { CognitoAuth, ControlPlane } from '@cdklabs/sbt-aws';
-import { EventBus } from 'aws-cdk-lib/aws-events';
+import { ControlPlane, CognitoAuth } from '@cdklabs/sbt-aws';
 
 export interface ControlPlaneStackProps extends StackProps {
   readonly systemAdminEmail: string;
@@ -20,19 +19,20 @@ export class ControlPlaneStack extends Stack {
     const systemAdminRoleName = 'SystemAdmin';
 
     const cognitoAuth = new CognitoAuth(this, 'CognitoAuth', {
-      idpName: idpName,
-      systemAdminRoleName: systemAdminRoleName,
-      systemAdminEmail: props.systemAdminEmail,
+      setAPIGWScopes: false, // only for testing purposes!
+      controlPlaneCallbackURL: '',
     });
 
     const controlPlane = new ControlPlane(this, 'ControlPlane', {
+      systemAdminEmail: props.systemAdminEmail,
       auth: cognitoAuth,
     });
 
     this.controlPlaneUrl = controlPlane.controlPlaneAPIGatewayUrl;
-    this.eventBusArn = controlPlane.eventBusArn;
-    this.clientId = cognitoAuth.clientId;
+    this.eventBusArn = controlPlane.eventManager.busArn;
+    this.clientId = cognitoAuth.userClientId;
     this.wellKnownEndpointUrl = cognitoAuth.wellKnownEndpointUrl;
-    this.authorizationServer = cognitoAuth.authorizationServer;
+    const tokenEndpoint = cognitoAuth.tokenEndpoint;
+    this.authorizationServer = tokenEndpoint.substring(0, tokenEndpoint.indexOf('/oauth2/token'));
   }
 }

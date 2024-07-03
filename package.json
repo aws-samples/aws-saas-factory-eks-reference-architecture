@@ -22,9 +22,9 @@
   },
   "dependencies": {
     "@aws-cdk/lambda-layer-kubectl-v29": "^2.0.0",
-    "@cdklabs/sbt-aws": "^0.0.26",
+    "@cdklabs/sbt-aws": "^0.3.1",
     "@types/js-yaml": "^4.0.9",
-    "aws-cdk-lib": "2.133.0",
+    "aws-cdk-lib": "2.140.0",
     "aws-sdk": "^2.1586.0",
     "constructs": "^10.3.0",
     "js-yaml": "^4.1.0",

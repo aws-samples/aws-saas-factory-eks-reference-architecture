@@ -2,8 +2,10 @@ import {
   CoreApplicationPlane,
   CoreApplicationPlaneJobRunnerProps,
   DetailType,
+  EventManager,
 } from '@cdklabs/sbt-aws';
 import { Stack, StackProps } from 'aws-cdk-lib';
+import { EventBus } from 'aws-cdk-lib/aws-events';
 import { Effect, PolicyDocument, PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 import * as fs from 'fs';
@@ -59,8 +61,19 @@ export class AppPlaneStack extends Stack {
       incomingEvent: DetailType.OFFBOARDING_REQUEST,
     };
 
+    let eventBus;
+    let eventManager;
+    if (props?.eventBusArn) {
+      eventBus = EventBus.fromEventBusArn(this, 'EventBus', props.eventBusArn);
+      eventManager = new EventManager(this, 'EventManager', {
+        eventBus: eventBus,
+      });
+    } else {
+      eventManager = new EventManager(this, 'EventManager');
+    }
+
     new CoreApplicationPlane(this, 'CoreApplicationPlane', {
-      eventBusArn: props.eventBusArn,
+      eventManager: eventManager,
       jobRunnerPropsList: [provisioningJobRunnerProps, deprovisioningJobRunnerProps],
     });
   }
