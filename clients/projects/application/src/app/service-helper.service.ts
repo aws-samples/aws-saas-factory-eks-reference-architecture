@@ -26,7 +26,7 @@ export class ServiceHelperService {
 
   getUrl(entity: string) {
     const tenantId = this.getTenantId();
-    const url = `${environment.apiUrl}/${tenantId}/${entity}`;
+    const url = `${environment.apiUrl}${tenantId}/${entity}`;
     return url;
   }
 

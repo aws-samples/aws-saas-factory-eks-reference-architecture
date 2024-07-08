@@ -27,7 +27,7 @@ import { Tenant } from './models/tenant';
 export class TenantService {
   constructor(private http: HttpClient) {}
 
-  apiUrl = `${environment.apiUrl}/tenants`;
+  apiUrl = `${environment.apiUrl}tenants`;
 
   // TODO strongly-type these anys as tenants once we dial in what the tenant call should return
   getTenants(): Observable<any[]> {
