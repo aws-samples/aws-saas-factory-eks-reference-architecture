@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-
+export AWS_PAGER=''
 export CDK_PARAM_SYSTEM_ADMIN_EMAIL="$1"
 CLOUD_9_INSTALL="$2"
 
@@ -31,20 +31,7 @@ if ! git remote add cc "$REPO_URL"; then
 fi
 git push cc "$(git branch --show-current)":main -f --no-verify
 export CDK_PARAM_COMMIT_ID=$(git log --format="%H" -n 1)
-# cd ../
 
-# if [[ ! -d "saas-control-plane" ]]; then
-#     git clone git@ssh.gitlab.aws.dev:saas-factory/saas-control-plane.git
-# fi
-
-# cd saas-control-plane
-# npm install
-
-# npx cdk bootstrap
-# npx cdk deploy --all --require-approval never
-
-# Preprovision pooled infrastructure
-# cd ../server
 npm install
 
 export CDK_PARAM_CONTROL_PLANE_SOURCE='sbt-control-plane-api'
@@ -55,4 +42,24 @@ export CDK_PARAM_OFFBOARDING_DETAIL_TYPE='Offboarding'
 export CDK_PARAM_DEPROVISIONING_DETAIL_TYPE=$CDK_PARAM_OFFBOARDING_DETAIL_TYPE
 
 npx cdk bootstrap
-npx cdk deploy --all --no-rollback --require-approval never --concurrency 10 --asset-parallelism true
+npm run deploy --email=$CDK_PARAM_SYSTEM_ADMIN_EMAIL
+
+STACKS=$(aws cloudformation describe-stacks)
+
+USERPOOLID=$(echo $STACKS |  jq -r '.Stacks[]?.Outputs[]? | select (.OutputKey=="ControlPlaneIdpUserPoolId") | .OutputValue')
+echo $USERPOOLID
+CLIENTID=$(echo $STACKS | jq -r '.Stacks[]?.Outputs[]? | select (.OutputKey=="ControlPlaneIdpClientId") | .OutputValue')
+echo $CLIENTID
+ADMIN_SITE_URL=$(echo $STACKS | jq -r '.Stacks[]?.Outputs[]? | select (.OutputKey=="AdminSiteUrl") | .OutputValue')
+echo $ADMIN_SITE_URL
+
+aws cognito-idp update-user-pool-client \
+  --user-pool-id $USERPOOLID \
+  --client-id $CLIENTID \
+  --callback-urls $ADMIN_SITE_URL \
+  --logout-urls $ADMIN_SITE_URL \
+  --supported-identity-providers "COGNITO" \
+  --allowed-o-auth-flows "code" \
+  --allowed-o-auth-scopes "phone" "email" "openid" "profile" "tenant/tenant_read" "tenant/tenant_write" "user/user_read" "user/user_write" 
+
+echo "Log into the admin site here: $ADMIN_SITE_URL"
