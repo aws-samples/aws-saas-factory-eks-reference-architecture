@@ -58,8 +58,8 @@ echo $API_ID
 aws cognito-idp update-user-pool-client \
   --user-pool-id $USERPOOLID \
   --client-id $CLIENTID \
-  --callback-urls $ADMIN_SITE_URL \
-  --logout-urls $ADMIN_SITE_URL \
+  --callback-urls "$ADMIN_SITE_URL" \
+  --logout-urls "$ADMIN_SITE_URL/signout" \
   --supported-identity-providers "COGNITO" \
   --allowed-o-auth-flows "code" "implicit" \
   --allowed-o-auth-scopes "phone" "email" "openid" "profile" "tenant/tenant_read" "tenant/tenant_write" "user/user_read" "user/user_write" 
@@ -68,4 +68,4 @@ aws apigatewayv2 update-api \
   --api-id $API_ID \
   --cors-configuration AllowOrigins="$ADMIN_SITE_URL",AllowMethods="*",AllowHeaders="*"
 
-echo "Log into the admin site here: $ADMIN_SITE_URL"
+echo "Log into the admin site here: $ADMIN_SITE_URL"  
