@@ -52,6 +52,8 @@ CLIENTID=$(echo $STACKS | jq -r '.Stacks[]?.Outputs[]? | select (.OutputKey=="Co
 echo $CLIENTID
 ADMIN_SITE_URL=$(echo $STACKS | jq -r '.Stacks[]?.Outputs[]? | select (.OutputKey=="AdminSiteUrl") | .OutputValue')
 echo $ADMIN_SITE_URL
+APPLICATION_SITE_URL=$(echo $STACKS | jq -r '.Stacks[]?.Outputs[]? | select (.OutputKey=="ApplicationSiteURl") | .OutputValue')
+echo $APPLICATION_SITE_URL
 API_ID=$( aws apigatewayv2 get-apis --query "Items[?Name=='controlPlaneAPI'].ApiId | [0]" --output text)
 echo $API_ID
 
@@ -66,6 +68,6 @@ aws cognito-idp update-user-pool-client \
 
 aws apigatewayv2 update-api \
   --api-id $API_ID \
-  --cors-configuration AllowOrigins="$ADMIN_SITE_URL",AllowMethods="*",AllowHeaders="*"
+  --cors-configuration AllowOrigins="$ADMIN_SITE_URL,$APPLICATION_SITE_URL",AllowMethods="*",AllowHeaders="*"
 
 echo "Log into the admin site here: $ADMIN_SITE_URL"  

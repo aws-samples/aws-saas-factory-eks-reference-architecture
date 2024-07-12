@@ -87,6 +87,9 @@ export class StaticSitesStack extends Stack {
     });
 
     this.applicationSiteDistribution = applicationSite.cloudfrontDistribution;
+    new CfnOutput(this, 'ApplicationSiteUrl', {
+      value: `https://${applicationSite.siteDomain}`,
+    });
     new CfnOutput(this, `ApplicationSiteRepository`, {
       value: applicationSite.repositoryUrl,
     });
