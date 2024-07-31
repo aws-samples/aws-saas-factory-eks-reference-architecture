@@ -52,7 +52,7 @@ CLIENTID=$(echo $STACKS | jq -r '.Stacks[]?.Outputs[]? | select (.OutputKey=="Co
 echo $CLIENTID
 ADMIN_SITE_URL=$(echo $STACKS | jq -r '.Stacks[]?.Outputs[]? | select (.OutputKey=="AdminSiteUrl") | .OutputValue')
 echo $ADMIN_SITE_URL
-APPLICATION_SITE_URL=$(echo $STACKS | jq -r '.Stacks[]?.Outputs[]? | select (.OutputKey=="ApplicationSiteURl") | .OutputValue')
+APPLICATION_SITE_URL=$(echo $STACKS | jq -r '.Stacks[]?.Outputs[]? | select (.OutputKey=="ApplicationSiteUrl") | .OutputValue')
 echo $APPLICATION_SITE_URL
 API_ID=$( aws apigatewayv2 get-apis --query "Items[?Name=='controlPlaneAPI'].ApiId | [0]" --output text)
 echo $API_ID

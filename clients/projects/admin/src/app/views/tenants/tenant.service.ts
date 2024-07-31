@@ -29,7 +29,6 @@ export class TenantService {
 
   apiUrl = `${environment.apiUrl}tenants`;
 
-  // TODO strongly-type these anys as tenants once we dial in what the tenant call should return
   getTenants(): Observable<Tenant[]> {
     return this.http.get<TenantResponse>(this.apiUrl).pipe(
       map((res) => {
