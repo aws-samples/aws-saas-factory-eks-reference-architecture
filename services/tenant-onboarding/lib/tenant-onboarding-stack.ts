@@ -1,4 +1,4 @@
-import { Arn, CfnParameter, RemovalPolicy, Stack, StackProps } from 'aws-cdk-lib';
+import { Arn, CfnOutput, CfnParameter, RemovalPolicy, Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as cr from 'aws-cdk-lib/custom-resources';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
@@ -99,49 +99,6 @@ export class TenantOnboardingStack extends Stack {
         recordName: tenantAppDomain,
         target: route53.RecordTarget.fromAlias(new alias.CloudFrontTarget(distribution)),
       });
-
-      // new route53.TxtRecord(this, `TxtRecord`,{
-      //     zone: hostedZone,
-      //     recordName: tenantAppDomain,
-      //     values: ['Tenant app TXT record']
-      // });
-
-      // const distributionArn = Arn.format({
-      //     service: "cloudfront",
-      //     resource: "distribution",
-      //     region: "",
-      //     resourceName: appDistributionId.valueAsString,
-      // }, this);
-
-      // new cr.AwsCustomResource(this, 'CloudFrontCustomDomain', {
-      //     onCreate: {
-      //         service: 'CloudFront',
-      //         action: 'associateAlias',
-      //         parameters: {
-      //             Alias: tenantAppDomain,
-      //             TargetDistributionId: appDistributionId.valueAsString,
-      //         },
-      //         physicalResourceId: cr.PhysicalResourceId.of(`CloudFrontCustomDomain-${props.tenantid}`),
-      //     },
-      //     onUpdate: {
-      //         service: 'CloudFront',
-      //         action: 'updateDistribution',
-      //         parameters: {
-      //             Alias: tenantAppDomain,
-      //             TargetDistributionId: appDistributionId.valueAsString,
-      //         },
-      //         physicalResourceId: cr.PhysicalResourceId.of(`CloudFrontCustomDomain-${props.tenantid}`),
-      //     },
-      //     // TODO: implement removal of alias later. not a blocker.
-      //     //policy: cr.AwsCustomResourcePolicy.fromSdkCalls({ resources: [distributionArn] }),
-      //     policy: cr.AwsCustomResourcePolicy.fromStatements([
-      //         new iam.PolicyStatement({
-      //             actions: ["cloudfront:AssociateAlias", "cloudfront:UpdateDistribution"],
-      //             effect: iam.Effect.ALLOW,
-      //             resources: [distributionArn],
-      //         })
-      //     ])
-      // });
     } else {
       // no distribution. app-domain/tenant is the url.
     }
@@ -158,6 +115,26 @@ export class TenantOnboardingStack extends Stack {
         'tenant-id': { value: props.tenantid, mutable: false },
       },
     });
+
+    new CfnOutput(this, 'tenantId', {
+      key: 'TenantId',
+      value: tenantId.valueAsString,
+    });
+
+    new CfnOutput(this, 'clientId', {
+      key: 'ClientId',
+      value: cognito.appClientId,
+    });
+
+    new CfnOutput(this, 'authServer', {
+      key: 'AuthServer',
+      value: cognito.authServerUrl,
+    });
+
+    new CfnOutput(this, 'redirectUri', {
+      key: 'RedirectUri',
+      value: getNamedUrlForCognito(),
+    })
 
     // create tenant entry in dynamodb
     const tableArn = Arn.format(

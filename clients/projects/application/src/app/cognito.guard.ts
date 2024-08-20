@@ -21,23 +21,14 @@ import {
   Router,
   RouterStateSnapshot,
 } from '@angular/router';
-import { OidcSecurityService } from 'angular-auth-oidc-client';
-import { Observable, of } from 'rxjs';
-import { map, switchMap, take } from 'rxjs/operators';
+import { OAuthService } from 'angular-oauth2-oidc';
 
 export const CognitoGuard: CanActivateFn = (
   route: ActivatedRouteSnapshot,
   state: RouterStateSnapshot
 ) => {
   const router = inject(Router);
-  const secSvc = inject(OidcSecurityService);
-  return secSvc.isAuthenticated$.pipe(
-    take(1),
-    map(({ isAuthenticated }) => {
-      if (isAuthenticated) {
-        return true;
-      }
-      return router.parseUrl('/error/unauthorized');
-    })
-  );
+  const oauthService = inject(OAuthService);
+  return oauthService.hasValidIdToken() ? true : router.parseUrl('/error/unauthorized');
+  return true;
 };

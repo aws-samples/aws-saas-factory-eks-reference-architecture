@@ -15,7 +15,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-export interface Tenant {
-  name: string;
+export interface TenantConfig {
+  tenantId: string;
+  appClientId: string;
+  authServer: string;
+  redirectUrl: string;
+}
+
+export interface Tenant extends TenantBase {
+  config: TenantConfig;
   url: string;
+}
+
+export interface TenantResponse {
+  data: TenantBase[];
+}
+
+export interface TenantBase {
+  companyName: string;
+  customDomain: string;
+  email: string;
+  isActive: string;
+  tenantConfig?: string;
+  tenantId: string;
+  tenantName: string;
+  tenantStatus: string;
+  tier: string;
 }

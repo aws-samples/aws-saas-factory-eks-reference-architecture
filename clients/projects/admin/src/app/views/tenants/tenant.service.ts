@@ -17,9 +17,9 @@
 
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { map, Observable, pipe } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Tenant } from './models/tenant';
+import { Tenant, TenantConfig, TenantResponse } from './models/tenant';
 
 @Injectable({
   providedIn: 'root',
@@ -27,10 +27,17 @@ import { Tenant } from './models/tenant';
 export class TenantService {
   constructor(private http: HttpClient) {}
 
-  apiUrl = `${environment.apiUrl}/tenants`;
+  apiUrl = `${environment.apiUrl}tenants`;
 
-  // TODO strongly-type these anys as tenants once we dial in what the tenant call should return
-  getTenants(): Observable<any[]> {
-    return this.http.get<any[]>(this.apiUrl);
+  getTenants(): Observable<Tenant[]> {
+    return this.http.get<TenantResponse>(this.apiUrl).pipe(
+      map((res) => {
+        return res.data.map((t) => ({
+          ...t,
+          config: t.tenantConfig ? JSON.parse(t.tenantConfig as string) : {},
+          url: `https://${t.customDomain}/#/${t.tenantId}`,
+        }));
+      })
+    );
   }
 }

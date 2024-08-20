@@ -12,7 +12,7 @@ export class UsersService {
   apiUrl: string;
 
   constructor(private http: HttpClient) {
-    this.apiUrl = `${environment.apiUrl}/users`;
+    this.apiUrl = `${environment.apiUrl}users`;
   }
 
   fetch(): Observable<User[]> {

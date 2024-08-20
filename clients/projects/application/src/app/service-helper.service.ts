@@ -26,12 +26,12 @@ export class ServiceHelperService {
 
   getUrl(entity: string) {
     const tenantId = this.getTenantId();
-    const url = `${environment.apiUrl}/${tenantId}/${entity}`;
+    const url = `${environment.apiUrl}${tenantId}/${entity}`;
     return url;
   }
 
   getTenantId() {
-    let tenantId = window.localStorage.getItem('tenantId');
+    let tenantId = window.sessionStorage.getItem('tenantId');
     if (!tenantId) {
       if (environment.usingCustomDomain) {
         const hostname = window.location.hostname;
@@ -45,7 +45,7 @@ export class ServiceHelperService {
           tenantId = query.get('tenantId') || '';
         }
       }
-      window.localStorage.setItem('tenantId', tenantId);
+      window.sessionStorage.setItem('tenantId', tenantId);
     }
     return tenantId;
   }

@@ -38,38 +38,39 @@ export class CreateComponent implements OnInit {
 
   constructor(private fb: FormBuilder, private http: HttpClient) {
     this.form = this.fb.group({
-      name: [null, [Validators.required]],
+      tenantName: [null, [Validators.required]],
       email: [null, [Validators.email, Validators.required]],
       companyName: [null, [Validators.required]],
-      plan: [null, [Validators.required]],
+      tier: [null, [Validators.required]],
     });
   }
 
   ngOnInit(): void {}
 
   onSubmit() {
-    const API_URL = `${environment.apiUrl}/register`;
+    const API_URL = `${environment.apiUrl}/tenants`;
     const domain = environment.domain;
 
-    const user = {
+    const tenant = {
       ...this.form.value,
+      tenantStatus: 'In progress',
       customDomain: domain,
     };
 
     this.submitting = true;
-    this.http.post(API_URL, user).subscribe(
-      (val) => {
+    this.http.post(API_URL, tenant).subscribe({
+      complete: () => {
         this.submitting = false;
         this.success = true;
         this.error = false;
       },
-      (err) => {
+      error: (err) => {
         this.submitting = false;
         this.success = false;
         this.error = true;
         console.log(err);
-      }
-    );
+      },
+    });
   }
 
   isFieldInvalid(field: string) {

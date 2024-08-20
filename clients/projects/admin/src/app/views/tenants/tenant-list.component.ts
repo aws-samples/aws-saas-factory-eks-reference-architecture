@@ -32,7 +32,7 @@ import { RouterLink } from '@angular/router';
 })
 export class TenantListComponent implements OnInit {
   constructor(private tenantSvc: TenantService) {}
-  tenants: Observable<any[]> = of([]);
+  tenants: Observable<Tenant[]> = of([]);
 
   ngOnInit(): void {
     this.tenants = this.tenantSvc.getTenants();

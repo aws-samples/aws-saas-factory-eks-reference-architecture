@@ -1,4 +1,4 @@
-<div *ngIf="isAuthenticated$ | async as isAuthenticated; else noAuth">
+<div *ngIf="isAuthenticated; else noAuth">
   <div class="animated fadeIn">
     <div class="row">
       <div class="col-md-6">
@@ -15,7 +15,7 @@
           <div class="card-body">
             <pre>
               <code contenteditable spellcheck="false">
-                {{accessToken$ | async}}
+                {{accessToken}}
               </code>
             </pre>
           </div>
@@ -26,7 +26,7 @@
           <figcaption>ID Token</figcaption>
           <pre>
             <code contenteditable spellcheck="false">
-              {{idToken$ | async}}
+              {{idToken}}
             </code>
           </pre>
         </figure>
