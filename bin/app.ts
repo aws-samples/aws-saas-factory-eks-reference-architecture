@@ -19,7 +19,10 @@ const ingressControllerName = 'controller';
 const tenantOnboardingProjectName = 'TenantOnboardingProject';
 const tenantDeletionProjectName = 'TenantDeletionProject';
 const sharedServiceAccountName = 'shared-service-account';
-const defaultBranchName = 'feat/sbt-merge';
+//TODO Replace with main before merging
+const defaultBranchName = 'fix/remove-codecommit';
+const repo = 'aws-saas-factory-eks-reference-architecture';
+const repo_owner = 'aws-samples';
 
 const customDomain =
   process.env.npm_config_domain && process.env.npm_config_domain.length > 0
@@ -98,4 +101,6 @@ const svcStack = new ServicesStack(app, 'Services', {
   appHostedZoneId: hostedZoneId,
   customDomain: customDomain,
   defaultBranchName,
+  repo,
+  repo_owner,
 });

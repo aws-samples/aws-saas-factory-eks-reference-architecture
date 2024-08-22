@@ -1,9 +1,9 @@
 import { CfnOutput, Stack, StackProps } from 'aws-cdk-lib';
+import { CloudFrontWebDistribution } from 'aws-cdk-lib/aws-cloudfront';
+import * as route53 from 'aws-cdk-lib/aws-route53';
 import { Construct } from 'constructs';
 import * as path from 'path';
-import * as route53 from 'aws-cdk-lib/aws-route53';
-import { StaticSite } from './constructs/static-site';
-import { Distribution } from 'aws-cdk-lib/aws-cloudfront';
+import { S3Site } from './constructs/s3-site';
 
 export interface StaticSitesStackProps extends StackProps {
   readonly apiUrl: string;
@@ -20,7 +20,7 @@ export interface StaticSitesStackProps extends StackProps {
 }
 
 export class StaticSitesStack extends Stack {
-  readonly applicationSiteDistribution: Distribution;
+  readonly applicationSiteDistribution: CloudFrontWebDistribution;
 
   constructor(scope: Construct, id: string, props: StaticSitesStackProps) {
     super(scope, id, props);
@@ -40,58 +40,46 @@ export class StaticSitesStack extends Stack {
       : undefined;
 
     // Admin site
-    const adminSite = new StaticSite(this, 'AdminSite', {
-      name: 'AdminSite',
+    const adminSite = new S3Site(this, 'AdminSite', {
       project: 'Admin',
       assetDirectory: path.join(path.dirname(__filename), '..', 'clients'),
-      allowedMethods: ['GET', 'HEAD', 'OPTIONS'],
       siteConfigurationGenerator: (siteDomain) => ({
-        production: true,
-        clientId: props.clientId!,
-        authServer: props.authorizationServer!,
-        wellKnownEndpointUrl: props.wellKnownEndpointUrl!,
         apiUrl: props.controlPlaneUrl,
+        authServer: props.authorizationServer!,
+        clientId: props.clientId!,
         domain: siteDomain,
+        kubecostUI: props.usingKubeCost ? `${props.apiUrl}/kubecost` : '',
+        production: true,
         usingCustomDomain: useCustomDomain,
         usingKubeCost: props.usingKubeCost,
-        kubecostUI: props.usingKubeCost ? `${props.apiUrl}/kubecost` : '',
+        wellKnownEndpointUrl: props.wellKnownEndpointUrl!,
       }),
       customDomain: useCustomDomain ? `admin.${props.customBaseDomain!}` : undefined,
       hostedZone: hostedZone,
-      defaultBranchName: props.defaultBranchName,
-    });
-    new CfnOutput(this, `AdminSiteRepository`, {
-      value: adminSite.repositoryUrl,
     });
     new CfnOutput(this, `AdminSiteUrl`, {
       value: `https://${adminSite.siteDomain}`,
     });
 
     // Application site
-    const applicationSite = new StaticSite(this, 'ApplicationSite', {
-      name: 'ApplicationSite',
+    const applicationSite = new S3Site(this, 'ApplicationSite', {
       project: 'Application',
       assetDirectory: path.join(path.dirname(__filename), '..', 'clients'),
-      allowedMethods: ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PATCH', 'POST', 'PUT'],
       siteConfigurationGenerator: (siteDomain) => ({
-        production: true,
         apiUrl: props.apiUrl,
         controlPlaneUrl: props.controlPlaneUrl,
         domain: siteDomain,
+        production: true,
         usingCustomDomain: useCustomDomain,
       }),
       customDomain: useCustomDomain ? `app.${props.customBaseDomain!}` : undefined,
       certDomain: useCustomDomain ? `*.app.${props.customBaseDomain!}` : undefined,
       hostedZone: hostedZone,
-      defaultBranchName: props.defaultBranchName,
     });
 
-    this.applicationSiteDistribution = applicationSite.cloudfrontDistribution;
+    this.applicationSiteDistribution = applicationSite.webDistribution;
     new CfnOutput(this, 'ApplicationSiteUrl', {
       value: `https://${applicationSite.siteDomain}`,
-    });
-    new CfnOutput(this, `ApplicationSiteRepository`, {
-      value: applicationSite.repositoryUrl,
     });
   }
 }

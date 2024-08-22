@@ -36,7 +36,7 @@ const defaultEmailSubjectGenerator = (siteName: string) => `${siteName} User Cre
 const defaultEmailBodyGenerator = (siteDomain: string) =>
   `Your username is {username} and temporary password is {####}. Please login here: https://${siteDomain}`;
 
-export class StaticSite extends Construct {
+export class StaticSiteZZZZZ extends Construct {
   readonly repositoryUrl: string;
   readonly siteDomain: string;
   readonly cloudfrontDistribution: cloudfront.Distribution;

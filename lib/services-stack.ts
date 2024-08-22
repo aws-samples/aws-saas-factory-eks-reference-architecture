@@ -16,6 +16,8 @@ export interface ServicesStackProps extends StackProps {
   readonly appHostedZoneId?: string;
   readonly customDomain?: string;
   readonly defaultBranchName: string;
+  readonly repo: string;
+  readonly repo_owner: string;
 }
 
 export class ServicesStack extends Stack {
@@ -26,6 +28,9 @@ export class ServicesStack extends Stack {
 
     // application services
     const productSvc = new ApplicationService(this, 'ProductService', {
+      defaultBranchName: props.defaultBranchName,
+      repo: props.repo,
+      repo_owner: props.repo_owner,
       internalApiDomain: props.internalNLBApiDomain,
       eksClusterName: props.eksClusterName,
       codebuildKubectlRole: role,
@@ -45,6 +50,9 @@ export class ServicesStack extends Stack {
     });
 
     const orderSvc = new ApplicationService(this, 'OrderService', {
+      defaultBranchName: props.defaultBranchName,
+      repo: props.repo,
+      repo_owner: props.repo_owner,
       internalApiDomain: props.internalNLBApiDomain,
       eksClusterName: props.eksClusterName,
       codebuildKubectlRole: role,

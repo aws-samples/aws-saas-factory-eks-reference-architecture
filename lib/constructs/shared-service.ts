@@ -1,6 +1,5 @@
 import { Construct } from 'constructs';
 import { RemovalPolicy, Stack } from 'aws-cdk-lib';
-import * as codecommit from 'aws-cdk-lib/aws-codecommit';
 import * as ecr from 'aws-cdk-lib/aws-ecr';
 import * as codebuild from 'aws-cdk-lib/aws-codebuild';
 import * as targets from 'aws-cdk-lib/aws-events-targets';

@@ -1,9 +1,7 @@
 import { Construct } from 'constructs';
 import { RemovalPolicy, Stack } from 'aws-cdk-lib';
-import * as codecommit from 'aws-cdk-lib/aws-codecommit';
 import * as ecr from 'aws-cdk-lib/aws-ecr';
 import * as codebuild from 'aws-cdk-lib/aws-codebuild';
-import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as cr from 'aws-cdk-lib/custom-resources';
 
@@ -17,6 +15,8 @@ export interface ApplicationServiceProps {
   readonly serviceUrlPrefix: string;
 
   readonly defaultBranchName?: string;
+  repo: string;
+  repo_owner: string;
 }
 
 export class ApplicationService extends Construct {
@@ -26,13 +26,6 @@ export class ApplicationService extends Construct {
     super(scope, id);
 
     const defaultBranchName = props.defaultBranchName ?? 'main';
-
-    const sourceRepo = new codecommit.Repository(this, `${id}Repository`, {
-      repositoryName: props.name,
-      description: `Repository with code for ${props.name}`,
-      code: codecommit.Code.fromDirectory(props.assetDirectory, defaultBranchName),
-    });
-    this.codeRepositoryUrl = sourceRepo.repositoryCloneUrlHttp;
 
     const containerRepo = new ecr.Repository(this, `${id}ECR`, {
       repositoryName: props.ecrImageName,
@@ -54,13 +47,20 @@ export class ApplicationService extends Construct {
 
     const project = new codebuild.Project(this, `${id}EKSDeployProject`, {
       projectName: `${props.name}`,
-      source: codebuild.Source.codeCommit({ repository: sourceRepo }),
+      source: codebuild.Source.gitHub({
+        repo: props.repo,
+        owner: props.repo_owner,
+        branchOrRef: defaultBranchName,
+      }),
       role: props.codebuildKubectlRole,
       environment: {
         buildImage: codebuild.LinuxBuildImage.STANDARD_7_0,
         privileged: true,
       },
       environmentVariables: {
+        ASSET_DIRECORY: {
+          value: `${props.assetDirectory}`,
+        },
         CLUSTER_NAME: {
           value: `${props.eksClusterName}`,
         },
@@ -102,6 +102,7 @@ export class ApplicationService extends Construct {
           },
           build: {
             commands: [
+              'cd $CODEBUILD_SRC_DIR/$ASSET_DIRECTORY',
               'docker build -t $SEVICE_IMAGE_NAME:$IMAGE_TAG .',
               'docker tag $SEVICE_IMAGE_NAME:$IMAGE_TAG $ECR_REPO_URI:latest',
               'docker tag $SEVICE_IMAGE_NAME:$IMAGE_TAG $ECR_REPO_URI:$IMAGE_TAG',
@@ -128,12 +129,12 @@ export class ApplicationService extends Construct {
       }),
     });
 
-    sourceRepo.onCommit('OnCommit', {
-      target: new targets.CodeBuildProject(project),
-      branches: [defaultBranchName],
-    });
+    // sourceRepo.onCommit('OnCommit', {
+    //   target: new targets.CodeBuildProject(project),
+    //   branches: [defaultBranchName],
+    // });
 
-    sourceRepo.grantPull(project.role!);
+    // sourceRepo.grantPull(project.role!);
     containerRepo.grantPullPush(project.role!);
 
     // to trigger the initial build when the repo is created
@@ -154,7 +155,11 @@ export class ApplicationService extends Construct {
     // deployment project to tenant namespace on tenant onboarding
     const tenantDeployProject = new codebuild.Project(this, `${id}EKSTenantDeployProject`, {
       projectName: `${props.name}TenantDeploy`,
-      source: codebuild.Source.codeCommit({ repository: sourceRepo }),
+      source: codebuild.Source.gitHub({
+        repo: props.repo,
+        owner: props.repo_owner,
+        branchOrRef: defaultBranchName,
+      }),
       role: props.codebuildKubectlRole,
       environment: {
         buildImage: codebuild.LinuxBuildImage.STANDARD_7_0,
@@ -217,7 +222,6 @@ export class ApplicationService extends Construct {
       }),
     });
 
-    sourceRepo.grantPull(tenantDeployProject.role!);
     containerRepo.grantPull(tenantDeployProject.role!);
   }
 }

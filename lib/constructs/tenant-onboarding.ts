@@ -1,6 +1,5 @@
 import { Construct } from 'constructs';
 import { Arn, RemovalPolicy, Stack } from 'aws-cdk-lib';
-import * as codecommit from 'aws-cdk-lib/aws-codecommit';
 import * as codebuild from 'aws-cdk-lib/aws-codebuild';
 import * as iam from 'aws-cdk-lib/aws-iam';
 
