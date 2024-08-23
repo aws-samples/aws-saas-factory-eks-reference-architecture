@@ -60,6 +60,7 @@ echo $API_ID
 aws cognito-idp update-user-pool-client \
   --user-pool-id $USERPOOLID \
   --client-id $CLIENTID \
+  --allowed-o-auth-flows-user-pool-client \
   --callback-urls "$ADMIN_SITE_URL" \
   --logout-urls "$ADMIN_SITE_URL/signout" \
   --supported-identity-providers "COGNITO" \

@@ -19,8 +19,6 @@ const ingressControllerName = 'controller';
 const tenantOnboardingProjectName = 'TenantOnboardingProject';
 const tenantDeletionProjectName = 'TenantDeletionProject';
 const sharedServiceAccountName = 'shared-service-account';
-//TODO Replace with main before merging
-const defaultBranchName = 'fix/remove-codecommit';
 const repo = 'aws-saas-factory-eks-reference-architecture';
 const repo_owner = 'aws-samples';
 
@@ -82,7 +80,6 @@ const sitesStack = new StaticSitesStack(app, 'StaticSites', {
   hostedZoneId: hostedZoneId,
   customBaseDomain: customDomain,
   usingKubeCost: !!kubecostToken,
-  defaultBranchName,
 });
 
 const commonResource = new CommonResourcesStack(app, 'CommonResources', {
@@ -100,7 +97,4 @@ const svcStack = new ServicesStack(app, 'Services', {
   sharedServiceAccountName: sharedServiceAccountName,
   appHostedZoneId: hostedZoneId,
   customDomain: customDomain,
-  defaultBranchName,
-  repo,
-  repo_owner,
 });

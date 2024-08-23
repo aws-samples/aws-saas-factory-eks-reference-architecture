@@ -21,8 +21,6 @@ export interface TenantOnboardingProps {
   readonly appSiteCloudFrontDomain: string;
   readonly appSiteCustomDomain?: string;
   readonly appSiteHostedZoneId?: string;
-
-  readonly defaultBranchName?: string;
 }
 
 export class TenantOnboarding extends Construct {
@@ -33,13 +31,6 @@ export class TenantOnboarding extends Construct {
 
     this.addTenantOnboardingPermissions(props.codebuildKubectlRole, props);
 
-    // const sourceRepo = new codecommit.Repository(this, `${id}Repository`, {
-    //   repositoryName: 'TenantOnboarding',
-    //   description: `Repository for tenant onboarding`,
-    //   code: codecommit.Code.fromDirectory(props.assetDirectory, defaultBranchName),
-    // });
-    // sourceRepo.applyRemovalPolicy(RemovalPolicy.DESTROY);
-    // this.repositoryUrl = sourceRepo.repositoryCloneUrlHttp;
     const sourceBucket = new SourceBucket(this, `${id}SourceBucket`, {
       name: 'TenantOnboarding',
       assetDirectory: props.assetDirectory,

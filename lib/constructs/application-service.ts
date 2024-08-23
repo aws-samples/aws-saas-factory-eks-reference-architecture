@@ -14,10 +14,6 @@ export interface ApplicationServiceProps {
   readonly codebuildKubectlRole: iam.IRole;
   readonly internalApiDomain: string;
   readonly serviceUrlPrefix: string;
-
-  readonly defaultBranchName?: string;
-  repo: string;
-  repo_owner: string;
 }
 
 export class ApplicationService extends Construct {
@@ -84,8 +80,6 @@ export class ApplicationService extends Construct {
               `export API_HOST=$(echo '${
                 props.internalApiDomain || ''
               }' | awk '{print tolower($0)}')`,
-              'export IMAGE_TAG=$CODEBUILD_RESOLVED_SOURCE_VERSION',
-              'echo $IMAGE_TAG',
               'curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"',
               'chmod +x ./kubectl',
             ],
@@ -98,18 +92,18 @@ export class ApplicationService extends Construct {
           },
           build: {
             commands: [
-              'docker build -t $SERVICE_IMAGE_NAME:$IMAGE_TAG .',
-              'docker tag $SERVICE_IMAGE_NAME:$IMAGE_TAG $ECR_REPO_URI:latest',
-              'docker tag $SERVICE_IMAGE_NAME:$IMAGE_TAG $ECR_REPO_URI:$IMAGE_TAG',
+              'docker build -t $SERVICE_IMAGE_NAME:v1 .',
+              'docker tag $SERVICE_IMAGE_NAME:v1 $ECR_REPO_URI:latest',
+              'docker tag $SERVICE_IMAGE_NAME:v1 $ECR_REPO_URI:v1',
               'docker push $ECR_REPO_URI:latest',
-              'docker push $ECR_REPO_URI:$IMAGE_TAG',
+              'docker push $ECR_REPO_URI:v1',
             ],
           },
           post_build: {
             commands: [
               'aws eks --region $AWS_REGION update-kubeconfig --name $CLUSTER_NAME',
               'echo "  newName: $ECR_REPO_URI" >> kubernetes/kustomization.yaml',
-              'echo "  newTag: $IMAGE_TAG" >> kubernetes/kustomization.yaml',
+              'echo "  newTag: v1" >> kubernetes/kustomization.yaml',
               'echo "  value: $API_HOST" >> kubernetes/host-patch.yaml',
               'for res in `kubectl get ns -l saas/tenant=true -o jsonpath=\'{.items[*].metadata.name}\'`; do \
                             cp kubernetes/svc-acc-patch-template.yaml kubernetes/svc-acc-patch.yaml && \
@@ -124,12 +118,6 @@ export class ApplicationService extends Construct {
       }),
     });
 
-    // sourceRepo.onCommit('OnCommit', {
-    //   target: new targets.CodeBuildProject(project),
-    //   branches: [defaultBranchName],
-    // });
-
-    // sourceRepo.grantPull(project.role!);
     containerRepo.grantPullPush(project.role!);
 
     // to trigger the initial build when the repo is created
