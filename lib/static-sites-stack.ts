@@ -1,16 +1,14 @@
 import { CfnOutput, Stack, StackProps } from 'aws-cdk-lib';
-import { CloudFrontWebDistribution, Distribution } from 'aws-cdk-lib/aws-cloudfront';
+import { Distribution } from 'aws-cdk-lib/aws-cloudfront';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import { Construct } from 'constructs';
 import * as path from 'path';
-import { S3Site } from './constructs/s3-site';
 import { StaticSite } from './constructs/static-site';
 import { SourceBucket } from './constructs/source-bucket';
 
 export interface StaticSitesStackProps extends StackProps {
   readonly apiUrl: string;
   readonly controlPlaneUrl: string;
-  // readonly saasAdminEmail: string;
 
   readonly usingKubeCost: boolean;
   readonly clientId?: string;
