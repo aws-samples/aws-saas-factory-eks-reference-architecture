@@ -159,11 +159,11 @@ export class S3Site extends Construct {
 
     this.s3Bucket = createS3Bucket(id);
     const useCustomDomain = props.customDomain ? true : false;
-    const siteConfig = props.siteConfigurationGenerator(this.siteDomain);
     this.webDistribution = createCloudFrontWebDistribution(id, this.s3Bucket);
     this.siteDomain = useCustomDomain
       ? props.customDomain!
       : this.webDistribution.distributionDomainName;
+    const siteConfig = props.siteConfigurationGenerator(this.siteDomain);
     callS3Deploy(
       siteConfig,
       props.assetDirectory,

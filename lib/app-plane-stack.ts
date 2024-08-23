@@ -1,8 +1,9 @@
 import {
   CoreApplicationPlane,
-  CoreApplicationPlaneJobRunnerProps,
+  BashJobRunnerProps,
   DetailType,
   EventManager,
+  BashJobRunner,
 } from '@cdklabs/sbt-aws';
 import { Stack, StackProps } from 'aws-cdk-lib';
 import { EventBus } from 'aws-cdk-lib/aws-events';
@@ -18,8 +19,19 @@ export class AppPlaneStack extends Stack {
   constructor(scope: Construct, id: string, props: AppPlaneStackProps) {
     super(scope, id, props);
 
-    const provisioningJobRunnerProps: CoreApplicationPlaneJobRunnerProps = {
-      name: 'provisioning',
+    let eventBus;
+    let eventManager;
+    if (props?.eventBusArn) {
+      eventBus = EventBus.fromEventBusArn(this, 'EventBus', props.eventBusArn);
+      eventManager = new EventManager(this, 'EventManager', {
+        eventBus: eventBus,
+      });
+    } else {
+      eventManager = new EventManager(this, 'EventManager');
+    }
+
+    const provisioningJobRunnerProps: BashJobRunnerProps = {
+      eventManager,
       permissions: new PolicyDocument({
         statements: [
           new PolicyStatement({
@@ -43,8 +55,8 @@ export class AppPlaneStack extends Stack {
       incomingEvent: DetailType.ONBOARDING_REQUEST,
     };
 
-    const deprovisioningJobRunnerProps: CoreApplicationPlaneJobRunnerProps = {
-      name: 'deprovisioning',
+    const deprovisioningJobRunnerProps: BashJobRunnerProps = {
+      eventManager,
       permissions: new PolicyDocument({
         statements: [
           new PolicyStatement({
@@ -61,20 +73,20 @@ export class AppPlaneStack extends Stack {
       incomingEvent: DetailType.OFFBOARDING_REQUEST,
     };
 
-    let eventBus;
-    let eventManager;
-    if (props?.eventBusArn) {
-      eventBus = EventBus.fromEventBusArn(this, 'EventBus', props.eventBusArn);
-      eventManager = new EventManager(this, 'EventManager', {
-        eventBus: eventBus,
-      });
-    } else {
-      eventManager = new EventManager(this, 'EventManager');
-    }
+    const provisioningJobRunner: BashJobRunner = new BashJobRunner(
+      this,
+      'provisioningJobRunner',
+      provisioningJobRunnerProps
+    );
+    const deprovisioningJobRunner: BashJobRunner = new BashJobRunner(
+      this,
+      'deprovisioningJobRunner',
+      deprovisioningJobRunnerProps
+    );
 
     new CoreApplicationPlane(this, 'CoreApplicationPlane', {
       eventManager: eventManager,
-      jobRunnerPropsList: [provisioningJobRunnerProps, deprovisioningJobRunnerProps],
+      jobRunnersList: [provisioningJobRunner, deprovisioningJobRunner],
     });
   }
 }

@@ -45,9 +45,6 @@ export class ServicesStack extends Stack {
         'product-service'
       ),
     });
-    new CfnOutput(this, 'ProductServiceRepository', {
-      value: productSvc.codeRepositoryUrl,
-    });
 
     const orderSvc = new ApplicationService(this, 'OrderService', {
       defaultBranchName: props.defaultBranchName,
@@ -67,9 +64,6 @@ export class ServicesStack extends Stack {
         'order-service'
       ),
     });
-    new CfnOutput(this, 'OrderServiceRepository', {
-      value: orderSvc.codeRepositoryUrl,
-    });
 
     const onboardingSvc = new TenantOnboarding(this, 'TenantOnboarding', {
       appSiteCloudFrontDomain: props.appSiteCloudFrontDomain,
@@ -84,10 +78,6 @@ export class ServicesStack extends Stack {
       appSiteCustomDomain: props.customDomain ? `app.${props.customDomain!}` : undefined,
       assetDirectory: path.join(__dirname, '..', 'services', 'tenant-onboarding'),
       defaultBranchName: props.defaultBranchName,
-    });
-
-    new CfnOutput(this, 'TenantOnboardingRepository', {
-      value: onboardingSvc.repositoryUrl,
     });
   }
 }

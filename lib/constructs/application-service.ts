@@ -1,9 +1,10 @@
-import { Construct } from 'constructs';
 import { RemovalPolicy, Stack } from 'aws-cdk-lib';
-import * as ecr from 'aws-cdk-lib/aws-ecr';
 import * as codebuild from 'aws-cdk-lib/aws-codebuild';
+import * as ecr from 'aws-cdk-lib/aws-ecr';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as cr from 'aws-cdk-lib/custom-resources';
+import { Construct } from 'constructs';
+import { SourceBucket } from './source-bucket';
 
 export interface ApplicationServiceProps {
   readonly name: string;
@@ -25,8 +26,6 @@ export class ApplicationService extends Construct {
   constructor(scope: Construct, id: string, props: ApplicationServiceProps) {
     super(scope, id);
 
-    const defaultBranchName = props.defaultBranchName ?? 'main';
-
     const containerRepo = new ecr.Repository(this, `${id}ECR`, {
       repositoryName: props.ecrImageName,
       imageScanOnPush: true,
@@ -44,23 +43,20 @@ export class ApplicationService extends Construct {
       },
       policy: cr.AwsCustomResourcePolicy.fromSdkCalls({ resources: [containerRepo.repositoryArn] }),
     });
+    const sourceBucket = new SourceBucket(this, `${props.name}SourceBucket`, {
+      assetDirectory: props.assetDirectory,
+      name: props.name,
+    });
 
     const project = new codebuild.Project(this, `${id}EKSDeployProject`, {
       projectName: `${props.name}`,
-      source: codebuild.Source.gitHub({
-        repo: props.repo,
-        owner: props.repo_owner,
-        branchOrRef: defaultBranchName,
-      }),
+      source: sourceBucket.source,
       role: props.codebuildKubectlRole,
       environment: {
         buildImage: codebuild.LinuxBuildImage.STANDARD_7_0,
         privileged: true,
       },
       environmentVariables: {
-        ASSET_DIRECORY: {
-          value: `${props.assetDirectory}`,
-        },
         CLUSTER_NAME: {
           value: `${props.eksClusterName}`,
         },
@@ -73,7 +69,7 @@ export class ApplicationService extends Construct {
         AWS_ACCOUNT: {
           value: Stack.of(this).account,
         },
-        SEVICE_IMAGE_NAME: {
+        SERVICE_IMAGE_NAME: {
           value: props.ecrImageName,
         },
         SERVICE_URL_PREFIX: {
@@ -102,10 +98,9 @@ export class ApplicationService extends Construct {
           },
           build: {
             commands: [
-              'cd $CODEBUILD_SRC_DIR/$ASSET_DIRECTORY',
-              'docker build -t $SEVICE_IMAGE_NAME:$IMAGE_TAG .',
-              'docker tag $SEVICE_IMAGE_NAME:$IMAGE_TAG $ECR_REPO_URI:latest',
-              'docker tag $SEVICE_IMAGE_NAME:$IMAGE_TAG $ECR_REPO_URI:$IMAGE_TAG',
+              'docker build -t $SERVICE_IMAGE_NAME:$IMAGE_TAG .',
+              'docker tag $SERVICE_IMAGE_NAME:$IMAGE_TAG $ECR_REPO_URI:latest',
+              'docker tag $SERVICE_IMAGE_NAME:$IMAGE_TAG $ECR_REPO_URI:$IMAGE_TAG',
               'docker push $ECR_REPO_URI:latest',
               'docker push $ECR_REPO_URI:$IMAGE_TAG',
             ],
@@ -155,11 +150,6 @@ export class ApplicationService extends Construct {
     // deployment project to tenant namespace on tenant onboarding
     const tenantDeployProject = new codebuild.Project(this, `${id}EKSTenantDeployProject`, {
       projectName: `${props.name}TenantDeploy`,
-      source: codebuild.Source.gitHub({
-        repo: props.repo,
-        owner: props.repo_owner,
-        branchOrRef: defaultBranchName,
-      }),
       role: props.codebuildKubectlRole,
       environment: {
         buildImage: codebuild.LinuxBuildImage.STANDARD_7_0,
@@ -177,7 +167,7 @@ export class ApplicationService extends Construct {
         AWS_ACCOUNT: {
           value: Stack.of(this).account,
         },
-        SEVICE_IMAGE_NAME: {
+        SERVICE_IMAGE_NAME: {
           value: props.ecrImageName,
         },
         SERVICE_URL_PREFIX: {
