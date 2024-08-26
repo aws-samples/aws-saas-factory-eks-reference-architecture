@@ -18,19 +18,19 @@ else
   REGION=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -s http://169.254.169.254/latest/meta-data/placement/availability-zone | sed 's/\(.*\)[a-z]/\1/')
 fi
 
-export CDK_PARAM_CODE_COMMIT_REPOSITORY_NAME="aws-saas-factory-ref-solution-eks-saas-sbt"
-if ! aws codecommit get-repository --repository-name $CDK_PARAM_CODE_COMMIT_REPOSITORY_NAME; then
-  CREATE_REPO=$(aws codecommit create-repository --repository-name $CDK_PARAM_CODE_COMMIT_REPOSITORY_NAME --repository-description "eks saas reference architecture repository")
-  echo "$CREATE_REPO"
-fi
+# export CDK_PARAM_CODE_COMMIT_REPOSITORY_NAME="aws-saas-factory-ref-solution-eks-saas-sbt"
+# if ! aws codecommit get-repository --repository-name $CDK_PARAM_CODE_COMMIT_REPOSITORY_NAME; then
+#   CREATE_REPO=$(aws codecommit create-repository --repository-name $CDK_PARAM_CODE_COMMIT_REPOSITORY_NAME --repository-description "eks saas reference architecture repository")
+#   echo "$CREATE_REPO"
+# fi
 
-REPO_URL="codecommit::${REGION}://$CDK_PARAM_CODE_COMMIT_REPOSITORY_NAME"
-if ! git remote add cc "$REPO_URL"; then
-  echo "Setting url to remote cc"
-  git remote set-url cc "$REPO_URL"
-fi
-git push cc "$(git branch --show-current)":main -f --no-verify
-export CDK_PARAM_COMMIT_ID=$(git log --format="%H" -n 1)
+# REPO_URL="codecommit::${REGION}://$CDK_PARAM_CODE_COMMIT_REPOSITORY_NAME"
+# if ! git remote add cc "$REPO_URL"; then
+#   echo "Setting url to remote cc"
+#   git remote set-url cc "$REPO_URL"
+# fi
+# git push cc "$(git branch --show-current)":main -f --no-verify
+# export CDK_PARAM_COMMIT_ID=$(git log --format="%H" -n 1)
 
 npm install
 
@@ -60,6 +60,7 @@ echo $API_ID
 aws cognito-idp update-user-pool-client \
   --user-pool-id $USERPOOLID \
   --client-id $CLIENTID \
+  --allowed-o-auth-flows-user-pool-client \
   --callback-urls "$ADMIN_SITE_URL" \
   --logout-urls "$ADMIN_SITE_URL/signout" \
   --supported-identity-providers "COGNITO" \

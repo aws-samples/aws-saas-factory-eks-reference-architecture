@@ -1,8 +1,10 @@
-import { Construct } from 'constructs';
+import * as cdk from 'aws-cdk-lib';
 import { Arn, RemovalPolicy, Stack } from 'aws-cdk-lib';
-import * as codecommit from 'aws-cdk-lib/aws-codecommit';
 import * as codebuild from 'aws-cdk-lib/aws-codebuild';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as aws_s3 from 'aws-cdk-lib/aws-s3';
+import { Construct } from 'constructs';
+import { SourceBucket } from './source-bucket';
 
 export interface TenantOnboardingProps {
   readonly onboardingProjectName: string;
@@ -19,8 +21,6 @@ export interface TenantOnboardingProps {
   readonly appSiteCloudFrontDomain: string;
   readonly appSiteCustomDomain?: string;
   readonly appSiteHostedZoneId?: string;
-
-  readonly defaultBranchName?: string;
 }
 
 export class TenantOnboarding extends Construct {
@@ -29,17 +29,12 @@ export class TenantOnboarding extends Construct {
   constructor(scope: Construct, id: string, props: TenantOnboardingProps) {
     super(scope, id);
 
-    const defaultBranchName = props.defaultBranchName ?? 'main';
-
     this.addTenantOnboardingPermissions(props.codebuildKubectlRole, props);
 
-    const sourceRepo = new codecommit.Repository(this, `${id}Repository`, {
-      repositoryName: 'TenantOnboarding',
-      description: `Repository for tenant onboarding`,
-      code: codecommit.Code.fromDirectory(props.assetDirectory, defaultBranchName),
+    const sourceBucket = new SourceBucket(this, `${id}SourceBucket`, {
+      name: 'TenantOnboarding',
+      assetDirectory: props.assetDirectory,
     });
-    sourceRepo.applyRemovalPolicy(RemovalPolicy.DESTROY);
-    this.repositoryUrl = sourceRepo.repositoryCloneUrlHttp;
 
     const onboardingCfnParams: { [key: string]: string } = {
       TenantId: '$TENANT_ID',
@@ -58,7 +53,7 @@ export class TenantOnboarding extends Construct {
 
     const onboardingProject = new codebuild.Project(this, `TenantOnboardingProject`, {
       projectName: `${props.onboardingProjectName}`,
-      source: codebuild.Source.codeCommit({ repository: sourceRepo }),
+      source: sourceBucket.source,
       role: props.codebuildKubectlRole,
       environment: {
         buildImage: codebuild.LinuxBuildImage.STANDARD_7_0,
@@ -113,12 +108,11 @@ export class TenantOnboarding extends Construct {
         },
       }),
     });
-    sourceRepo.grantPull(onboardingProject.role!);
 
     const tenantDeletionProject = new codebuild.Project(this, 'TenantDeletionProject', {
       projectName: props.deletionProjectName,
       role: props.codebuildKubectlRole,
-      source: codebuild.Source.codeCommit({ repository: sourceRepo }),
+      source: sourceBucket.source,
       environment: {
         buildImage: codebuild.LinuxBuildImage.STANDARD_7_0,
       },
@@ -154,7 +148,6 @@ export class TenantOnboarding extends Construct {
         },
       }),
     });
-    sourceRepo.grantPull(tenantDeletionProject.role!);
   }
 
   private addTenantOnboardingPermissions(projectRole: iam.IRole, props: TenantOnboardingProps) {

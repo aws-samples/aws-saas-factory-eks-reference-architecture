@@ -1,11 +1,10 @@
-import { Construct } from 'constructs';
 import { RemovalPolicy, Stack } from 'aws-cdk-lib';
-import * as codecommit from 'aws-cdk-lib/aws-codecommit';
-import * as ecr from 'aws-cdk-lib/aws-ecr';
 import * as codebuild from 'aws-cdk-lib/aws-codebuild';
-import * as targets from 'aws-cdk-lib/aws-events-targets';
+import * as ecr from 'aws-cdk-lib/aws-ecr';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as cr from 'aws-cdk-lib/custom-resources';
+import { Construct } from 'constructs';
+import { SourceBucket } from './source-bucket';
 
 export interface ApplicationServiceProps {
   readonly name: string;
@@ -15,8 +14,6 @@ export interface ApplicationServiceProps {
   readonly codebuildKubectlRole: iam.IRole;
   readonly internalApiDomain: string;
   readonly serviceUrlPrefix: string;
-
-  readonly defaultBranchName?: string;
 }
 
 export class ApplicationService extends Construct {
@@ -24,15 +21,6 @@ export class ApplicationService extends Construct {
 
   constructor(scope: Construct, id: string, props: ApplicationServiceProps) {
     super(scope, id);
-
-    const defaultBranchName = props.defaultBranchName ?? 'main';
-
-    const sourceRepo = new codecommit.Repository(this, `${id}Repository`, {
-      repositoryName: props.name,
-      description: `Repository with code for ${props.name}`,
-      code: codecommit.Code.fromDirectory(props.assetDirectory, defaultBranchName),
-    });
-    this.codeRepositoryUrl = sourceRepo.repositoryCloneUrlHttp;
 
     const containerRepo = new ecr.Repository(this, `${id}ECR`, {
       repositoryName: props.ecrImageName,
@@ -51,10 +39,14 @@ export class ApplicationService extends Construct {
       },
       policy: cr.AwsCustomResourcePolicy.fromSdkCalls({ resources: [containerRepo.repositoryArn] }),
     });
+    const sourceBucket = new SourceBucket(this, `${props.name}SourceBucket`, {
+      assetDirectory: props.assetDirectory,
+      name: props.name,
+    });
 
     const project = new codebuild.Project(this, `${id}EKSDeployProject`, {
       projectName: `${props.name}`,
-      source: codebuild.Source.codeCommit({ repository: sourceRepo }),
+      source: sourceBucket.source,
       role: props.codebuildKubectlRole,
       environment: {
         buildImage: codebuild.LinuxBuildImage.STANDARD_7_0,
@@ -73,7 +65,7 @@ export class ApplicationService extends Construct {
         AWS_ACCOUNT: {
           value: Stack.of(this).account,
         },
-        SEVICE_IMAGE_NAME: {
+        SERVICE_IMAGE_NAME: {
           value: props.ecrImageName,
         },
         SERVICE_URL_PREFIX: {
@@ -88,8 +80,6 @@ export class ApplicationService extends Construct {
               `export API_HOST=$(echo '${
                 props.internalApiDomain || ''
               }' | awk '{print tolower($0)}')`,
-              'export IMAGE_TAG=$CODEBUILD_RESOLVED_SOURCE_VERSION',
-              'echo $IMAGE_TAG',
               'curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"',
               'chmod +x ./kubectl',
             ],
@@ -102,18 +92,18 @@ export class ApplicationService extends Construct {
           },
           build: {
             commands: [
-              'docker build -t $SEVICE_IMAGE_NAME:$IMAGE_TAG .',
-              'docker tag $SEVICE_IMAGE_NAME:$IMAGE_TAG $ECR_REPO_URI:latest',
-              'docker tag $SEVICE_IMAGE_NAME:$IMAGE_TAG $ECR_REPO_URI:$IMAGE_TAG',
+              'docker build -t $SERVICE_IMAGE_NAME:v1 .',
+              'docker tag $SERVICE_IMAGE_NAME:v1 $ECR_REPO_URI:latest',
+              'docker tag $SERVICE_IMAGE_NAME:v1 $ECR_REPO_URI:v1',
               'docker push $ECR_REPO_URI:latest',
-              'docker push $ECR_REPO_URI:$IMAGE_TAG',
+              'docker push $ECR_REPO_URI:v1',
             ],
           },
           post_build: {
             commands: [
               'aws eks --region $AWS_REGION update-kubeconfig --name $CLUSTER_NAME',
               'echo "  newName: $ECR_REPO_URI" >> kubernetes/kustomization.yaml',
-              'echo "  newTag: $IMAGE_TAG" >> kubernetes/kustomization.yaml',
+              'echo "  newTag: v1" >> kubernetes/kustomization.yaml',
               'echo "  value: $API_HOST" >> kubernetes/host-patch.yaml',
               'for res in `kubectl get ns -l saas/tenant=true -o jsonpath=\'{.items[*].metadata.name}\'`; do \
                             cp kubernetes/svc-acc-patch-template.yaml kubernetes/svc-acc-patch.yaml && \
@@ -128,12 +118,6 @@ export class ApplicationService extends Construct {
       }),
     });
 
-    sourceRepo.onCommit('OnCommit', {
-      target: new targets.CodeBuildProject(project),
-      branches: [defaultBranchName],
-    });
-
-    sourceRepo.grantPull(project.role!);
     containerRepo.grantPullPush(project.role!);
 
     // to trigger the initial build when the repo is created
@@ -154,8 +138,8 @@ export class ApplicationService extends Construct {
     // deployment project to tenant namespace on tenant onboarding
     const tenantDeployProject = new codebuild.Project(this, `${id}EKSTenantDeployProject`, {
       projectName: `${props.name}TenantDeploy`,
-      source: codebuild.Source.codeCommit({ repository: sourceRepo }),
       role: props.codebuildKubectlRole,
+      source: sourceBucket.source,
       environment: {
         buildImage: codebuild.LinuxBuildImage.STANDARD_7_0,
       },
@@ -172,7 +156,7 @@ export class ApplicationService extends Construct {
         AWS_ACCOUNT: {
           value: Stack.of(this).account,
         },
-        SEVICE_IMAGE_NAME: {
+        SERVICE_IMAGE_NAME: {
           value: props.ecrImageName,
         },
         SERVICE_URL_PREFIX: {
@@ -217,7 +201,6 @@ export class ApplicationService extends Construct {
       }),
     });
 
-    sourceRepo.grantPull(tenantDeployProject.role!);
     containerRepo.grantPull(tenantDeployProject.role!);
   }
 }

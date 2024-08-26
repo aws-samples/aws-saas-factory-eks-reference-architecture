@@ -2,6 +2,9 @@
 
 **[Feedback & Feature request](https://www.pulse.aws/survey/XHZBD2KH)** 
 
+> [!NOTE]  
+> **8/26/2024** - This reference architecture has been modified to integrate with the [SaaS Builder Toolkit for AWS (SBT-AWS)](https://github.com/awslabs/sbt-aws). SBT offers components to increase SaaS developer velocity and reduce time to value. As such, you may have noticed that all services in the `Shared Services` section of this reference architecture are gone. They were replaced by the functionality offered by SBT. We encourage you to look at the SBT repo for additional information, or post a question/comment in the [discussions section](https://github.com/aws-samples/aws-saas-factory-eks-reference-architecture/discussions) of this repo.
+
 The code provide here is intended to provide a sample implementation of a SaaS Amazon EKS solution. The goal is to provide SaaS developers and architects with working code that will illustrate how multi-tenant SaaS applications can be design and delivered on AWS. The solution covers a broad range of multi-tenant considerations, including tenant isolation, identity, data partitioning, and deployment. It provides developers with a prescriptive approach the fundamentals of building SaaS solution with EKS. The focus here is more on giving developers a view into the working elements of the solution without going to the extent of making a full, production-ready solution. Instead, we're hoping this can jump start your process and address some of the common challenges that teams must address when delivering a SaaS solution with EKS.
 
 Note that the instructions below are intended to give you step-by-step, how-to instructions for getting this solution up and running in your own AWS account. For a general description and overview of the solution, please see the [developer's guide here](GUIDE.md).
@@ -45,13 +48,13 @@ Note that the instructions below are intended to give you step-by-step, how-to i
     **OPTION 1: Without custom domain**
     * If you don't have a custom domain, execute the below command by providing an email Id. This email address will be used by the SaaS administrator to login to the "Admin" application. A temporary password will be sent to this email address.
 
-    ```
-    npm i
-    npm run deploy --email=your@email.com
+    ```bash
+    ./scripts/install.sh <email address of admin user>
     ```
 
     **OPTION 2: With custom domain**
-    * However, if you do have a custom domain, follow the below instructions:
+
+    > :warning: While we have no reason to think this option is broke, we haven't completely tested it with the SaaS Builder Toolkit (SBT) integration. Please report any issues found [here](https://github.com/aws-samples/aws-saas-factory-eks-reference-architecture/issues).
 
     > :warning: This option requires an external domain name for which you control DNS settings. If you don't currently own a domain name, you can purchase usually for under $5. namecheap.com is a great resource for this.
 

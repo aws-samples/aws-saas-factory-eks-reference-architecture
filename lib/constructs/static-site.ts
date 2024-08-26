@@ -1,19 +1,21 @@
 import { RemovalPolicy, Stack } from 'aws-cdk-lib';
-import { Construct } from 'constructs';
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
+import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
+import * as codebuild from 'aws-cdk-lib/aws-codebuild';
 import * as codecommit from 'aws-cdk-lib/aws-codecommit';
 import * as codepipeline from 'aws-cdk-lib/aws-codepipeline';
 import * as actions from 'aws-cdk-lib/aws-codepipeline-actions';
-import * as codebuild from 'aws-cdk-lib/aws-codebuild';
-import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
-import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as route53 from 'aws-cdk-lib/aws-route53';
-import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as alias from 'aws-cdk-lib/aws-route53-targets';
+import * as s3 from 'aws-cdk-lib/aws-s3';
+import { Construct } from 'constructs';
+import { SourceBucket } from './source-bucket';
 
 export interface StaticSiteProps {
   readonly name: string;
+  readonly sourceBucket: SourceBucket;
   readonly project: string;
   readonly assetDirectory: string;
   readonly allowedMethods: string[];
@@ -24,7 +26,6 @@ export interface StaticSiteProps {
   readonly customDomain?: string;
   readonly certDomain?: string;
   readonly hostedZone?: route53.IHostedZone;
-  readonly defaultBranchName?: string;
   readonly cognitoProps?: {
     adminUserEmail: string;
     emailSubjectGenerator?: (siteName: string) => string;
@@ -45,20 +46,11 @@ export class StaticSite extends Construct {
   constructor(scope: Construct, id: string, props: StaticSiteProps) {
     super(scope, id);
 
-    const defaultBranchName = props.defaultBranchName ?? 'main';
     const useCustomDomain = props.customDomain ? true : false;
 
     if (useCustomDomain && !props.hostedZone) {
       throw new Error(`HostedZone cannot be empty for the custom domain '${props.customDomain}'`);
     }
-
-    const repository = new codecommit.Repository(this, `${id}Repository`, {
-      repositoryName: props.name,
-      description: `Repository with code for ${props.name}`,
-      code: codecommit.Code.fromDirectory(props.assetDirectory, defaultBranchName),
-    });
-    repository.applyRemovalPolicy(RemovalPolicy.DESTROY);
-    this.repositoryUrl = repository.repositoryCloneUrlHttp;
 
     const { distribution, appBucket } = this.createStaticSite(
       id,
@@ -77,11 +69,10 @@ export class StaticSite extends Construct {
     this.createCICDForStaticSite(
       id,
       props.project,
-      repository,
-      defaultBranchName,
       distribution.distributionId,
       siteConfig,
-      appBucket
+      appBucket,
+      props.sourceBucket
     );
   }
 
@@ -113,6 +104,7 @@ export class StaticSite extends Construct {
     const appBucket = new s3.Bucket(this, `${id}Bucket`, {
       removalPolicy: RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
+      enforceSSL: true,
     });
 
     appBucket.addToResourcePolicy(
@@ -165,11 +157,10 @@ export class StaticSite extends Construct {
   private createCICDForStaticSite(
     id: string,
     project: string,
-    repo: codecommit.Repository,
-    branchName: string,
     cloudfrontDistributionId: string,
     siteConfig: Record<string, string | number | boolean>,
-    bucket: s3.Bucket
+    distroBucket: s3.Bucket,
+    sourceBucket: SourceBucket
   ) {
     const pipeline = new codepipeline.Pipeline(this, `${id}CodePipeline`, {
       pipelineType: codepipeline.PipelineType.V2,
@@ -177,6 +168,7 @@ export class StaticSite extends Construct {
       artifactBucket: new s3.Bucket(this, `${id}CodePipelineBucket`, {
         autoDeleteObjects: true,
         removalPolicy: RemovalPolicy.DESTROY,
+        enforceSSL: true,
       }),
     });
     const sourceArtifact = new codepipeline.Artifact();
@@ -184,11 +176,11 @@ export class StaticSite extends Construct {
     pipeline.addStage({
       stageName: 'Source',
       actions: [
-        new actions.CodeCommitSourceAction({
+        new actions.S3SourceAction({
           actionName: 'Checkout',
-          repository: repo,
           output: sourceArtifact,
-          branch: branchName,
+          bucket: sourceBucket.bucket,
+          bucketKey: sourceBucket.key,
         }),
       ],
     });
@@ -269,7 +261,7 @@ export class StaticSite extends Construct {
       actions: [
         new actions.S3DeployAction({
           actionName: 'CopyToS3',
-          bucket: bucket,
+          bucket: distroBucket,
           input: buildOutput,
           cacheControl: [actions.CacheControl.fromString('no-store')],
           runOrder: 1,

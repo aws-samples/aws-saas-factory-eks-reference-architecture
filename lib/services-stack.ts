@@ -15,7 +15,6 @@ export interface ServicesStackProps extends StackProps {
   readonly sharedServiceAccountName: string;
   readonly appHostedZoneId?: string;
   readonly customDomain?: string;
-  readonly defaultBranchName: string;
 }
 
 export class ServicesStack extends Stack {
@@ -25,7 +24,7 @@ export class ServicesStack extends Stack {
     const role = iam.Role.fromRoleArn(this, 'CodebuildKubectlRole', props.codebuildKubectlRoleArn);
 
     // application services
-    const productSvc = new ApplicationService(this, 'ProductService', {
+    new ApplicationService(this, 'ProductService', {
       internalApiDomain: props.internalNLBApiDomain,
       eksClusterName: props.eksClusterName,
       codebuildKubectlRole: role,
@@ -40,11 +39,8 @@ export class ServicesStack extends Stack {
         'product-service'
       ),
     });
-    new CfnOutput(this, 'ProductServiceRepository', {
-      value: productSvc.codeRepositoryUrl,
-    });
 
-    const orderSvc = new ApplicationService(this, 'OrderService', {
+    new ApplicationService(this, 'OrderService', {
       internalApiDomain: props.internalNLBApiDomain,
       eksClusterName: props.eksClusterName,
       codebuildKubectlRole: role,
@@ -59,11 +55,8 @@ export class ServicesStack extends Stack {
         'order-service'
       ),
     });
-    new CfnOutput(this, 'OrderServiceRepository', {
-      value: orderSvc.codeRepositoryUrl,
-    });
 
-    const onboardingSvc = new TenantOnboarding(this, 'TenantOnboarding', {
+    new TenantOnboarding(this, 'TenantOnboarding', {
       appSiteCloudFrontDomain: props.appSiteCloudFrontDomain,
       appSiteDistributionId: props.appSiteDistributionId,
       codebuildKubectlRole: role,
@@ -75,11 +68,6 @@ export class ServicesStack extends Stack {
       appSiteHostedZoneId: props.appHostedZoneId,
       appSiteCustomDomain: props.customDomain ? `app.${props.customDomain!}` : undefined,
       assetDirectory: path.join(__dirname, '..', 'services', 'tenant-onboarding'),
-      defaultBranchName: props.defaultBranchName,
-    });
-
-    new CfnOutput(this, 'TenantOnboardingRepository', {
-      value: onboardingSvc.repositoryUrl,
     });
   }
 }
