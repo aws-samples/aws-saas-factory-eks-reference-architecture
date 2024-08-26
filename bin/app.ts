@@ -19,8 +19,6 @@ const ingressControllerName = 'controller';
 const tenantOnboardingProjectName = 'TenantOnboardingProject';
 const tenantDeletionProjectName = 'TenantDeletionProject';
 const sharedServiceAccountName = 'shared-service-account';
-const repo = 'aws-saas-factory-eks-reference-architecture';
-const repo_owner = 'aws-samples';
 
 const customDomain =
   process.env.npm_config_domain && process.env.npm_config_domain.length > 0
