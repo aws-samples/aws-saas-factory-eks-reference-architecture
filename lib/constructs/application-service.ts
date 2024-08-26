@@ -139,6 +139,7 @@ export class ApplicationService extends Construct {
     const tenantDeployProject = new codebuild.Project(this, `${id}EKSTenantDeployProject`, {
       projectName: `${props.name}TenantDeploy`,
       role: props.codebuildKubectlRole,
+      source: sourceBucket.source,
       environment: {
         buildImage: codebuild.LinuxBuildImage.STANDARD_7_0,
       },
