@@ -19,7 +19,7 @@ export CDK_PARAM_APPLICATION_NAME_PLANE_SOURCE="NA"
 export CDK_PARAM_OFFBOARDING_DETAIL_TYPE="NA"
 export CDK_PARAM_DEPROVISIONING_DETAIL_TYPE="NA"
 
-cd ../server
+cd ../
 
 # Get tenant root stacks and user pool ids.
 # TODO: Use a more unique identifier to query tenant stacks.
