@@ -1,9 +1,9 @@
 import {
   CoreApplicationPlane,
-  BashJobRunnerProps,
-  DetailType,
+  DeprovisioningScriptJob,
   EventManager,
-  BashJobRunner,
+  ProvisioningScriptJob,
+  TenantLifecycleScriptJobProps,
 } from '@cdklabs/sbt-aws';
 import { Stack, StackProps } from 'aws-cdk-lib';
 import { EventBus } from 'aws-cdk-lib/aws-events';
@@ -30,7 +30,7 @@ export class AppPlaneStack extends Stack {
       eventManager = new EventManager(this, 'EventManager');
     }
 
-    const provisioningJobRunnerProps: BashJobRunnerProps = {
+    const provisioningJobRunnerProps: TenantLifecycleScriptJobProps = {
       eventManager,
       permissions: new PolicyDocument({
         statements: [
@@ -51,11 +51,9 @@ export class AppPlaneStack extends Stack {
         'tenantStatus',
       ],
       environmentVariablesToOutgoingEvent: ['tenantConfig', 'tenantStatus'],
-      outgoingEvent: DetailType.PROVISION_SUCCESS,
-      incomingEvent: DetailType.ONBOARDING_REQUEST,
     };
 
-    const deprovisioningJobRunnerProps: BashJobRunnerProps = {
+    const deprovisioningJobRunnerProps: TenantLifecycleScriptJobProps = {
       eventManager,
       permissions: new PolicyDocument({
         statements: [
@@ -69,16 +67,14 @@ export class AppPlaneStack extends Stack {
       script: fs.readFileSync('./scripts/deprovisioning.sh', 'utf8'),
       environmentStringVariablesFromIncomingEvent: ['tenantId', 'tier'],
       environmentVariablesToOutgoingEvent: ['tenantStatus'],
-      outgoingEvent: DetailType.DEPROVISION_SUCCESS,
-      incomingEvent: DetailType.OFFBOARDING_REQUEST,
     };
 
-    const provisioningJobRunner: BashJobRunner = new BashJobRunner(
+    const provisioningJob: ProvisioningScriptJob = new ProvisioningScriptJob(
       this,
       'provisioningJobRunner',
       provisioningJobRunnerProps
     );
-    const deprovisioningJobRunner: BashJobRunner = new BashJobRunner(
+    const deprovisioningJob: DeprovisioningScriptJob = new DeprovisioningScriptJob(
       this,
       'deprovisioningJobRunner',
       deprovisioningJobRunnerProps
@@ -86,7 +82,7 @@ export class AppPlaneStack extends Stack {
 
     new CoreApplicationPlane(this, 'CoreApplicationPlane', {
       eventManager: eventManager,
-      jobRunnersList: [provisioningJobRunner, deprovisioningJobRunner],
+      scriptJobs: [provisioningJob, deprovisioningJob],
     });
   }
 }
