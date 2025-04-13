@@ -19,7 +19,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { map, Observable, pipe } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Tenant, TenantConfig, TenantResponse } from './models/tenant';
+import { Tenant, TenantRegistrationData } from './models/tenant';
 
 @Injectable({
   providedIn: 'root',
@@ -27,17 +27,37 @@ import { Tenant, TenantConfig, TenantResponse } from './models/tenant';
 export class TenantService {
   constructor(private http: HttpClient) {}
 
-  apiUrl = `${environment.apiUrl}tenants`;
+  // apiUrl = `${environment.apiUrl}tenants`;
+  apiUrl = `${environment.apiUrl}tenant-registrations`;
+  apiTenantUrl = `${environment.apiUrl}tenants`;
 
+  // getTenants(): Observable<Tenant[]> {
+  //   return this.http.get<TenantResponse>(this.apiUrl).pipe(
+  //     map((res) => {
+  //       return res.data.map((t) => ({
+  //         ...t,
+  //         config: t.tenantConfig ? JSON.parse(t.tenantConfig as string) : {},
+  //         url: `https://${t.customDomain}/#/${t.tenantId}`,
+  //       }));
+  //     })
+  //   );
+  // }
   getTenants(): Observable<Tenant[]> {
-    return this.http.get<TenantResponse>(this.apiUrl).pipe(
-      map((res) => {
-        return res.data.map((t) => ({
-          ...t,
-          config: t.tenantConfig ? JSON.parse(t.tenantConfig as string) : {},
-          url: `https://${t.customDomain}/#/${t.tenantId}`,
-        }));
-      })
-    );
+    return this.http.get<Tenant[]>(this.apiTenantUrl).pipe(
+      map((res: any) =>  res.data.map((t: any) => ({
+        tenantId: t.tenantId,
+        customDomain: '',
+        tenantData: {
+          tenantName: t.tenantName,
+          companyName: t.companyName,
+          tier: t.tier,
+          email: t.email
+        },
+        tenantRegistrationData: {
+          tenantRegistrationId: t.tenantRegistrationId,
+          registrationStatus: t.sbtaws_active ? 'Active' : 'Inactive'
+        }
+      })))
+      );
   }
 }

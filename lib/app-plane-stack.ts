@@ -1,9 +1,10 @@
 import {
   CoreApplicationPlane,
-  BashJobRunnerProps,
+  TenantLifecycleScriptJobProps,
   DetailType,
   EventManager,
-  BashJobRunner,
+  ProvisioningScriptJob,
+  DeprovisioningScriptJob
 } from '@cdklabs/sbt-aws';
 import { Stack, StackProps } from 'aws-cdk-lib';
 import { EventBus } from 'aws-cdk-lib/aws-events';
@@ -30,7 +31,7 @@ export class AppPlaneStack extends Stack {
       eventManager = new EventManager(this, 'EventManager');
     }
 
-    const provisioningJobRunnerProps: BashJobRunnerProps = {
+    const provisioningJobRunnerProps: TenantLifecycleScriptJobProps = {
       eventManager,
       permissions: new PolicyDocument({
         statements: [
@@ -50,12 +51,13 @@ export class AppPlaneStack extends Stack {
         'email',
         'tenantStatus',
       ],
-      environmentVariablesToOutgoingEvent: ['tenantConfig', 'tenantStatus'],
-      outgoingEvent: DetailType.PROVISION_SUCCESS,
-      incomingEvent: DetailType.ONBOARDING_REQUEST,
+      environmentVariablesToOutgoingEvent: {
+        tenantData:['tenantConfig', 'tenantStatus'],tenantRegistrationData: ['registrationStatus'],
+      }
+      
     };
 
-    const deprovisioningJobRunnerProps: BashJobRunnerProps = {
+    const deprovisioningJobRunnerProps: TenantLifecycleScriptJobProps = {
       eventManager,
       permissions: new PolicyDocument({
         statements: [
@@ -68,25 +70,26 @@ export class AppPlaneStack extends Stack {
       }),
       script: fs.readFileSync('./scripts/deprovisioning.sh', 'utf8'),
       environmentStringVariablesFromIncomingEvent: ['tenantId', 'tier'],
-      environmentVariablesToOutgoingEvent: ['tenantStatus'],
-      outgoingEvent: DetailType.DEPROVISION_SUCCESS,
-      incomingEvent: DetailType.OFFBOARDING_REQUEST,
+      environmentVariablesToOutgoingEvent: {
+        tenantRegistrationData:['registrationStatus']
+      },
+      
     };
 
-    const provisioningJobRunner: BashJobRunner = new BashJobRunner(
+    const provisioningScriptJob: ProvisioningScriptJob = new ProvisioningScriptJob(
       this,
-      'provisioningJobRunner',
+      'provisioningScriptJob',
       provisioningJobRunnerProps
     );
-    const deprovisioningJobRunner: BashJobRunner = new BashJobRunner(
+    const deprovisioningScriptJob: DeprovisioningScriptJob = new DeprovisioningScriptJob(
       this,
-      'deprovisioningJobRunner',
+      'deprovisioningScriptJob',
       deprovisioningJobRunnerProps
     );
 
     new CoreApplicationPlane(this, 'CoreApplicationPlane', {
       eventManager: eventManager,
-      jobRunnersList: [provisioningJobRunner, deprovisioningJobRunner],
+      scriptJobs: [provisioningScriptJob, deprovisioningScriptJob]
     });
   }
 }

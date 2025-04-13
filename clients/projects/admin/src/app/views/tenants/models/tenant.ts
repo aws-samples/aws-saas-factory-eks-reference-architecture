@@ -22,23 +22,48 @@ export interface TenantConfig {
   redirectUrl: string;
 }
 
-export interface Tenant extends TenantBase {
-  config: TenantConfig;
-  url: string;
-}
+// export interface Tenant extends TenantBase {
+//   config: TenantConfig;
+//   url: string;
+// }
+
+// export interface TenantResponse {
+//   data: Tenant[];
+// }
+
+// export interface TenantBase {
+//   companyName: string;
+//   customDomain: string;
+//   email: string;
+//   isActive: string;
+//   tenantConfig?: string;
+//   tenantId: string;
+//   tenantName: string;
+//   tenantStatus: string;
+//   tier: string;
+// }
 
 export interface TenantResponse {
-  data: TenantBase[];
+  data: Tenant[];
 }
 
-export interface TenantBase {
-  companyName: string;
+interface TenantData {
+  tenantName?: string | null;
+  email?: string | undefined | null;
+  tier?: string | undefined | null;
+  companyName?: string | undefined | null;
+}
+
+export interface TenantRegistrationData {
+  tenantRegistrationId?: string;
+  registrationStatus?: string;
+}
+
+export interface Tenant {
+  tenantId?: string;
+  url?: string | undefined | null;
   customDomain: string;
-  email: string;
-  isActive: string;
   tenantConfig?: string;
-  tenantId: string;
-  tenantName: string;
-  tenantStatus: string;
-  tier: string;
+  tenantData: TenantData;
+  tenantRegistrationData: TenantRegistrationData;
 }
