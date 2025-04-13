@@ -49,7 +49,7 @@ export class AppPlaneStack extends Stack {
         'tier',
         'tenantName',
         'email',
-        'tenantStatus',
+        // 'registrationStatus',
       ],
       environmentVariablesToOutgoingEvent: {
         tenantData:['tenantConfig', 'tenantStatus'],tenantRegistrationData: ['registrationStatus'],
