@@ -43,7 +43,7 @@ export class RegisterComponent implements OnInit {
   }
 
   onSubmit() {
-    const API_URL = `${environment.apiUrl}/register`;
+    const API_URL = `${environment.apiUrl}register`;
     const domain = environment.domain;
 
     const user = {

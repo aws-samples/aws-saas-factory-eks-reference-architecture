@@ -19,7 +19,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { map, Observable, pipe } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Tenant, TenantConfig, TenantResponse } from './models/tenant';
+import { Tenant, TenantRegistrationData } from './models/tenant';
 
 @Injectable({
   providedIn: 'root',
@@ -27,17 +27,31 @@ import { Tenant, TenantConfig, TenantResponse } from './models/tenant';
 export class TenantService {
   constructor(private http: HttpClient) {}
 
-  apiUrl = `${environment.apiUrl}tenants`;
-
+  private readonly tenantRegistrationUrl = `${environment.apiUrl}tenant-registrations`;
+  private readonly tenantsUrl = `${environment.apiUrl}tenants`;
   getTenants(): Observable<Tenant[]> {
-    return this.http.get<TenantResponse>(this.apiUrl).pipe(
-      map((res) => {
-        return res.data.map((t) => ({
-          ...t,
-          config: t.tenantConfig ? JSON.parse(t.tenantConfig as string) : {},
-          url: `https://${t.customDomain}/#/${t.tenantId}`,
-        }));
+    return this.http.get<any>(this.tenantsUrl).pipe(
+      map((response: any) => {
+        const tenantList = Array.isArray(response) ? response : (response.data || []);
+        return tenantList.map((tenant: any) => this.mapToTenant(tenant));
       })
     );
+  }
+
+  private mapToTenant(apiTenant: any): Tenant {
+    return {
+      tenantId: apiTenant.tenantId,
+      customDomain: apiTenant.customDomain || '',
+      tenantData: {
+        tenantName: apiTenant.tenantName,
+        companyName: apiTenant.companyName,
+        tier: apiTenant.tier,
+        email: apiTenant.email
+      },
+      tenantRegistrationData: {
+        tenantRegistrationId: apiTenant.tenantRegistrationId,
+        registrationStatus: apiTenant.sbtaws_active ? 'Active' : 'Inactive'
+      }
+    };
   }
 }

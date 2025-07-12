@@ -21,20 +21,20 @@
           <table class="table">
             <thead>
               <tr>
+                <th>Tenant ID</th>
                 <th>Tenant Name</th>
-                <th>Company Name</th>
+                <th>Email Name</th>
                 <th>Tier</th>
-                <th>Status</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let tenant of tenants | async">
                 <td>
-                  <a [href]="tenant.url">{{ tenant.tenantName }}</a>
+                  <a [href]="'#'">{{ tenant.tenantId }}</a>
                 </td>
-                <td>{{ tenant.companyName }}</td>
-                <td>{{ tenant.tier }}</td>
-                <td>{{ tenant.tenantStatus }}</td>
+                <td>{{ tenant.tenantData.tenantName }}</td>
+                <td>{{ tenant.tenantData.email }}</td>
+                <td>{{ tenant.tenantData.tier }}</td>
               </tr>
             </tbody>
           </table>

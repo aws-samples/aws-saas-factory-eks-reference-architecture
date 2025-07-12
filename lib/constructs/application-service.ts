@@ -80,7 +80,8 @@ export class ApplicationService extends Construct {
               `export API_HOST=$(echo '${
                 props.internalApiDomain || ''
               }' | awk '{print tolower($0)}')`,
-              'curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"',
+              'KUBECTL_VERSION=$(curl -L -s https://api.github.com/repos/kubernetes/kubernetes/releases/latest | grep \'"tag_name":\' | cut -d\'"\' -f4)',
+              'curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"',
               'chmod +x ./kubectl',
             ],
           },
@@ -174,7 +175,8 @@ export class ApplicationService extends Construct {
               `export API_HOST=$(echo '${
                 props.internalApiDomain || ''
               }' | awk '{print tolower($0)}')`,
-              'curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"',
+              'KUBECTL_VERSION=$(curl -L -s https://api.github.com/repos/kubernetes/kubernetes/releases/latest | grep \'"tag_name":\' | cut -d\'"\' -f4)',
+              'curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"',
               'chmod +x ./kubectl',
             ],
           },

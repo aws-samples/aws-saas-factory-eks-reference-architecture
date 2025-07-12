@@ -15,30 +15,35 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+// SBT 0.6.5 compatible interfaces
+export interface TenantData {
+  tenantName?: string;
+  email?: string;
+  tier?: string;
+  companyName?: string;
+}
+
+export interface TenantRegistrationData {
+  tenantRegistrationId?: string;
+  registrationStatus?: string;
+}
+
+export interface Tenant {
+  tenantId?: string;
+  customDomain?: string;
+  url?: string;
+  tenantData: TenantData;
+  tenantRegistrationData: TenantRegistrationData;
+}
+
+export interface TenantResponse {
+  data: Tenant[];
+}
+
+// Legacy interfaces for backward compatibility
 export interface TenantConfig {
   tenantId: string;
   appClientId: string;
   authServer: string;
   redirectUrl: string;
-}
-
-export interface Tenant extends TenantBase {
-  config: TenantConfig;
-  url: string;
-}
-
-export interface TenantResponse {
-  data: TenantBase[];
-}
-
-export interface TenantBase {
-  companyName: string;
-  customDomain: string;
-  email: string;
-  isActive: string;
-  tenantConfig?: string;
-  tenantId: string;
-  tenantName: string;
-  tenantStatus: string;
-  tier: string;
 }

@@ -1,9 +1,9 @@
 import {
   CoreApplicationPlane,
-  BashJobRunnerProps,
-  DetailType,
+  TenantLifecycleScriptJobProps,
   EventManager,
-  BashJobRunner,
+  ProvisioningScriptJob,
+  DeprovisioningScriptJob
 } from '@cdklabs/sbt-aws';
 import { Stack, StackProps } from 'aws-cdk-lib';
 import { EventBus } from 'aws-cdk-lib/aws-events';
@@ -30,7 +30,7 @@ export class AppPlaneStack extends Stack {
       eventManager = new EventManager(this, 'EventManager');
     }
 
-    const provisioningJobRunnerProps: BashJobRunnerProps = {
+    const provisioningScriptJobProps: TenantLifecycleScriptJobProps = {
       eventManager,
       permissions: new PolicyDocument({
         statements: [
@@ -42,20 +42,28 @@ export class AppPlaneStack extends Stack {
         ],
       }),
       script: fs.readFileSync('./scripts/provisioning.sh', 'utf8'),
-      postScript: '',
       environmentStringVariablesFromIncomingEvent: [
         'tenantId',
         'tier',
         'tenantName',
         'email',
-        'tenantStatus',
+        // 'tenantStatus',
       ],
-      environmentVariablesToOutgoingEvent: ['tenantConfig', 'tenantStatus'],
-      outgoingEvent: DetailType.PROVISION_SUCCESS,
-      incomingEvent: DetailType.ONBOARDING_REQUEST,
+      environmentVariablesToOutgoingEvent: {
+        tenantData:[
+          'tenantS3Bucket',
+          'tenantConfig',
+          // 'tenantStatus',
+          'prices', // added so we don't lose it for targets beyond provisioning (ex. billing)
+          'tenantName', // added so we don't lose it for targets beyond provisioning (ex. billing)
+          'email', // added so we don't lose it for targets beyond provisioning (ex. billing)
+        ],
+        tenantRegistrationData: ['registrationStatus'],
+      }
+      
     };
 
-    const deprovisioningJobRunnerProps: BashJobRunnerProps = {
+    const deprovisioningScriptJobProps: TenantLifecycleScriptJobProps = {
       eventManager,
       permissions: new PolicyDocument({
         statements: [
@@ -68,25 +76,26 @@ export class AppPlaneStack extends Stack {
       }),
       script: fs.readFileSync('./scripts/deprovisioning.sh', 'utf8'),
       environmentStringVariablesFromIncomingEvent: ['tenantId', 'tier'],
-      environmentVariablesToOutgoingEvent: ['tenantStatus'],
-      outgoingEvent: DetailType.DEPROVISION_SUCCESS,
-      incomingEvent: DetailType.OFFBOARDING_REQUEST,
+      environmentVariablesToOutgoingEvent: {
+        tenantRegistrationData: ['registrationStatus']
+      },
+      
     };
 
-    const provisioningJobRunner: BashJobRunner = new BashJobRunner(
+    const provisioningScriptJob: ProvisioningScriptJob = new ProvisioningScriptJob(
       this,
-      'provisioningJobRunner',
-      provisioningJobRunnerProps
+      'provisioningScriptJob',
+      provisioningScriptJobProps
     );
-    const deprovisioningJobRunner: BashJobRunner = new BashJobRunner(
+    const deprovisioningScriptJob: DeprovisioningScriptJob = new DeprovisioningScriptJob(
       this,
-      'deprovisioningJobRunner',
-      deprovisioningJobRunnerProps
+      'deprovisioningScriptJob',
+      deprovisioningScriptJobProps
     );
 
     new CoreApplicationPlane(this, 'CoreApplicationPlane', {
       eventManager: eventManager,
-      jobRunnersList: [provisioningJobRunner, deprovisioningJobRunner],
+      scriptJobs: [provisioningScriptJob, deprovisioningScriptJob]
     });
   }
 }

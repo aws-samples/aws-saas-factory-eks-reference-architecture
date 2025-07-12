@@ -6,8 +6,12 @@
 # usage:
 # ./cleanup.sh
 
+# SCRIPT DIR
+CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+cd "$CUR_DIR"
+
 export CDK_PARAM_SYSTEM_ADMIN_EMAIL="NA"
-export CDK_PARAM_CODE_COMMIT_REPOSITORY_NAME="aws-saas-factory-ref-solution-eks-saas-sbt"
+# export CDK_PARAM_CODE_COMMIT_REPOSITORY_NAME="aws-saas-factory-ref-solution-eks-saas-sbt"
 export CDK_PARAM_COMMIT_ID="NA"
 export CDK_PARAM_REG_API_GATEWAY_URL="NA"
 export CDK_PARAM_EVENT_BUS_ARN=arn:aws:service:::resource
@@ -79,11 +83,11 @@ while true; do
 done
 
 # Delete CodeCommit repo.
-echo "Deleting CodeCommit repository: $CDK_PARAM_CODE_COMMIT_REPOSITORY_NAME"
-if aws codecommit get-repository --repository-name $CDK_PARAM_CODE_COMMIT_REPOSITORY_NAME; then
-  DELETE_REPO=$(aws codecommit delete-repository --repository-name $CDK_PARAM_CODE_COMMIT_REPOSITORY_NAME)
-  echo "$DELETE_REPO"
-fi
+# echo "Deleting CodeCommit repository: $CDK_PARAM_CODE_COMMIT_REPOSITORY_NAME"
+# if aws codecommit get-repository --repository-name $CDK_PARAM_CODE_COMMIT_REPOSITORY_NAME; then
+#   DELETE_REPO=$(aws codecommit delete-repository --repository-name $CDK_PARAM_CODE_COMMIT_REPOSITORY_NAME)
+#   echo "$DELETE_REPO"
+# fi
 
 # Destroy the EKS reference arch stacks.
 echo "Destroying EKS reference architecture..."
