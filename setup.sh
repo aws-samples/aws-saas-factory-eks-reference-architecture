@@ -10,8 +10,34 @@ curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip
 unzip awscliv2.zip
 sudo ./aws/install --update
 
+# Check OS type
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    OS=$ID
+fi
+
+# Package installation function
 echo "Installing helper tools"
-sudo yum -y install jq gettext bash-completion moreutils
+install_packages() {
+    case $OS in
+        "ubuntu"|"debian")
+            echo "Detected Ubuntu/Debian - using apt"
+            sudo apt update
+            sudo apt install -y jq gettext bash-completion moreutils
+            ;;
+        "amzn"|"rhel"|"centos")
+            echo "Detected Amazon Linux/RHEL/CentOS - using yum"
+            sudo yum update -y
+            sudo yum install -y jq gettext bash-completion moreutils
+            ;;
+        *)
+            echo "Unsupported OS: $OS"
+            exit 1
+            ;;
+    esac
+}
+# Run script
+install_packages
 
 export ACCOUNT_ID=$(aws sts get-caller-identity --output text --query Account)
 TOKEN=`curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600"` 
@@ -51,3 +77,39 @@ kubectl completion bash >>  ~/.bash_completion
 . ~/.bash_completion
 
 aws sts get-caller-identity --query Arn | grep eks-ref-arch-admin -q && echo "IAM role valid. You can continue setting up the EKS Cluster." || echo "IAM role NOT valid. Do not proceed with creating the EKS Cluster or you won't be able to authenticate. Ensure you assigned the role to your EC2 instance as detailed in the README.md of the eks-saas repo"
+
+
+# SBT Lambda function must be built for ARM64 since v0.8.0 
+# Setup multi-architecture build environment
+setup_multiarch() {
+    case $OS in
+        "ubuntu"|"debian")
+            echo "Detected Ubuntu/Debian - Installing requirements"
+            sudo apt update
+            sudo apt install -y qemu-user-static binfmt-support docker-buildx-plugin
+            ;;
+        "amzn"|"rhel"|"centos")
+            echo "Detected Amazon Linux/RHEL/CentOS - Installing requirements"
+            sudo yum update -y
+            sudo yum install -y qemu-user-static docker-buildx-plugin
+            ;;
+        *)
+            echo "Unsupported OS: $OS"
+            exit 1
+            ;;
+    esac
+
+    echo "Setting up QEMU emulation for ARM64 docker build"
+    docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+
+    echo "Creating multi-architecture builder..."
+    docker buildx create --name multiarch --driver docker-container --use
+    docker buildx inspect --bootstrap
+
+    echo "Checking supported architectures..."
+    docker buildx ls
+
+    echo "Multi-architecture build environment setup complete!"
+}
+# Run setup
+setup_multiarch
