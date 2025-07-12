@@ -15,43 +15,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-export interface TenantConfig {
-  tenantId: string;
-  appClientId: string;
-  authServer: string;
-  redirectUrl: string;
-}
-
-// export interface Tenant extends TenantBase {
-//   config: TenantConfig;
-//   url: string;
-// }
-
-// export interface TenantResponse {
-//   data: Tenant[];
-// }
-
-// export interface TenantBase {
-//   companyName: string;
-//   customDomain: string;
-//   email: string;
-//   isActive: string;
-//   tenantConfig?: string;
-//   tenantId: string;
-//   tenantName: string;
-//   tenantStatus: string;
-//   tier: string;
-// }
-
-export interface TenantResponse {
-  data: Tenant[];
-}
-
-interface TenantData {
-  tenantName?: string | null;
-  email?: string | undefined | null;
-  tier?: string | undefined | null;
-  companyName?: string | undefined | null;
+// SBT 0.6.5 compatible interfaces
+export interface TenantData {
+  tenantName?: string;
+  email?: string;
+  tier?: string;
+  companyName?: string;
 }
 
 export interface TenantRegistrationData {
@@ -61,9 +30,20 @@ export interface TenantRegistrationData {
 
 export interface Tenant {
   tenantId?: string;
-  url?: string | undefined | null;
-  customDomain: string;
-  tenantConfig?: string;
+  customDomain?: string;
+  url?: string;
   tenantData: TenantData;
   tenantRegistrationData: TenantRegistrationData;
+}
+
+export interface TenantResponse {
+  data: Tenant[];
+}
+
+// Legacy interfaces for backward compatibility
+export interface TenantConfig {
+  tenantId: string;
+  appClientId: string;
+  authServer: string;
+  redirectUrl: string;
 }

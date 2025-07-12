@@ -1,7 +1,6 @@
 import {
   CoreApplicationPlane,
   TenantLifecycleScriptJobProps,
-  DetailType,
   EventManager,
   ProvisioningScriptJob,
   DeprovisioningScriptJob
@@ -49,10 +48,11 @@ export class AppPlaneStack extends Stack {
         'tier',
         'tenantName',
         'email',
-        // 'registrationStatus',
+        'tenantStatus',
       ],
       environmentVariablesToOutgoingEvent: {
-        tenantData:['tenantConfig', 'tenantStatus'],tenantRegistrationData: ['registrationStatus'],
+        tenantData: ['tenantConfig', 'tenantStatus'],
+        tenantRegistrationData: ['registrationStatus'],
       }
       
     };
@@ -71,7 +71,7 @@ export class AppPlaneStack extends Stack {
       script: fs.readFileSync('./scripts/deprovisioning.sh', 'utf8'),
       environmentStringVariablesFromIncomingEvent: ['tenantId', 'tier'],
       environmentVariablesToOutgoingEvent: {
-        tenantRegistrationData:['registrationStatus']
+        tenantRegistrationData: ['registrationStatus']
       },
       
     };

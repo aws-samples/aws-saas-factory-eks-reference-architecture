@@ -48,22 +48,14 @@ export class CreateComponent implements OnInit {
   ngOnInit(): void {}
 
   onSubmit() {
-    // const API_URL = `${environment.apiUrl}/tenants`;
-    const API_URL = `${environment.apiUrl}/tenant-registrations`;
-    const domain = environment.domain;
-
-    // const tenant = {
-    //   ...this.form.value,
-    //   tenantStatus: 'In progress',
-    //   customDomain: domain,
-    // };
+    const API_URL = `${environment.apiUrl}tenant-registrations`;
+    
     const tenant = {
-      // tenantId: guid(),
       tenantData: {
         ...this.form.value,
       },
       tenantRegistrationData: {
-        registrationStatus: "In progress"
+        registrationStatus: 'In progress'
       }
     };
 

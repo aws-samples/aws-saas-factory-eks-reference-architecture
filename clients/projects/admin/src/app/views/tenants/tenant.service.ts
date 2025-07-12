@@ -27,37 +27,31 @@ import { Tenant, TenantRegistrationData } from './models/tenant';
 export class TenantService {
   constructor(private http: HttpClient) {}
 
-  // apiUrl = `${environment.apiUrl}tenants`;
-  apiUrl = `${environment.apiUrl}tenant-registrations`;
-  apiTenantUrl = `${environment.apiUrl}tenants`;
-
-  // getTenants(): Observable<Tenant[]> {
-  //   return this.http.get<TenantResponse>(this.apiUrl).pipe(
-  //     map((res) => {
-  //       return res.data.map((t) => ({
-  //         ...t,
-  //         config: t.tenantConfig ? JSON.parse(t.tenantConfig as string) : {},
-  //         url: `https://${t.customDomain}/#/${t.tenantId}`,
-  //       }));
-  //     })
-  //   );
-  // }
+  private readonly tenantRegistrationUrl = `${environment.apiUrl}tenant-registrations`;
+  private readonly tenantsUrl = `${environment.apiUrl}tenants`;
   getTenants(): Observable<Tenant[]> {
-    return this.http.get<Tenant[]>(this.apiTenantUrl).pipe(
-      map((res: any) =>  res.data.map((t: any) => ({
-        tenantId: t.tenantId,
-        customDomain: '',
-        tenantData: {
-          tenantName: t.tenantName,
-          companyName: t.companyName,
-          tier: t.tier,
-          email: t.email
-        },
-        tenantRegistrationData: {
-          tenantRegistrationId: t.tenantRegistrationId,
-          registrationStatus: t.sbtaws_active ? 'Active' : 'Inactive'
-        }
-      })))
-      );
+    return this.http.get<any>(this.tenantsUrl).pipe(
+      map((response: any) => {
+        const tenantList = Array.isArray(response) ? response : (response.data || []);
+        return tenantList.map((tenant: any) => this.mapToTenant(tenant));
+      })
+    );
+  }
+
+  private mapToTenant(apiTenant: any): Tenant {
+    return {
+      tenantId: apiTenant.tenantId,
+      customDomain: apiTenant.customDomain || '',
+      tenantData: {
+        tenantName: apiTenant.tenantName,
+        companyName: apiTenant.companyName,
+        tier: apiTenant.tier,
+        email: apiTenant.email
+      },
+      tenantRegistrationData: {
+        tenantRegistrationId: apiTenant.tenantRegistrationId,
+        registrationStatus: apiTenant.sbtaws_active ? 'Active' : 'Inactive'
+      }
+    };
   }
 }
