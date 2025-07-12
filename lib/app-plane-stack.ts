@@ -30,7 +30,7 @@ export class AppPlaneStack extends Stack {
       eventManager = new EventManager(this, 'EventManager');
     }
 
-    const provisioningJobRunnerProps: TenantLifecycleScriptJobProps = {
+    const provisioningScriptJobProps: TenantLifecycleScriptJobProps = {
       eventManager,
       permissions: new PolicyDocument({
         statements: [
@@ -42,22 +42,28 @@ export class AppPlaneStack extends Stack {
         ],
       }),
       script: fs.readFileSync('./scripts/provisioning.sh', 'utf8'),
-      postScript: '',
       environmentStringVariablesFromIncomingEvent: [
         'tenantId',
         'tier',
         'tenantName',
         'email',
-        'tenantStatus',
+        // 'tenantStatus',
       ],
       environmentVariablesToOutgoingEvent: {
-        tenantData: ['tenantConfig', 'tenantStatus'],
+        tenantData:[
+          'tenantS3Bucket',
+          'tenantConfig',
+          // 'tenantStatus',
+          'prices', // added so we don't lose it for targets beyond provisioning (ex. billing)
+          'tenantName', // added so we don't lose it for targets beyond provisioning (ex. billing)
+          'email', // added so we don't lose it for targets beyond provisioning (ex. billing)
+        ],
         tenantRegistrationData: ['registrationStatus'],
       }
       
     };
 
-    const deprovisioningJobRunnerProps: TenantLifecycleScriptJobProps = {
+    const deprovisioningScriptJobProps: TenantLifecycleScriptJobProps = {
       eventManager,
       permissions: new PolicyDocument({
         statements: [
@@ -79,12 +85,12 @@ export class AppPlaneStack extends Stack {
     const provisioningScriptJob: ProvisioningScriptJob = new ProvisioningScriptJob(
       this,
       'provisioningScriptJob',
-      provisioningJobRunnerProps
+      provisioningScriptJobProps
     );
     const deprovisioningScriptJob: DeprovisioningScriptJob = new DeprovisioningScriptJob(
       this,
       'deprovisioningScriptJob',
-      deprovisioningJobRunnerProps
+      deprovisioningScriptJobProps
     );
 
     new CoreApplicationPlane(this, 'CoreApplicationPlane', {
