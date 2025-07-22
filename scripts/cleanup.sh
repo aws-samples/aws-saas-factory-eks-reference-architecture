@@ -40,10 +40,15 @@ done
 # Delete tenant user pools.
 for i in $user_pool_ids; do
   pool_domain=$(aws cognito-idp describe-user-pool --user-pool-id "$i" | jq -r '.UserPool.Domain')
-  echo "Deleting pool domain $pool_domain..."
-  aws cognito-idp delete-user-pool-domain \
-    --user-pool-id "$i" \
-    --domain "$pool_domain"
+  
+  if [[ "$pool_domain" != "null" && -n "$pool_domain" ]]; then
+    echo "Deleting pool domain $pool_domain..."
+    aws cognito-idp delete-user-pool-domain \
+      --user-pool-id "$i" \
+      --domain "$pool_domain"
+  else
+    echo "No domain found for user pool $i, skipping domain deletion"
+  fi
 
   echo "Deleting user pool: $i"
   aws cognito-idp delete-user-pool --user-pool-id "$i"

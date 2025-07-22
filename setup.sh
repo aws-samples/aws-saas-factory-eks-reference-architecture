@@ -100,15 +100,22 @@ setup_multiarch() {
     esac
 
     echo "Setting up QEMU emulation for ARM64 docker build"
-    docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-
-    echo "Creating multi-architecture builder..."
-    docker buildx create --name multiarch --driver docker-container --use
-    docker buildx inspect --bootstrap
-
+    
+    if [ "$OS" == "amzn" ]; then
+        echo "Amazon Linux detected - checking binfmt_misc configuration"
+        ls /proc/sys/fs/binfmt_misc/
+        docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+    else
+        docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+        
+        echo "Creating multi-architecture builder..."
+        docker buildx create --name multiarch --driver docker-container --use
+        docker buildx inspect --bootstrap
+    fi
+    
     echo "Checking supported architectures..."
     docker buildx ls
-
+    
     echo "Multi-architecture build environment setup complete!"
 }
 # Run setup
