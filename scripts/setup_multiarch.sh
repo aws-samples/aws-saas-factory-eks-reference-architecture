@@ -33,7 +33,7 @@ echo "Setting up QEMU emulation for ARM64 docker build"
 
 if [ "$OS" == "amzn" ]; then
     echo "Amazon Linux detected - checking binfmt_misc configuration"
-    ls /proc/sys/fs/binfmt_misc/
+    sudo mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc
     docker run --privileged --rm tonistiigi/binfmt --install arm64
 else
     docker run --privileged --rm tonistiigi/binfmt --install arm64
