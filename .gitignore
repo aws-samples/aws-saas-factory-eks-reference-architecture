@@ -13,4 +13,5 @@ cdk.out
 .idea/runConfigurations.xml
 .idea/vcs.xml
 .idea/.gitignore
-/.angular/cache 
+/.angular/cache
+.vscode/ 
