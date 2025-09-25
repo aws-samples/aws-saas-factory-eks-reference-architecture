@@ -8,7 +8,7 @@ import { SourceBucket } from './source-bucket';
 
 export interface ApplicationServiceProps {
   readonly name: string;
-  readonly assetDirectory: string;
+  readonly assetDirectory: string; // Path to service source code
   readonly ecrImageName: string;
   readonly eksClusterName: string;
   readonly codebuildKubectlRole: iam.IRole;
@@ -22,12 +22,16 @@ export class ApplicationService extends Construct {
   constructor(scope: Construct, id: string, props: ApplicationServiceProps) {
     super(scope, id);
 
+    // Create ECR repository for the service
     const containerRepo = new ecr.Repository(this, `${id}ECR`, {
       repositoryName: props.ecrImageName,
       imageScanOnPush: true,
       imageTagMutability: ecr.TagMutability.MUTABLE,
       removalPolicy: RemovalPolicy.DESTROY,
     });
+    const containerRepoUri = containerRepo.repositoryUri;
+    
+    // Add custom resource to handle ECR repository deletion
     new cr.AwsCustomResource(this, 'ECRRepoDeletion', {
       onDelete: {
         service: 'ECR',
@@ -39,39 +43,42 @@ export class ApplicationService extends Construct {
       },
       policy: cr.AwsCustomResourcePolicy.fromSdkCalls({ resources: [containerRepo.repositoryArn] }),
     });
+    
+    // Create source bucket for the service
     const sourceBucket = new SourceBucket(this, `${props.name}SourceBucket`, {
       assetDirectory: props.assetDirectory,
       name: props.name,
     });
 
+    // Create build project for the service
     const project = new codebuild.Project(this, `${id}EKSDeployProject`, {
-      projectName: `${props.name}`,
-      source: sourceBucket.source,
-      role: props.codebuildKubectlRole,
-      environment: {
-        buildImage: codebuild.LinuxBuildImage.STANDARD_7_0,
-        privileged: true,
-      },
-      environmentVariables: {
-        CLUSTER_NAME: {
-          value: `${props.eksClusterName}`,
+        projectName: `${props.name}`,
+        source: sourceBucket.source,
+        role: props.codebuildKubectlRole,
+        environment: {
+          buildImage: codebuild.LinuxBuildImage.STANDARD_7_0,
+          privileged: true,
         },
-        ECR_REPO_URI: {
-          value: `${containerRepo.repositoryUri}`,
+        environmentVariables: {
+          CLUSTER_NAME: {
+            value: `${props.eksClusterName}`,
+          },
+          ECR_REPO_URI: {
+            value: containerRepoUri,
+          },
+          AWS_REGION: {
+            value: Stack.of(this).region,
+          },
+          AWS_ACCOUNT: {
+            value: Stack.of(this).account,
+          },
+          SERVICE_IMAGE_NAME: {
+            value: props.ecrImageName,
+          },
+          SERVICE_URL_PREFIX: {
+            value: props.serviceUrlPrefix,
+          },
         },
-        AWS_REGION: {
-          value: Stack.of(this).region,
-        },
-        AWS_ACCOUNT: {
-          value: Stack.of(this).account,
-        },
-        SERVICE_IMAGE_NAME: {
-          value: props.ecrImageName,
-        },
-        SERVICE_URL_PREFIX: {
-          value: props.serviceUrlPrefix,
-        },
-      },
       buildSpec: codebuild.BuildSpec.fromObject({
         version: '0.2',
         phases: {
@@ -119,24 +126,25 @@ export class ApplicationService extends Construct {
       }),
     });
 
+    // Grant permissions to the build project
     containerRepo.grantPullPush(project.role!);
 
-    // to trigger the initial build when the repo is created
+    // Trigger the initial build when the repo is created
     const buildTriggerResource = new cr.AwsCustomResource(this, 'ApplicationSvcIntialBuild', {
-      onCreate: {
-        service: 'CodeBuild',
-        action: 'startBuild',
-        parameters: {
-          projectName: project.projectName,
+        onCreate: {
+          service: 'CodeBuild',
+          action: 'startBuild',
+          parameters: {
+            projectName: project.projectName,
+          },
+          physicalResourceId: cr.PhysicalResourceId.of(`InitialAppSvcDeploy-${props.name}`),
+          outputPaths: ['build.id', 'build.buildNumber'],
         },
-        physicalResourceId: cr.PhysicalResourceId.of(`InitialAppSvcDeploy-${props.name}`),
-        outputPaths: ['build.id', 'build.buildNumber'],
-      },
-      policy: cr.AwsCustomResourcePolicy.fromSdkCalls({ resources: [project.projectArn] }),
-    });
+        policy: cr.AwsCustomResourcePolicy.fromSdkCalls({ resources: [project.projectArn] }),
+      });
     buildTriggerResource.node.addDependency(project);
 
-    // deployment project to tenant namespace on tenant onboarding
+    // Deployment project to tenant namespace on tenant onboarding
     const tenantDeployProject = new codebuild.Project(this, `${id}EKSTenantDeployProject`, {
       projectName: `${props.name}TenantDeploy`,
       role: props.codebuildKubectlRole,
@@ -149,7 +157,7 @@ export class ApplicationService extends Construct {
           value: `${props.eksClusterName}`,
         },
         ECR_REPO_URI: {
-          value: `${containerRepo.repositoryUri}`,
+          value: containerRepoUri,
         },
         AWS_REGION: {
           value: Stack.of(this).region,
@@ -203,6 +211,7 @@ export class ApplicationService extends Construct {
       }),
     });
 
+    // Grant pull permissions to the tenant deploy project
     containerRepo.grantPull(tenantDeployProject.role!);
   }
 }

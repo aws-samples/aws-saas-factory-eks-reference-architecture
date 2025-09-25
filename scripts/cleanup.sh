@@ -38,16 +38,30 @@ for i in $tenant_stacks; do
 done
 
 # Delete tenant user pools.
-for i in $user_pool_ids; do
-  pool_domain=$(aws cognito-idp describe-user-pool --user-pool-id "$i" | jq -r '.UserPool.Domain')
-  echo "Deleting pool domain $pool_domain..."
-  aws cognito-idp delete-user-pool-domain \
-    --user-pool-id "$i" \
-    --domain "$pool_domain"
+if [[ -n "$user_pool_ids" && "$user_pool_ids" != "null" ]]; then
+  for i in $user_pool_ids; do
+    if [[ -n "$i" && "$i" != "null" ]]; then
+      echo "Processing user pool: $i"
+      pool_domain=$(aws cognito-idp describe-user-pool --user-pool-id "$i" | jq -r '.UserPool.Domain')
+      
+      if [[ "$pool_domain" != "null" && -n "$pool_domain" ]]; then
+        echo "Deleting pool domain $pool_domain..."
+        aws cognito-idp delete-user-pool-domain \
+          --user-pool-id "$i" \
+          --domain "$pool_domain"
+      else
+        echo "No domain found for user pool $i, skipping domain deletion"
+      fi
 
-  echo "Deleting user pool: $i"
-  aws cognito-idp delete-user-pool --user-pool-id "$i"
-done
+      echo "Deleting user pool: $i"
+      aws cognito-idp delete-user-pool --user-pool-id "$i"
+    else
+      echo "Skipping null or empty user pool ID"
+    fi
+  done
+else
+  echo "No user pools to delete"
+fi
 
 # Delete SaaS Control Plane user pool.
 next_token=""

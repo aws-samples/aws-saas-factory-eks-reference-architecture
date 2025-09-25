@@ -81,35 +81,16 @@ aws sts get-caller-identity --query Arn | grep eks-ref-arch-admin -q && echo "IA
 
 # SBT Lambda function must be built for ARM64 since v0.8.0 
 # Setup multi-architecture build environment
-setup_multiarch() {
-    case $OS in
-        "ubuntu"|"debian")
-            echo "Detected Ubuntu/Debian - Installing requirements"
-            sudo apt update
-            sudo apt install -y qemu-user-static binfmt-support docker-buildx-plugin
-            ;;
-        "amzn"|"rhel"|"centos")
-            echo "Detected Amazon Linux/RHEL/CentOS - Installing requirements"
-            sudo yum update -y
-            sudo yum install -y qemu-user-static docker-buildx-plugin
-            ;;
-        *)
-            echo "Unsupported OS: $OS"
-            exit 1
-            ;;
-    esac
 
-    echo "Setting up QEMU emulation for ARM64 docker build"
-    docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+# Make the script executable
+chmod +x ./scripts/setup_multiarch.sh
 
-    echo "Creating multi-architecture builder..."
-    docker buildx create --name multiarch --driver docker-container --use
-    docker buildx inspect --bootstrap
+# Run the setup_multiarch.sh script
+echo "Running setup_multiarch.sh to configure ARM64 emulation..."
+./scripts/setup_multiarch.sh
 
-    echo "Checking supported architectures..."
-    docker buildx ls
+# Create a symlink in /usr/local/bin for global access
+sudo ln -sf $(pwd)/scripts/setup_multiarch.sh /usr/local/bin/setup_multiarch
 
-    echo "Multi-architecture build environment setup complete!"
-}
-# Run setup
-setup_multiarch
+echo "ARM64 emulation setup complete!"
+echo "You can run 'setup_multiarch' command anytime to refresh the configuration"

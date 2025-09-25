@@ -1,0 +1,16 @@
+{
+  "services": [
+    {
+      "name": "ProductService",
+      "ecrImageName": "product-svc-${AWS_ACCOUNT}-${AWS_REGION}",
+      "serviceUrlPrefix": "products",
+      "assetDirectory": "services/application-services/product-service"
+    },
+    {
+      "name": "OrderService",
+      "ecrImageName": "order-svc-${AWS_ACCOUNT}-${AWS_REGION}",
+      "serviceUrlPrefix": "orders",
+      "assetDirectory": "services/application-services/order-service"
+    }
+  ]
+}
