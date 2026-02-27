@@ -9,10 +9,10 @@
 
 # Provision EKS tenant.
 aws codebuild start-build --project-name TenantOnboardingProject --environment-variables-override \
-name=TENANT_ID,value=$tenantId,type=PLAINTEXT \
-name=PLAN,value=$tier,type=PLAINTEXT \
-name=COMPANY_NAME,value=$tenantName,type=PLAINTEXT \
-name=ADMIN_EMAIL,value=$email,type=PLAINTEXT
+name=TENANT_ID,value="$tenantId",type=PLAINTEXT \
+name=PLAN,value="$tier",type=PLAINTEXT \
+name=COMPANY_NAME,value="$tenantName",type=PLAINTEXT \
+name=ADMIN_EMAIL,value="$email",type=PLAINTEXT
 
 STACK_NAME="TenantStack-$tenantId"
 
