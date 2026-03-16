@@ -64,7 +64,7 @@ The other category of services shown here are part of the managed tenant environ
 
 Now that we have a sense of the moving concepts, let’s dig into the underlying architecture and see the actual architecture elements that are created when you install the SaaS EKS solution.
 
-Before we can start to think about tenants and applications, we need to get the baseline version of our environment deployed. This baseline infrastructure is comprised of the actual EKS cluster that hosts our service. It also includes all the required AWS supporting infrastructure such as IAM Roles, CloudFront Distributions and backing S3 buckets.
+Before we can start to think about tenants and applications, we need to get the baseline version of our environment deployed. This baseline infrastructure comprises the actual EKS cluster that hosts our service. It also includes all the required AWS supporting infrastructure such as IAM Roles, CloudFront Distributions and backing S3 buckets.
 
 The entire solution is built and deployed from within a Cloud9 instance in an AWS region of your choosing. Please see the Getting Started portion of the README.md file in the root directory of the repo for the latest deployment directions.
 
