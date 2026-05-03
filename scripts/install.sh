@@ -1,6 +1,9 @@
 #!/bin/bash -e
 
 export AWS_PAGER=''
+# AWS CLI auto-fetches URL params starting with http(s):// by default.
+# Disable it so callback/logout URLs are passed as literal strings.
+aws configure set cli_follow_urlparam false
 export CDK_PARAM_SYSTEM_ADMIN_EMAIL="$1"
 CLOUD_9_INSTALL="$2"
 

@@ -1,0 +1,116 @@
+/* Auth Pages Specific Styles */
+
+.auth-container {
+  background: transparent;
+  padding: 0;
+}
+
+/* Auth Info Page Cards */
+.auth-info-card-standard {
+  min-height: 300px !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.auth-info-card-tall {
+  min-height: 400px !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.auth-info-card-standard .MuiCardContent-root,
+.auth-info-card-tall .MuiCardContent-root {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+}
+
+/* JWT Token Analysis Cards */
+.jwt-token-card {
+  min-height: 500px !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.jwt-token-card .MuiCardContent-root {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+}
+
+.jwt-raw-token {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+  font-size: 0.75rem !important;
+  word-break: break-all !important;
+  background-color: rgba(0, 0, 0, 0.05) !important;
+  padding: 8px !important;
+  border-radius: 4px !important;
+  max-height: 100px !important;
+  overflow: auto !important;
+}
+
+.jwt-decoded-section {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+  font-size: 0.75rem !important;
+  white-space: pre-wrap !important;
+  background-color: rgba(0, 0, 0, 0.05) !important;
+  padding: 8px !important;
+  border-radius: 4px !important;
+  overflow: auto !important;
+  max-height: 200px !important;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: var(--spacing-xl);
+}
+
+.auth-logo {
+  width: 64px;
+  height: 64px;
+  background: var(--gradient-primary);
+  border-radius: var(--border-radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--spacing-md);
+}
+
+.auth-title {
+  font-size: 1.5rem;
+  font-weight: var(--font-weight-semibold);
+  color: rgba(0, 0, 0, 0.87);
+  margin-bottom: var(--spacing-sm);
+}
+
+.auth-subtitle {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.auth-footer {
+  text-align: center;
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.auth-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+}
+
+.auth-link:hover {
+  text-decoration: underline;
+}

@@ -30,11 +30,27 @@ export class CommonResourcesStack extends Stack {
         new dynamodb.Table(this, 'ProductsTable', {
             tableName: "Product",
             partitionKey: {
-                name: "TenantId",
+                name: "tenantId",
                 type: dynamodb.AttributeType.STRING
             },
             sortKey: {
-                name: "ProductId",
+                name: "productId",
+                type: dynamodb.AttributeType.STRING
+            },
+            readCapacity: 5,
+            writeCapacity: 5,
+            removalPolicy: RemovalPolicy.DESTROY
+        });
+
+        // Shared Order table for Basic tier tenants (leading key isolation via ABAC)
+        new dynamodb.Table(this, 'OrdersTable', {
+            tableName: "Order",
+            partitionKey: {
+                name: "tenantId",
+                type: dynamodb.AttributeType.STRING
+            },
+            sortKey: {
+                name: "orderId",
                 type: dynamodb.AttributeType.STRING
             },
             readCapacity: 5,

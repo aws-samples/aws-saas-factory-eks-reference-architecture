@@ -1,0 +1,261 @@
+/* Common Component Styles */
+
+/* Page Header */
+.page-header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+}
+
+/* App Header */
+.app-header {
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  transition: width 0.3s, margin-left 0.3s;
+}
+
+.app-header-menu-button {
+  margin-right: 16px;
+  color: #2c3e50;
+}
+
+.app-header-menu-button.mobile {
+  display: block;
+}
+
+.app-header-menu-button.desktop {
+  display: none;
+}
+
+@media (min-width: 600px) {
+  .app-header-menu-button.mobile {
+    display: none;
+  }
+  .app-header-menu-button.desktop {
+    display: block;
+  }
+}
+
+.app-header-tenant-name {
+  margin-right: 24px;
+  color: #2c3e50;
+}
+
+.app-header-spacer {
+  flex-grow: 1;
+}
+
+.app-header-user-info {
+  display: flex;
+  align-items: center;
+  margin-right: 16px;
+}
+
+.app-header-user-icon {
+  margin-right: 8px;
+  font-size: 1.2rem;
+  color: #2c3e50;
+}
+
+.app-header-user-email {
+  color: #2c3e50;
+}
+
+.app-header-logout-button {
+  color: #2c3e50;
+}
+
+.app-header-logout-button:hover {
+  background-color: rgba(44, 62, 80, 0.1);
+}
+
+/* Loading */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+/* Form Fields */
+.form-fields-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Modern Card */
+.modern-card {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.06);
+}
+
+.modern-card-content {
+  padding: 32px;
+}
+
+.modern-button-container {
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px;
+}
+
+/* Text Field */
+.modern-text-field .MuiOutlinedInput-root {
+  border-radius: 8px;
+  background-color: rgba(0,0,0,0.02);
+}
+
+.modern-text-field .MuiOutlinedInput-root:hover {
+  background-color: rgba(0,0,0,0.04);
+}
+
+.modern-text-field .MuiOutlinedInput-root.Mui-focused {
+  background-color: white;
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+}
+
+/* User Role Chip */
+.user-role-chip {
+  font-weight: 500;
+  background-color: #f5f5f5;
+  color: #666666;
+}
+
+/* Table Styles */
+.user-table-container {
+  width: 100%;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.user-table-head {
+  background-color: #f8f9fa;
+}
+
+.user-table-head .MuiTableCell-head {
+  font-weight: 600;
+  color: #2c3e50;
+  border-bottom: 2px solid #dee2e6;
+  font-size: 0.95rem;
+}
+
+.user-table-row:nth-of-type(even) {
+  background-color: #f8f9fa;
+}
+
+.user-table-row:hover {
+  background-color: #e3f2fd;
+}
+
+.user-table-row .MuiTableCell-root {
+  border-bottom: 1px solid #dee2e6;
+  padding: 12px 16px;
+}
+
+.user-table-email {
+  font-weight: 500;
+  color: #1976d2;
+}
+
+.user-table-empty {
+  padding: 32px 16px;
+  color: #6c757d;
+}
+
+.user-table-secondary {
+  color: #6c757d;
+}
+
+.user-chip {
+  font-weight: 500;
+}
+
+.error-alert {
+  margin-bottom: 16px;
+}
+
+/* Unified Table Styles */
+.unified-table-container {
+  border: 1px solid #e0e0e0 !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+}
+
+.unified-table-head {
+  background-color: #f8f9fa !important;
+}
+
+.unified-table-head .MuiTableCell-head {
+  font-weight: 600 !important;
+  color: #2c3e50 !important;
+  border-bottom: 2px solid #dee2e6 !important;
+  font-size: 0.95rem !important;
+}
+
+.unified-table-row:nth-of-type(even) {
+  background-color: #f8f9fa !important;
+}
+
+.unified-table-row:hover {
+  background-color: #e3f2fd !important;
+}
+
+.unified-table-row .MuiTableCell-root {
+  border-bottom: 1px solid #dee2e6 !important;
+  padding: 8px 16px !important;
+}
+
+.unified-table-empty {
+  padding: 32px 16px !important;
+  color: #6c757d !important;
+}
+
+.unified-table-email {
+  font-weight: 500 !important;
+  color: #1976d2 !important;
+}
+
+.unified-table-secondary {
+  color: #6c757d !important;
+}
+
+/* Dashboard Cards */
+.dashboard-card {
+  height: 140px !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.dashboard-card-content {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+}
+
+/* Card Borders */
+.card-with-top-border {
+  box-shadow: 0 -0.1px 0 0 #bbb, 0px 1px 1px -1px rgba(0,0,0,0.1), 0px 1px 1px 0px rgba(0,0,0,0.08), 0px 1px 2px 0px rgba(0,0,0,0.06) !important;
+}
+
+/* Header Height Consistency */
+.app-header-toolbar {
+  min-height: 64px !important;
+  height: 64px !important;
+}
+
+.drawer-header {
+  min-height: 64px !important;
+  height: 64px !important;
+  display: flex !important;
+  align-items: center !important;
+  padding: 0 16px !important;
+}

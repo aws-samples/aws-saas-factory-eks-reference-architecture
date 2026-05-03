@@ -1,0 +1,80 @@
+/* Tenant Pages Specific Styles */
+@import './tenant-create.css';
+
+.tenant-create-container {
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+.tenant-create-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-lg);
+}
+
+.back-button {
+  color: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background-color: white;
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+  transition: all var(--transition-normal);
+}
+
+.back-button:hover {
+  background-color: #f5f5f5;
+}
+
+.main-card {
+  padding: var(--spacing-xl);
+}
+
+.sidebar-card {
+  padding: var(--spacing-xl);
+}
+
+/* Sidebar features */
+.feature-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.feature-icon {
+  color: rgba(0, 0, 0, 0.6);
+  margin-right: var(--spacing-sm);
+  font-size: 20px;
+}
+
+.feature-text {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.sidebar-divider {
+  padding-top: var(--spacing-md);
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.provision-list {
+  padding-left: var(--spacing-md);
+  margin: 0;
+}
+
+.provision-item {
+  color: rgba(0, 0, 0, 0.6);
+  margin-bottom: var(--spacing-xs);
+  font-size: 0.75rem;
+}
+
+/* Sticky header styles */
+.tenant-header-sticky {
+  position: sticky !important;
+  top: 64px !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  z-index: 10 !important;
+  padding: 16px 0 !important;
+  margin-bottom: 24px !important;
+}

@@ -1,0 +1,245 @@
+/* Common Component Styles */
+
+/* Confirm Dialog */
+.confirm-dialog {
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  min-width: 400px;
+}
+
+.confirm-dialog-title {
+  font-family: inherit !important;
+  font-weight: 800 !important;
+  font-size: 1.05rem !important;
+  padding-bottom: 16px !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.confirm-dialog-title.error {
+  color: #6b7280;
+}
+
+.confirm-dialog-title.warning {
+  color: #f59e0b;
+}
+
+.confirm-dialog-title.info {
+  color: #6b7280;
+}
+
+.confirm-dialog-content {
+  padding-top: 24px;
+  padding-bottom: 16px;
+}
+
+.confirm-dialog-message {
+  font-family: inherit !important;
+  font-size: 0.95rem !important;
+  line-height: 1.6 !important;
+  color: #666 !important;
+  white-space: pre-line;
+}
+
+.confirm-dialog-actions {
+  padding: 0 24px 24px;
+  gap: 8px;
+}
+
+.confirm-dialog-button {
+  font-family: inherit !important;
+  text-transform: none !important;
+  border-radius: 8px !important;
+  padding: 8px 24px !important;
+  font-weight: 500 !important;
+}
+
+.confirm-dialog-button.cancel {
+  color: #666;
+}
+
+.confirm-dialog-button.cancel:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.confirm-dialog-button.confirm {
+  color: white;
+  box-shadow: 0 4px 12px rgba(75, 85, 99, 0.3);
+}
+
+.confirm-dialog-button.confirm.error {
+  background-color: #4b5563;
+}
+
+.confirm-dialog-button.confirm.error:hover {
+  background-color: #374151;
+  box-shadow: 0 6px 16px rgba(75, 85, 99, 0.4);
+}
+
+.confirm-dialog-button.confirm.warning {
+  background-color: #f59e0b;
+}
+
+.confirm-dialog-button.confirm.warning:hover {
+  background-color: #d97706;
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+}
+
+.confirm-dialog-button.confirm.info {
+  background-color: #1976d2;
+}
+
+.confirm-dialog-button.confirm.info:hover {
+  background-color: #1565c0;
+  box-shadow: 0 6px 16px rgba(25, 118, 210, 0.4);
+}
+
+.confirm-dialog-loading {
+  width: 18px !important;
+  height: 18px !important;
+  color: inherit;
+}
+
+/* Page Header styles removed - component deleted */
+
+/* Status badge animations */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* App Header */
+.app-header {
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.app-header-menu-button {
+  margin-right: 16px;
+  color: #2c3e50;
+}
+
+.app-header-menu-button.mobile {
+  display: block;
+}
+
+.app-header-menu-button.desktop {
+  display: none;
+}
+
+@media (min-width: 600px) {
+  .app-header-menu-button.mobile {
+    display: none;
+  }
+  .app-header-menu-button.desktop {
+    display: block;
+  }
+}
+
+.app-header-title {
+  flex-grow: 1;
+  color: #2c3e50;
+}
+
+.app-header-user-info {
+  display: flex;
+  align-items: center;
+  margin-right: 16px;
+}
+
+.app-header-user-icon {
+  margin-right: 8px;
+  font-size: 20px;
+  color: #2c3e50;
+}
+
+.app-header-user-email {
+  color: #2c3e50;
+}
+
+.app-header-logout-button {
+  color: #2c3e50;
+}
+
+.app-header-logout-button:hover {
+  background-color: rgba(44, 62, 80, 0.1);
+}
+
+/* Tenant List */
+.tenant-create-button {
+  background: linear-gradient(135deg, #1976d2 0%, #7b1fa2 100%);
+  color: white;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-weight: 500;
+  text-transform: none;
+}
+
+.tenant-create-button:hover {
+  background: linear-gradient(135deg, #1565c0 0%, #6a1b9a 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(25, 118, 210, 0.4);
+}
+
+.tenant-card {
+  border: 0;
+  background-color: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(12px);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease-in-out;
+}
+
+.tenant-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* Alert */
+.error-alert {
+  max-width: 600px;
+}
+
+.error-alert-subtitle {
+  margin-top: 8px;
+}
+
+.error-buttons {
+  display: flex;
+  gap: 16px;
+}
+
+/* Delete Tenant Button */
+.delete-tenant-button {
+  border-radius: 8px !important;
+  padding: 12px 24px !important;
+  font-weight: 500 !important;
+  text-transform: none !important;
+  background-color: #4b5563 !important;
+  color: white !important;
+}
+
+.delete-tenant-button:hover {
+  background-color: #374151 !important;
+}
+
+/* Tenant Detail */
+.tenant-detail-field {
+  margin-bottom: 16px;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}

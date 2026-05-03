@@ -14,4 +14,10 @@ cdk.out
 .idea/vcs.xml
 .idea/.gitignore
 /.angular/cache
-.vscode/ 
+.vscode/
+refer/
+
+# Local workspace — Kiro specs/steering and AWS CLI install blob
+.kiro/
+aws/
+awscliv2.zip

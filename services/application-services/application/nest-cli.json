@@ -1,0 +1,61 @@
+{
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "microservices/order/src",
+  "monorepo": true,
+  "root": "microservices/order",
+  "compilerOptions": {
+    "webpack": true,
+    "tsConfigPath": "microservices/order/tsconfig.app.json"
+  },
+  "projects": {
+    "product": {
+      "type": "application",
+      "root": "microservices/product",
+      "entryFile": "main",
+      "sourceRoot": "microservices/product/src",
+      "compilerOptions": {
+        "tsConfigPath": "microservices/product/tsconfig.app.json",
+        "assets": ["**/*.json"]
+      }
+    },
+    "order": {
+      "type": "application",
+      "root": "microservices/order",
+      "entryFile": "main",
+      "sourceRoot": "microservices/order/src",
+      "compilerOptions": {
+        "tsConfigPath": "microservices/order/tsconfig.app.json",
+        "assets": ["**/*.json"]
+      }
+    },
+    "user": {
+      "type": "application",
+      "root": "microservices/user",
+      "entryFile": "main",
+      "sourceRoot": "microservices/user/src",
+      "compilerOptions": {
+        "tsConfigPath": "microservices/user/tsconfig.app.json",
+        "assets": ["**/*.json"]
+      }
+    },
+    "auth": {
+      "type": "library",
+      "root": "libs/auth",
+      "entryFile": "index",
+      "sourceRoot": "libs/auth/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/auth/tsconfig.lib.json",
+        "assets": ["**/*.json"]
+      }
+    },
+    "client-factory": {
+      "type": "library",
+      "root": "libs/client-factory",
+      "entryFile": "index",
+      "sourceRoot": "libs/client-factory/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/client-factory/tsconfig.lib.json"
+      }
+    }
+  }
+}

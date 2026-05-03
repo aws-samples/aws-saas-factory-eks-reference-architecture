@@ -1,0 +1,56 @@
+/* Common Component Styles for AdminWeb-React */
+
+/* Glass Card Styles */
+.glass-card {
+  border: 0 !important;
+  background-color: rgba(255, 255, 255, 0.5) !important;
+  backdrop-filter: blur(12px) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
+}
+
+.glass-card-content {
+  padding: 24px !important;
+}
+
+/* Auth Info Card Heights */
+.auth-info-card-standard {
+  min-height: 300px !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.auth-info-card-tall {
+  min-height: 400px !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.jwt-token-card {
+  min-height: 500px !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* JWT Token Display */
+.jwt-raw-token {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+  font-size: 0.75rem !important;
+  word-break: break-all !important;
+  background-color: rgba(0, 0, 0, 0.05) !important;
+  padding: 8px !important;
+  border-radius: 4px !important;
+  max-height: 100px !important;
+  overflow: auto !important;
+}
+
+.jwt-decoded-section {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+  font-size: 0.75rem !important;
+  white-space: pre-wrap !important;
+  background-color: rgba(0, 0, 0, 0.05) !important;
+  padding: 8px !important;
+  border-radius: 4px !important;
+  overflow: auto !important;
+  max-height: 200px !important;
+}

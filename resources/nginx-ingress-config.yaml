@@ -1,16 +1,19 @@
-controller:
-  enableCustomResources: false
-  appprotect:
-    enable: false
-  publishService:
-    enabled: true
-  service:
-    annotations:
-      service.beta.kubernetes.io/aws-load-balancer-connection-idle-timeout: "3600"
-      service.beta.kubernetes.io/aws-load-balancer-type: nlb
-      service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
-      service.beta.kubernetes.io/aws-load-balancer-backend-protocol: http
-      service.beta.kubernetes.io/aws-load-balancer-scheme: "internal"
-      service.beta.kubernetes.io/aws-load-balancer-internal: "true"
-    targetPorts:
-      https: http
+# =========================================================================
+# [DEPRECATED] Nginx Ingress Configuration
+# =========================================================================
+# This file is no longer in use.
+# Migrated to Istio Service Mesh.
+#
+# Previous Nginx Ingress flow:
+#   API GW -> NLB -> Nginx Ingress Controller -> per-tenant Ingress -> Service
+#
+# Current Istio flow:
+#   API GW -> NLB -> Istio Ingress Gateway -> Gateway -> VirtualService -> Service
+#   + RequestAuthentication (JWT validation & tenantId extraction)
+#   + AuthorizationPolicy (JWT required)
+#
+# Related files:
+#   - lib/eks-cluster-stack.ts: Istio Helm charts installation
+#   - services/*/kubernetes/service.yaml: VirtualService definitions
+#   - services/tenant-onboarding/lib/tenant-onboarding-stack.ts: Istio security resources
+# =========================================================================

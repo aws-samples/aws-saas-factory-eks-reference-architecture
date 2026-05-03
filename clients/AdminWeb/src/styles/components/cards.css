@@ -1,0 +1,178 @@
+/* Card Components */
+
+.glass-card {
+  border: 0 !important;
+  background-color: var(--glass-background) !important;
+  /* Remove backdrop-filter for performance improvement */
+  border-radius: var(--border-radius-lg) !important;
+  box-shadow: var(--glass-shadow) !important;
+  /* Limit transition to transform and box-shadow only */
+  transition: transform var(--transition-normal),
+    box-shadow var(--transition-normal) !important;
+  /* Enable GPU acceleration */
+  transform: translateZ(0) !important;
+  will-change: transform !important;
+}
+
+.glass-card:hover {
+  transform: translateY(-2px) translateZ(0) !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15) !important;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.card-title {
+  font-weight: var(--font-weight-semibold);
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.card-subtitle {
+  color: rgba(0, 0, 0, 0.6);
+  margin-bottom: var(--spacing-xl);
+}
+
+.card-content {
+  padding: var(--spacing-xl);
+}
+
+/* Plan selection cards */
+.plan-card {
+  padding: var(--spacing-md) !important;
+  border: 2px solid rgba(0, 0, 0, 0.12) !important;
+  cursor: pointer !important;
+  transition: all var(--transition-normal) !important;
+  border-radius: var(--border-radius-lg) !important;
+  background: white !important;
+  min-height: 140px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+}
+
+.plan-card .plan-header {
+  margin-bottom: var(--spacing-sm) !important;
+}
+
+.plan-card .plan-description {
+  line-height: 1.4 !important;
+  min-height: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* Tenant list cards */
+.tenant-card {
+  height: 240px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  /* Performance optimization */
+  contain: layout style paint !important;
+  /* Create GPU layer */
+  transform: translateZ(0) !important;
+}
+
+.tenant-card .MuiCardContent-root {
+  padding: 24px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  /* Optimize text rendering */
+  text-rendering: optimizeSpeed !important;
+}
+
+.tenant-card-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-start !important;
+  margin-bottom: 16px !important;
+  min-height: 48px !important;
+}
+
+.tenant-card-title {
+  font-weight: 600 !important;
+  font-size: 1.125rem !important;
+  line-height: 1.4 !important;
+  margin-bottom: 8px !important;
+  flex: 1 !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.tenant-card-email {
+  color: rgba(0, 0, 0, 0.6) !important;
+  margin-bottom: 16px !important;
+  height: 20px !important;
+  word-break: break-word !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.tenant-card-chips {
+  display: flex !important;
+  gap: 8px !important;
+  margin-bottom: 16px !important;
+  flex-wrap: wrap !important;
+  min-height: 32px !important;
+}
+
+.tenant-card-id {
+  color: rgba(0, 0, 0, 0.6) !important;
+  font-size: 0.875rem !important;
+  margin-top: auto !important;
+  word-break: break-all !important;
+  line-height: 1.4 !important;
+  height: 40px !important;
+  overflow: hidden !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+}
+
+.tenant-card-actions {
+  display: flex !important;
+  gap: 4px !important;
+  flex-shrink: 0 !important;
+}
+
+.plan-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+}
+
+.plan-card.selected {
+  border-color: var(--primary-color) !important;
+  background-color: rgba(25, 118, 210, 0.08) !important;
+}
+
+.plan-card:hover:not(.selected) {
+  border-color: rgba(0, 0, 0, 0.6) !important;
+}
+
+.plan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.plan-title {
+  font-weight: var(--font-weight-semibold);
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.plan-price {
+  font-weight: var(--font-weight-medium);
+  color: var(--primary-color);
+}
+
+.plan-description {
+  color: rgba(0, 0, 0, 0.6);
+}

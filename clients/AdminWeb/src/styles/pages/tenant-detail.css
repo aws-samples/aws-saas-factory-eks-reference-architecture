@@ -1,0 +1,98 @@
+/* Tenant Detail Page Styles */
+
+.tenant-detail-container {
+  padding: 0;
+}
+
+.tenant-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+}
+
+.tenant-detail-field {
+  margin-bottom: 24px;
+}
+
+.tenant-detail-field-label {
+  margin-bottom: 8px !important;
+}
+
+.tenant-detail-field-value {
+  font-weight: 600 !important;
+  color: #1f2937 !important;
+}
+
+.tenant-detail-id-field {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+  background-color: #f8fafc !important;
+  padding: 8px 12px !important;
+  border-radius: 6px !important;
+  border: 1px solid #e2e8f0 !important;
+  display: inline-block !important;
+}
+
+/* Status Badge Styles */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  min-width: 120px;
+  justify-content: center;
+  line-height: 0.9;
+}
+
+/* Status Badge Variants */
+.status-badge--success {
+  color: #10b981;
+  background-color: #d1fae5;
+  border: 1px solid #10b98120;
+}
+
+.status-badge--error {
+  color: #ef4444;
+  background-color: #fee2e2;
+  border: 1px solid #ef444420;
+}
+
+.status-badge--warning {
+  color: #f59e0b;
+  background-color: #fef3c7;
+  border: 1px solid #f59e0b20;
+}
+
+.status-badge--info {
+  color: #3b82f6;
+  background-color: #dbeafe;
+  border: 1px solid #3b82f620;
+}
+
+.status-badge--default {
+  color: #6b7280;
+  background-color: #f3f4f6;
+  border: 1px solid #6b728020;
+}
+
+/* Status Badge Icons */
+.status-badge__icon {
+  font-size: 20px !important;
+}
+
+.status-badge__icon--spinning {
+  animation: spin 2s linear infinite;
+}
+
+/* Animations */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

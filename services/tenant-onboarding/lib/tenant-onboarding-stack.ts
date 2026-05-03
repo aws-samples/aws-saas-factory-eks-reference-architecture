@@ -7,7 +7,9 @@ import * as alias from 'aws-cdk-lib/aws-route53-targets';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as eks from 'aws-cdk-lib/aws-eks';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import { KubectlV35Layer } from '@aws-cdk/lambda-layer-kubectl-v35';
 import { Cognito } from './cognito';
+import * as cognito from 'aws-cdk-lib/aws-cognito';
 
 const TENANT_TABLE = 'Tenant';
 
@@ -40,7 +42,7 @@ export class TenantOnboardingStack extends Stack {
 
     const appSiteBaseUrl = usingCustomDomain
       ? `https://${props.tenantid}.${props.customDomain!}`
-      : `https://${distributionDomain.valueAsString}/#/${props.tenantid}`;
+      : `https://${distributionDomain.valueAsString}`;
 
     const getNamedUrlForCognito = (pathName?: string) => {
       if (usingCustomDomain) {
@@ -51,9 +53,7 @@ export class TenantOnboardingStack extends Stack {
         }
       }
 
-      const path = pathName ? `%26path=${pathName!}` : '';
-
-      return `https://${distributionDomain.valueAsString}/?tenantId=${props.tenantid}${path}`;
+      return `https://${distributionDomain.valueAsString}`;
     };
 
     const provider = eks.OpenIdConnectProvider.fromOpenIdConnectProviderArn(
@@ -66,6 +66,7 @@ export class TenantOnboardingStack extends Stack {
       clusterName: eksClusterName.valueAsString,
       kubectlRoleArn: eksKubectlRoleArn.valueAsString,
       openIdConnectProvider: provider,
+      kubectlLayer: new KubectlV35Layer(this, 'KubectlLayer'),
     });
 
     // create kubernetes resource
@@ -104,15 +105,21 @@ export class TenantOnboardingStack extends Stack {
     }
 
     // create cognito resources
-    const cognito = new Cognito(this, 'CognitoResources', {
+    const tenantCognito = new Cognito(this, 'CognitoResources', {
       adminUserEmailAddress: tenantAdminEmail.valueAsString,
       userPoolName: `${props.tenantid}-UserPool`,
+      tenantId: props.tenantid,
       callbackUrl: getNamedUrlForCognito(),
-      signoutUrl: getNamedUrlForCognito('logoff'),
-      inviteEmailSubject: `Login for ${companyName.valueAsString}`,
-      inviteEmailBody: `Your username is {username} and temporary password is {####}. Please login here: ${appSiteBaseUrl}`,
+      signoutUrl: getNamedUrlForCognito(),
+      inviteEmailSubject: `[${companyName.valueAsString}] Your temporary password`,
+      inviteEmailBody: `Welcome to ${companyName.valueAsString}!\n\nLogin at ${appSiteBaseUrl}?tenant=${companyName.valueAsString}\n\nUsername:\n{username}\n\nTemporary password:\n{####}\n\nPlease change your password after first login.`,
       customAttributes: {
         'tenant-id': { value: props.tenantid, mutable: false },
+      },
+      extraCustomAttributes: {
+        'userRole': new cognito.StringAttribute({ mutable: true }),
+        'tenantTier': new cognito.StringAttribute({ mutable: true }),
+        'tenantName': new cognito.StringAttribute({ mutable: true }),
       },
     });
 
@@ -123,12 +130,12 @@ export class TenantOnboardingStack extends Stack {
 
     new CfnOutput(this, 'clientId', {
       key: 'ClientId',
-      value: cognito.appClientId,
+      value: tenantCognito.appClientId,
     });
 
     new CfnOutput(this, 'authServer', {
       key: 'AuthServer',
-      value: cognito.authServerUrl,
+      value: tenantCognito.authServerUrl,
     });
 
     new CfnOutput(this, 'redirectUri', {
@@ -146,7 +153,86 @@ export class TenantOnboardingStack extends Stack {
       this
     );
 
-    // TODO: make sure silent referesh works with or without custom domain
+    // =========================================================================
+    // Order table: per-tenant for Standard/Premium, shared for Basic
+    // =========================================================================
+    const isBasicTier = props.plan.toLowerCase() === 'basic';
+
+    // Standard/Premium: per-tenant order table
+    // Basic: uses shared "Order" table with leading key isolation (ABAC)
+    let orderTableArn: string;
+    if (!isBasicTier) {
+      const orderTable = new dynamodb.Table(this, 'OrderTable', {
+        tableName: `Order-${props.tenantid}`,
+        partitionKey: {
+          name: 'tenantId',
+          type: dynamodb.AttributeType.STRING,
+        },
+        sortKey: {
+          name: 'orderId',
+          type: dynamodb.AttributeType.STRING,
+        },
+        readCapacity: 5,
+        writeCapacity: 5,
+        removalPolicy: RemovalPolicy.DESTROY,
+      });
+      orderTableArn = orderTable.tableArn;
+    } else {
+      orderTableArn = Arn.format(
+        { service: 'dynamodb', resource: 'table', resourceName: 'Order' },
+        this
+      );
+    }
+
+    // =========================================================================
+    // ABAC role for Basic tier (STS AssumeRole with tag-based isolation)
+    // =========================================================================
+    // Basic tier pods use IRSA ServiceAccount to AssumeRole into this ABAC role.
+    // The ABAC role has DynamoDB access scoped by leading key = tenantId.
+    // Standard/Premium tiers use IRSA directly (no AssumeRole needed).
+    // =========================================================================
+    let abacRoleArn = '';
+    let abacRole: iam.Role | undefined;
+    if (isBasicTier) {
+      const productTableArn = Arn.format(
+        { service: 'dynamodb', resource: 'table', resourceName: 'Product' },
+        this
+      );
+
+      abacRole = new iam.Role(this, 'TenantABACRole', {
+        roleName: `${props.tenantid}-abac-role`,
+        assumedBy: new iam.ServicePrincipal('sts.amazonaws.com'),
+        inlinePolicies: {
+          DynamoDBTenantAccess: new iam.PolicyDocument({
+            statements: [
+              new iam.PolicyStatement({
+                effect: iam.Effect.ALLOW,
+                actions: [
+                  'dynamodb:GetItem',
+                  'dynamodb:BatchGetItem',
+                  'dynamodb:Query',
+                  'dynamodb:PutItem',
+                  'dynamodb:UpdateItem',
+                  'dynamodb:DeleteItem',
+                  'dynamodb:BatchWriteItem',
+                  'dynamodb:Scan',
+                ],
+                resources: [productTableArn, orderTableArn],
+                conditions: {
+                  'ForAllValues:StringEquals': {
+                    'dynamodb:LeadingKeys': ['${aws:PrincipalTag/tenant}'],
+                  },
+                },
+              }),
+            ],
+          }),
+        },
+      });
+
+      abacRoleArn = abacRole.roleArn;
+    }
+
+    // DynamoDB Tenant entry (must be after isBasicTier/abacRoleArn are defined)
     const tenantEntry = new cr.AwsCustomResource(this, 'TenantEntryResource', {
       onCreate: {
         service: 'DynamoDB',
@@ -158,11 +244,12 @@ export class TenantOnboardingStack extends Stack {
             COMPANY_NAME: { S: companyName.valueAsString },
             TENANT_EMAIL: { S: tenantAdminEmail.valueAsString },
             PLAN: { S: props.plan },
-            AUTH_SERVER: { S: cognito.authServerUrl },
-            AUTH_CLIENT_ID: { S: cognito.appClientId },
+            AUTH_SERVER: { S: tenantCognito.authServerUrl },
+            AUTH_CLIENT_ID: { S: tenantCognito.appClientId },
+            USER_POOL_ID: { S: tenantCognito.userPoolId },
             AUTH_REDIRECT_URI: { S: getNamedUrlForCognito() },
             COGNITO_DOMAIN: {
-              S: `https://${cognito.appClientId}.auth.${this.region}.amazoncognito.com`,
+              S: `https://${tenantCognito.appClientId}.auth.${this.region}.amazoncognito.com`,
             },
             AUTH_USE_SR: { BOOL: true },
             AUTH_SR_REDIRECT_URI: { S: getNamedUrlForCognito('silentrefresh') },
@@ -171,6 +258,7 @@ export class TenantOnboardingStack extends Stack {
             AUTH_SESSION_CHECKS_ENABLED: { BOOL: true },
             AUTH_SHOW_DEBUG_INFO: { BOOL: true },
             AUTH_CLEAR_HASH_AFTER_LOGIN: { BOOL: false },
+            ...(isBasicTier ? { ABAC_ROLE_ARN: { S: abacRoleArn } } : {}),
           },
         },
         physicalResourceId: cr.PhysicalResourceId.of(`TenantEntry-${props.tenantid}`),
@@ -188,19 +276,11 @@ export class TenantOnboardingStack extends Stack {
       policy: cr.AwsCustomResourcePolicy.fromSdkCalls({ resources: [tableArn] }),
     });
 
-    // create order table
-    const orderTable = new dynamodb.Table(this, 'OrderTable', {
-      tableName: `Order-${props.tenantid}`,
-      partitionKey: {
-        name: 'OrderId',
-        type: dynamodb.AttributeType.STRING,
-      },
-      readCapacity: 5,
-      writeCapacity: 5,
-      removalPolicy: RemovalPolicy.DESTROY,
-    });
-
-    //Create Tenant namespace
+    //Create Tenant namespace (with Istio sidecar injection)
+    // =========================================================================
+    // The istio-injection: enabled label enables automatic Envoy sidecar
+    // injection for all Pods in this namespace.
+    // =========================================================================
     const ns = cluster.addManifest('tenant-namespace', {
       apiVersion: 'v1',
       kind: 'Namespace',
@@ -209,9 +289,96 @@ export class TenantOnboardingStack extends Stack {
         labels: {
           name: props.tenantid,
           'saas/tenant': 'true',
+          'istio-injection': 'enabled',
         },
       },
     });
+
+    // =========================================================================
+    // Istio RequestAuthentication (JWT validation + tenantId extraction)
+    // =========================================================================
+    // This resource registers the tenant's Cognito UserPool as an issuer to:
+    //   1. Validate JWT token authenticity
+    //   2. Extract the custom:tenant-id claim into the x-tenant-id header
+    //
+    // Each tenant has a separate Cognito UserPool, so a RequestAuthentication
+    // is created per tenant namespace.
+    //
+    // issuer: Cognito UserPool OIDC issuer URL
+    //   e.g.: https://cognito-idp.ap-northeast-2.amazonaws.com/ap-northeast-2_xxxxx
+    // jwksUri: Cognito JWKS endpoint (can be auto-derived but set explicitly)
+    // outputClaimToHeaders: JWT claim -> HTTP header mapping
+    //   custom:tenant-id -> x-tenant-id
+    // =========================================================================
+    const requestAuth = cluster.addManifest('tenant-request-auth', {
+      apiVersion: 'security.istio.io/v1',
+      kind: 'RequestAuthentication',
+      metadata: {
+        name: `${props.tenantid}-jwt-auth`,
+        namespace: props.tenantid,
+      },
+      spec: {
+        jwtRules: [
+          {
+            issuer: tenantCognito.authServerUrl,
+            jwksUri: `${tenantCognito.authServerUrl}/.well-known/jwks.json`,
+            forwardOriginalToken: true,
+            // Forward custom:tenant-id claim from JWT to x-tenant-id header
+            outputClaimToHeaders: [
+              {
+                header: 'x-tenant-id',
+                claim: 'custom:tenant-id',
+              },
+              {
+                header: 'x-tenant-tier',
+                claim: 'custom:tenantTier',
+              },
+              {
+                header: 'x-tenant-name',
+                claim: 'custom:tenantName',
+              },
+            ],
+          },
+        ],
+      },
+    });
+    requestAuth.node.addDependency(ns);
+
+    // =========================================================================
+    // Istio AuthorizationPolicy (enforce JWT requirement)
+    // =========================================================================
+    // RequestAuthentication alone still allows requests without a JWT.
+    // (If a JWT is present it gets validated, but missing JWTs pass through)
+    //
+    // Adding an AuthorizationPolicy ensures:
+    //   - Only requests with a valid JWT requestPrincipal are allowed
+    //   - Requests without a JWT receive 403 Forbidden
+    //
+    // requestPrincipals: ["*"] = allow all requests with a valid JWT
+    // =========================================================================
+    const authPolicy = cluster.addManifest('tenant-auth-policy', {
+      apiVersion: 'security.istio.io/v1',
+      kind: 'AuthorizationPolicy',
+      metadata: {
+        name: `${props.tenantid}-require-jwt`,
+        namespace: props.tenantid,
+      },
+      spec: {
+        action: 'ALLOW',
+        rules: [
+          {
+            from: [
+              {
+                source: {
+                  requestPrincipals: ['*'],
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+    authPolicy.node.addDependency(ns);
 
     // create service account for tenant
     const tenantServiceAccount = cluster.addServiceAccount(`TenantServiceAccount`, {
@@ -219,44 +386,89 @@ export class TenantOnboardingStack extends Stack {
       namespace: props.tenantid,
     });
 
-    // permission for order and product tables
-    tenantServiceAccount.addToPrincipalPolicy(
-      new iam.PolicyStatement({
-        actions: [
-          'dynamodb:GetItem',
-          'dynamodb:BatchGetItem',
-          'dynamodb:Query',
-          'dynamodb:PutItem',
-          'dynamodb:UpdateItem',
-          'dynamodb:DeleteItem',
-          'dynamodb:BatchWriteItem',
-          'dynamodb:Scan',
-        ],
-        resources: [orderTable.tableArn],
-        effect: iam.Effect.ALLOW,
-      })
+    // =========================================================================
+    // ServiceAccount permissions based on tier
+    // =========================================================================
+    if (isBasicTier) {
+      // Basic: IRSA needs sts:AssumeRole + sts:TagSession to assume ABAC role
+      tenantServiceAccount.addToPrincipalPolicy(
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['sts:AssumeRole', 'sts:TagSession'],
+          resources: [abacRoleArn],
+        })
+      );
+
+      // Add IRSA ServiceAccount role to ABAC role trust policy
+      abacRole!.assumeRolePolicy?.addStatements(
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          principals: [new iam.ArnPrincipal(tenantServiceAccount.role.roleArn)],
+          actions: ['sts:AssumeRole', 'sts:TagSession'],
+          conditions: {
+            StringLike: {
+              'aws:RequestTag/tenant': '*',
+            },
+          },
+        })
+      );
+    } else {
+      // Standard/Premium: direct DynamoDB access via IRSA
+      tenantServiceAccount.addToPrincipalPolicy(
+        new iam.PolicyStatement({
+          actions: [
+            'dynamodb:GetItem',
+            'dynamodb:BatchGetItem',
+            'dynamodb:Query',
+            'dynamodb:PutItem',
+            'dynamodb:UpdateItem',
+            'dynamodb:DeleteItem',
+            'dynamodb:BatchWriteItem',
+            'dynamodb:Scan',
+          ],
+          resources: [orderTableArn],
+          effect: iam.Effect.ALLOW,
+        })
+      );
+      tenantServiceAccount.addToPrincipalPolicy(
+        new iam.PolicyStatement({
+          actions: [
+            'dynamodb:GetItem',
+            'dynamodb:BatchGetItem',
+            'dynamodb:Query',
+            'dynamodb:PutItem',
+            'dynamodb:UpdateItem',
+            'dynamodb:DeleteItem',
+            'dynamodb:BatchWriteItem',
+            'dynamodb:Scan',
+          ],
+          resources: [
+            Arn.format({ service: 'dynamodb', resource: 'table', resourceName: 'Product' }, this),
+          ],
+          effect: iam.Effect.ALLOW,
+        })
+      );
+    }
+
+    // Cognito Admin permissions for User service (manage users in tenant's User Pool)
+    const userPoolArn = Arn.format(
+      { service: 'cognito-idp', resource: 'userpool', resourceName: tenantCognito.userPoolId },
+      this
     );
     tenantServiceAccount.addToPrincipalPolicy(
       new iam.PolicyStatement({
-        actions: [
-          'dynamodb:GetItem',
-          'dynamodb:BatchGetItem',
-          'dynamodb:Query',
-          'dynamodb:PutItem',
-          'dynamodb:UpdateItem',
-          'dynamodb:DeleteItem',
-          'dynamodb:BatchWriteItem',
-          'dynamodb:Scan',
-        ],
-        resources: [
-          Arn.format({ service: 'dynamodb', resource: 'table', resourceName: 'Product' }, this),
-        ],
-        conditions: {
-          'ForAllValues:StringEquals': {
-            'dynamodb:LeadingKeys': [props.tenantid],
-          },
-        },
         effect: iam.Effect.ALLOW,
+        actions: [
+          'cognito-idp:AdminCreateUser',
+          'cognito-idp:AdminGetUser',
+          'cognito-idp:AdminUpdateUserAttributes',
+          'cognito-idp:AdminDeleteUser',
+          'cognito-idp:AdminAddUserToGroup',
+          'cognito-idp:ListUsersInGroup',
+          'cognito-idp:GetGroup',
+          'cognito-idp:CreateGroup',
+        ],
+        resources: [userPoolArn],
       })
     );
 

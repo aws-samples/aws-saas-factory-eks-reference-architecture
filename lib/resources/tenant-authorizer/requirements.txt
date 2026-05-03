@@ -1,0 +1,4 @@
+# Runtime dependencies for the Tenant Authorizer Lambda.
+# Keep minimal — only what is needed inside Lambda at runtime.
+python-jose[cryptography]==3.3.0
+aws-xray-sdk==2.14.0

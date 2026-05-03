@@ -34,6 +34,7 @@ export class TenantOnboarding extends Construct {
     const sourceBucket = new SourceBucket(this, `${id}SourceBucket`, {
       name: 'TenantOnboarding',
       assetDirectory: props.assetDirectory,
+      excludes: ['node_modules', '.cdk.staging', 'cdk.out'],
     });
 
     const onboardingCfnParams: { [key: string]: string } = {
@@ -88,6 +89,9 @@ export class TenantOnboarding extends Construct {
         version: '0.2',
         phases: {
           install: {
+            'runtime-versions': {
+              nodejs: '22',
+            },
             commands: ['npm i'],
           },
           pre_build: {
@@ -95,7 +99,6 @@ export class TenantOnboarding extends Construct {
           },
           build: {
             commands: [
-              'npm run cdk bootstrap',
               `npm run cdk deploy TenantStack-$TENANT_ID -- --require-approval=never ${cfnParamString}`,
             ],
           },
@@ -131,6 +134,9 @@ export class TenantOnboarding extends Construct {
         version: '0.2',
         phases: {
           install: {
+            'runtime-versions': {
+              nodejs: '22',
+            },
             commands: ['npm i'],
           },
           pre_build: {
@@ -138,7 +144,6 @@ export class TenantOnboarding extends Construct {
           },
           build: {
             commands: [
-              'npm run cdk bootstrap',
               `npm run cdk destroy TenantStack-$TENANT_ID -- --require-approval=never -f`,
             ],
           },
@@ -202,6 +207,19 @@ export class TenantOnboarding extends Construct {
     projectRole.addToPrincipalPolicy(
       new iam.PolicyStatement({
         actions: ['dynamodb:PutItem', 'dynamodb:DeleteItem'],
+        resources: [
+          Arn.format(
+            { service: 'dynamodb', resource: 'table', resourceName: 'Tenant' },
+            Stack.of(this)
+          ),
+        ],
+        effect: iam.Effect.ALLOW,
+      })
+    );
+    // Allow reading tenant info for CodeBuild env var injection
+    projectRole.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        actions: ['dynamodb:GetItem'],
         resources: [
           Arn.format(
             { service: 'dynamodb', resource: 'table', resourceName: 'Tenant' },

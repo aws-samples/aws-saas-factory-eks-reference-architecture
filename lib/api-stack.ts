@@ -1,11 +1,13 @@
-import { Arn, CfnOutput, Fn, Stack, StackProps } from 'aws-cdk-lib';
+import { Arn, CfnOutput, Duration, Fn, Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as elb from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as apigw from 'aws-cdk-lib/aws-apigateway';
+import * as logs from 'aws-cdk-lib/aws-logs';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as targets from 'aws-cdk-lib/aws-route53-targets';
+import { TenantAuthorizer } from './constructs/tenant-authorizer';
 
 export interface ApiStackProps extends StackProps {
   readonly internalNLBDomain: string;
@@ -73,17 +75,47 @@ export class ApiStack extends Stack {
         } as apigw.DomainNameProps)
       : undefined;
 
+    // Access log group. Format deliberately excludes the Authorization header
+    // and any JWT content (Requirement 9.5).
+    const accessLogGroup = new logs.LogGroup(this, 'ApiAccessLogs', {
+      retention: logs.RetentionDays.ONE_MONTH,
+    });
+
     const api = new apigw.RestApi(this, 'EKSSaaSAPI', {
       restApiName: 'EKSSaaSAPI',
       endpointTypes: [apigw.EndpointType.REGIONAL],
       domainName: domainNameProps,
       deployOptions: {
         tracingEnabled: true,
+        accessLogDestination: new apigw.LogGroupLogDestination(accessLogGroup),
+        accessLogFormat: apigw.AccessLogFormat.custom(
+          JSON.stringify({
+            requestId: '$context.requestId',
+            sourceIp: '$context.identity.sourceIp',
+            method: '$context.httpMethod',
+            path: '$context.resourcePath',
+            status: '$context.status',
+            tenantId: '$context.authorizer.tenantId',
+            userRole: '$context.authorizer.userRole',
+            integrationLatency: '$context.integration.latency',
+            responseLatency: '$context.responseLatency',
+          })
+        ),
       },
       defaultMethodOptions: {
+        // Keep NONE here so CORS preflight (OPTIONS) stays unauthenticated.
+        // The proxy ANY method below overrides this to CUSTOM.
         authorizationType: apigw.AuthorizationType.NONE,
       },
     });
+
+    // Tenant Authorizer: validates the Cognito JWT and exposes tenant claims
+    // as authorizer context consumed by the integration-request static
+    // overrides below. See .kiro/specs/api-gateway-lambda-authorizer/design.md.
+    const tenantAuthorizer = new TenantAuthorizer(this, 'TenantAuthorizer', {
+      resultsCacheTtl: Duration.seconds(300),
+    });
+
     const proxy = api.root.addProxy({
       anyMethod: false,
     });
@@ -97,6 +129,18 @@ export class ApiStack extends Stack {
           vpcLink: vpcLink,
           requestParameters: {
             'integration.request.path.proxy': 'method.request.path.proxy',
+            // Static overrides — client-sent x-tenant-* headers are ignored;
+            // values are authoritatively sourced from the authorizer context.
+            // Intentionally NO mapping for `Authorization` so the original
+            // bearer token passes through to downstream (TVM consumes it).
+            'integration.request.header.x-tenant-id':
+              'context.authorizer.tenantId',
+            'integration.request.header.x-tenant-tier':
+              'context.authorizer.tenantTier',
+            'integration.request.header.x-tenant-name':
+              'context.authorizer.tenantName',
+            'integration.request.header.x-tenant-user-role':
+              'context.authorizer.userRole',
           },
         },
         integrationHttpMethod: 'ANY',
@@ -106,7 +150,8 @@ export class ApiStack extends Stack {
         requestParameters: {
           'method.request.path.proxy': true,
         },
-        authorizationType: apigw.AuthorizationType.NONE,
+        authorizer: tenantAuthorizer.authorizer,
+        authorizationType: apigw.AuthorizationType.CUSTOM,
       }
     );
     proxy.addCorsPreflight({

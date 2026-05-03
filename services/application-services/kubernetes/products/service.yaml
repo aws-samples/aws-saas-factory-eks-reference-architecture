@@ -1,0 +1,92 @@
+# =========================================================================
+# Product Service - Deployment + Service + Istio VirtualService
+# =========================================================================
+# NestJS microservice running on port 3010
+#
+# Traffic flow:
+#   API Gateway -> NLB -> Istio Ingress Gateway -> Gateway(saas-gateway)
+#   -> VirtualService(this file) -> product-service:80 -> Pod:3010
+#
+# Environment variables are injected via kustomize sed replacements
+# =========================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: product
+  template:
+    metadata:
+      labels:
+        app: product
+      annotations:
+        sidecar.istio.io/inject: "true"
+    spec:
+      serviceAccountName: KUSTOMIZE_SVC_ACCOUNT_NAME
+      automountServiceAccountToken: true
+      containers:
+        - name: product
+          image: KUSTOMIZE_IMAGE
+          ports:
+            - containerPort: 3010
+              name: "http"
+          env:
+            - name: TABLE_NAME
+              value: "Product"
+            - name: AWS_REGION
+              value: "KUSTOMIZE_AWS_REGION"
+            - name: TENANT_TIER
+              value: "KUSTOMIZE_TENANT_TIER"
+            - name: IAM_ROLE_ARN
+              value: "KUSTOMIZE_IAM_ROLE_ARN"
+            - name: REQUEST_TAG_KEYS_MAPPING_ATTRIBUTES
+              value: 'KUSTOMIZE_TAG_KEYS_MAPPING'
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-service
+spec:
+  selector:
+    app: product
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 3010
+  type: ClusterIP
+---
+# =========================================================================
+# Istio VirtualService (replaces Nginx Ingress)
+# =========================================================================
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: product-service-vs
+spec:
+  hosts:
+    - "*"
+  gateways:
+    - istio-system/saas-gateway
+  http:
+    - match:
+        - uri:
+            prefix: /products
+          headers:
+            x-tenant-id:
+              exact: KUSTOMIZE_TENANT_ID
+      route:
+        - destination:
+            host: product-service
+            port:
+              number: 80

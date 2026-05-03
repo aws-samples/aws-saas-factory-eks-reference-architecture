@@ -1,0 +1,84 @@
+# =========================================================================
+# User Service - Deployment + Service + Istio VirtualService
+# =========================================================================
+# NestJS microservice running on port 3010
+# Manages Cognito users (CRUD) for each tenant
+#
+# Traffic flow:
+#   API Gateway -> NLB -> Istio Ingress Gateway -> Gateway(saas-gateway)
+#   -> VirtualService(this file) -> user-service:80 -> Pod:3010
+# =========================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user
+  template:
+    metadata:
+      labels:
+        app: user
+      annotations:
+        sidecar.istio.io/inject: "true"
+    spec:
+      serviceAccountName: KUSTOMIZE_SVC_ACCOUNT_NAME
+      automountServiceAccountToken: true
+      containers:
+        - name: user
+          image: KUSTOMIZE_IMAGE
+          ports:
+            - containerPort: 3010
+              name: "http"
+          env:
+            - name: AWS_REGION
+              value: "KUSTOMIZE_AWS_REGION"
+            - name: COGNITO_USER_POOL_ID
+              value: "KUSTOMIZE_COGNITO_USER_POOL_ID"
+            - name: TENANT_TIER
+              value: "KUSTOMIZE_TENANT_TIER"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+spec:
+  selector:
+    app: user
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 3010
+  type: ClusterIP
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: user-service-vs
+spec:
+  hosts:
+    - "*"
+  gateways:
+    - istio-system/saas-gateway
+  http:
+    - match:
+        - uri:
+            prefix: /users
+          headers:
+            x-tenant-id:
+              exact: KUSTOMIZE_TENANT_ID
+      route:
+        - destination:
+            host: user-service
+            port:
+              number: 80

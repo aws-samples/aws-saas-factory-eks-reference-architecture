@@ -1,0 +1,56 @@
+/* Button Components */
+
+.submit-button {
+  background: var(--gradient-primary) !important;
+  color: white !important;
+  padding: 10px 0 !important;
+  border-radius: var(--border-radius-md) !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+  text-transform: none !important;
+  width: 100% !important;
+  transition: all var(--transition-normal) !important;
+  border: none !important;
+  cursor: pointer !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.submit-button:hover {
+  background: var(--gradient-primary-hover) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 20px rgba(25, 118, 210, 0.4) !important;
+}
+
+.submit-button:disabled {
+  background: rgba(0, 0, 0, 0.12) !important;
+  color: rgba(0, 0, 0, 0.26) !important;
+  transform: none !important;
+  box-shadow: none !important;
+  cursor: not-allowed !important;
+}
+
+.submit-button:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2) !important;
+}
+
+.btn-secondary {
+  color: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background-color: white;
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  transition: all var(--transition-normal);
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background-color: #f5f5f5;
+}
+
+.btn-icon {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}

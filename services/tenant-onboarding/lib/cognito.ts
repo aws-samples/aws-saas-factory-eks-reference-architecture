@@ -5,8 +5,10 @@ import * as cognito from 'aws-cdk-lib/aws-cognito'
 export interface CognitoProps {
     readonly adminUserEmailAddress: string;
     readonly userPoolName: string;
+    readonly tenantId: string;
 
     readonly customAttributes?: { [key: string]: { value: boolean | number | string, mutable: boolean } };
+    readonly extraCustomAttributes?: { [key: string]: cognito.ICustomAttribute };
     readonly callbackUrl?: string;
     readonly signoutUrl?: string;
     readonly inviteEmailSubject?: string;
@@ -65,7 +67,10 @@ export class Cognito extends Construct {
             autoVerify: {
                 email: true
             },
-            customAttributes: customAttributes,
+            customAttributes: {
+                ...customAttributes,
+                ...props.extraCustomAttributes,
+            },
             accountRecovery: cognito.AccountRecovery.NONE,
             mfa: cognito.Mfa.OFF,
             removalPolicy: RemovalPolicy.DESTROY
@@ -133,5 +138,21 @@ export class Cognito extends Construct {
             ],
             forceAliasCreation: true
         });
+
+        // Create tenant group and add admin user to it
+        const tenantGroup = new cognito.CfnUserPoolGroup(this, 'TenantGroup', {
+            userPoolId: userPool.userPoolId,
+            groupName: props.tenantId,
+            description: `${props.tenantId}'s group`,
+            precedence: 0,
+        });
+
+        const adminGroupMembership = new cognito.CfnUserPoolUserToGroupAttachment(this, 'AdminGroupMembership', {
+            userPoolId: userPool.userPoolId,
+            groupName: props.tenantId,
+            username: props.adminUserEmailAddress,
+        });
+        adminGroupMembership.addDependency(admin);
+        adminGroupMembership.addDependency(tenantGroup);
     }
 }

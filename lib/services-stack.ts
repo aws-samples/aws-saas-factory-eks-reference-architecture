@@ -14,6 +14,7 @@ interface ServiceDefinition {
   ecrImageName: string;
   serviceUrlPrefix: string;
   assetDirectory: string;
+  dockerfileName: string;
 }
 
 export interface ServicesStackProps extends StackProps {
@@ -45,18 +46,22 @@ export class ServicesStack extends Stack {
     // If neither file exists, use default services
     if (!fs.existsSync(configPath)) {
       // Default services if no configuration file is found
+      const appServicesDir = path.join(__dirname, '..', 'services', 'application-services');
+
       serviceDefinitions.push({
         name: 'ProductService',
         ecrImageName: 'product-svc',
         serviceUrlPrefix: 'products',
-        assetDirectory: path.join(__dirname, '..', 'services', 'application-services', 'product-service')
+        assetDirectory: appServicesDir,
+        dockerfileName: 'Dockerfile.product',
       });
       
       serviceDefinitions.push({
         name: 'OrderService',
         ecrImageName: 'order-svc',
         serviceUrlPrefix: 'orders',
-        assetDirectory: path.join(__dirname, '..', 'services', 'application-services', 'order-service')
+        assetDirectory: appServicesDir,
+        dockerfileName: 'Dockerfile.order',
       });
     } else {
       // Read and process the configuration file
@@ -75,7 +80,8 @@ export class ServicesStack extends Stack {
               name: service.name,
               ecrImageName: service.ecrImageName,
               serviceUrlPrefix: service.serviceUrlPrefix,
-              assetDirectory: path.join(__dirname, '..', service.assetDirectory)
+              assetDirectory: path.join(__dirname, '..', service.assetDirectory),
+              dockerfileName: service.dockerfileName || `Dockerfile.${service.serviceUrlPrefix}`,
             });
           });
         }
@@ -87,13 +93,13 @@ export class ServicesStack extends Stack {
     // Create services from the collected definitions
     serviceDefinitions.forEach(service => {
       new ApplicationService(this, service.name, {
-        internalApiDomain: props.internalNLBApiDomain,
         eksClusterName: props.eksClusterName,
         codebuildKubectlRole: role,
         name: service.name,
         ecrImageName: service.ecrImageName,
         serviceUrlPrefix: service.serviceUrlPrefix,
-        assetDirectory: service.assetDirectory
+        assetDirectory: service.assetDirectory,
+        dockerfileName: service.dockerfileName,
       });
     });
 

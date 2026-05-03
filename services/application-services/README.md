@@ -1,14 +1,33 @@
 # Application Services
 
-The application services are deployed on a per-tenant basis as pods inside a tenant-specific namespace. The images for these services are built, tagged and deployed to [AWS ECR](https://aws.amazon.com/ecr/) by of the [build_and_upload_sharedsvcs.sh](../../resources/build_and_upload_sharedsvcs.sh) script.
+Sample microservices deployed on a per-tenant basis as pods inside tenant-specific EKS namespaces.
 
-Both services are written in Java Spring and are secured with Spring Security. The Application client presents the access token retrieved as part of the standard OAuth 2.0 Authorization Code grant flow, using the Cognito user pool that was provisioned upon tenant registration.
+## Directory Structure
 
-## [Order Service](./order-service)
+```
+application-services/
+├── application/          # NestJS monorepo (shared libs + microservices)
+│   ├── libs/             # Shared libraries
+│   │   ├── auth/         # IstioAuthGuard, TenantCredentials decorator, TokenVendingMachine
+│   │   └── client-factory/ # Tier-based DynamoDB client (ABAC for Basic, IRSA for Standard/Premium)
+│   ├── microservices/
+│   │   ├── order/        # Order CRUD service
+│   │   └── product/      # Product CRUD service
+│   ├── Dockerfile.order
+│   ├── Dockerfile.product
+│   ├── package.json
+│   └── nest-cli.json
+└── kubernetes/           # K8s manifests (Deployment + Service + Istio VirtualService)
+    ├── order/
+    └── product/
+```
 
-The order service provides basic CRUD functionality for our Application web client. An order object simply contains the order name as well as a collection of objects representing the individual line items in this order--specifically the id, quantity and price of the products ordered.
+## Authentication
 
-## [Product Service](./product-service)
+Istio handles JWT validation via `RequestAuthentication` and injects `x-tenant-id` header.
+The `IstioAuthGuard` reads this header — no Cognito SDK needed at the app level.
 
-The product service handles basic CRUD functionaliry for our Application web client. A product object contains the product name, and price. Once created, the object becomes available to Order. 
+## DynamoDB Access Pattern
 
+- Basic tier: Shared table + STS AssumeRole (ABAC leading key isolation)
+- Standard/Premium tier: Per-tenant table + IRSA (ServiceAccount credentials)

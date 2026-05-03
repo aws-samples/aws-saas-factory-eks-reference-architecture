@@ -1,0 +1,6 @@
+# Test-only dependencies. Not bundled into the Lambda layer.
+-r requirements.txt
+pytest==8.3.3
+pytest-mock==3.14.0
+hypothesis==6.112.1
+cryptography==43.0.1

@@ -21,7 +21,8 @@
     "typescript": "~5.2.2"
   },
   "dependencies": {
-    "@aws-cdk/lambda-layer-kubectl-v29": "^2.0.0",
+    "@aws-cdk/aws-lambda-python-alpha": "2.195.0-alpha.0",
+    "@aws-cdk/lambda-layer-kubectl-v35": "^2.0.0",
     "@cdklabs/sbt-aws": "^0.9.1",
     "@types/js-yaml": "^4.0.9",
     "aws-cdk-lib": "^2.195.1",

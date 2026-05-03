@@ -134,7 +134,7 @@ export class StaticSite extends Construct {
       domainNames: domainNamesToUse,
       enabled: true,
       errorResponses: [
-        // Needed to support angular routing
+        // Needed to support React client-side routing
         { httpStatus: 404, responseHttpStatus: 200, responsePagePath: '/index.html' },
         { httpStatus: 403, responseHttpStatus: 200, responsePagePath: '/index.html' },
       ],
@@ -185,7 +185,7 @@ export class StaticSite extends Construct {
       ],
     });
 
-    const buildProject = new codebuild.PipelineProject(this, `${id}AngularBuildProject`, {
+    const buildProject = new codebuild.PipelineProject(this, `${id}ReactBuildProject`, {
       environment: {
         buildImage: codebuild.LinuxBuildImage.STANDARD_7_0,
       },
@@ -193,23 +193,22 @@ export class StaticSite extends Construct {
         version: '0.2',
         phases: {
           install: {
-            commands: ['npm install'],
+            'runtime-versions': {
+              nodejs: '22',
+            },
+            commands: ['npm install --legacy-peer-deps --no-optional'],
           },
           build: {
             commands: [
-              `echo 'export const environment = ${JSON.stringify(
-                siteConfig
-              )}' > ./projects/${project.toLowerCase()}/src/environments/environment.development.ts`,
-              `echo 'export const environment = ${JSON.stringify(
-                siteConfig
-              )}' > ./projects/${project.toLowerCase()}/src/environments/environment.ts`,
-              `npm run build ${project}`,
+              'mkdir -p ./src/config',
+              `cat > ./src/config/environment.ts << 'ENVEOF'\nexport const environment = ${JSON.stringify(siteConfig, null, 2)};\nexport default environment;\nENVEOF`,
+              'npm run build || npm run build:fallback',
             ],
           },
         },
         artifacts: {
           files: ['**/*'],
-          'base-directory': `dist/${project.toLowerCase()}/browser`,
+          'base-directory': 'build',
         },
       }),
 
@@ -222,7 +221,7 @@ export class StaticSite extends Construct {
       stageName: 'Build',
       actions: [
         new actions.CodeBuildAction({
-          actionName: 'CompileNgSite',
+          actionName: 'CompileReactSite',
           input: sourceArtifact,
           project: buildProject,
           outputs: [buildOutput],

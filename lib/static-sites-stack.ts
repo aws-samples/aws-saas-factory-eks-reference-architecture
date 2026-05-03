@@ -38,22 +38,28 @@ export class StaticSitesStack extends Stack {
         })
       : undefined;
 
-    const sourceBucket = new SourceBucket(this, 'static-sites-source', {
-      name: 'static-sites-source',
-      assetDirectory: path.join(path.dirname(__filename), '..', 'clients'),
-      excludes: ['node_modules', '.vscode', 'dist', '.angular'],
+    const adminSourceBucket = new SourceBucket(this, 'admin-source', {
+      name: 'admin-source',
+      assetDirectory: path.join(path.dirname(__filename), '..', 'clients', 'AdminWeb'),
+      excludes: ['node_modules', '.vscode', 'build'],
+    });
+
+    const appSourceBucket = new SourceBucket(this, 'app-source', {
+      name: 'app-source',
+      assetDirectory: path.join(path.dirname(__filename), '..', 'clients', 'Application'),
+      excludes: ['node_modules', '.vscode', 'build'],
     });
 
     // Admin site
     const adminSite = new StaticSite(this, 'AdminSite', {
       name: 'AdminSite',
-      sourceBucket,
+      sourceBucket: adminSourceBucket,
       project: 'Admin',
-      assetDirectory: path.join(path.dirname(__filename), '..', 'clients'),
+      assetDirectory: path.join(path.dirname(__filename), '..', 'clients', 'AdminWeb'),
       allowedMethods: ['GET', 'HEAD', 'OPTIONS'],
       siteConfigurationGenerator: (siteDomain) => ({
-        apiUrl: props.controlPlaneUrl,
-        authServer: props.authorizationServer!,
+        controlPlaneUrl: props.controlPlaneUrl,
+        issuer: props.authorizationServer!,
         clientId: props.clientId!,
         domain: siteDomain,
         kubecostUI: props.usingKubeCost ? `${props.apiUrl}/kubecost` : '',
@@ -72,9 +78,9 @@ export class StaticSitesStack extends Stack {
     // Application site
     const applicationSite = new StaticSite(this, 'ApplicationSite', {
       name: 'ApplicationSite',
-      sourceBucket,
+      sourceBucket: appSourceBucket,
       project: 'Application',
-      assetDirectory: path.join(path.dirname(__filename), '..', 'clients'),
+      assetDirectory: path.join(path.dirname(__filename), '..', 'clients', 'Application'),
       allowedMethods: ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PATCH', 'POST', 'PUT'],
       siteConfigurationGenerator: (siteDomain) => ({
         production: true,

@@ -8,12 +8,12 @@ import { SourceBucket } from './source-bucket';
 
 export interface ApplicationServiceProps {
   readonly name: string;
-  readonly assetDirectory: string; // Path to service source code
+  readonly assetDirectory: string; // Path to services/application-services/
   readonly ecrImageName: string;
   readonly eksClusterName: string;
   readonly codebuildKubectlRole: iam.IRole;
-  readonly internalApiDomain: string;
   readonly serviceUrlPrefix: string;
+  readonly dockerfileName: string; // e.g. Dockerfile.product
 }
 
 export class ApplicationService extends Construct {
@@ -22,7 +22,6 @@ export class ApplicationService extends Construct {
   constructor(scope: Construct, id: string, props: ApplicationServiceProps) {
     super(scope, id);
 
-    // Create ECR repository for the service
     const containerRepo = new ecr.Repository(this, `${id}ECR`, {
       repositoryName: props.ecrImageName,
       imageScanOnPush: true,
@@ -30,8 +29,7 @@ export class ApplicationService extends Construct {
       removalPolicy: RemovalPolicy.DESTROY,
     });
     const containerRepoUri = containerRepo.repositoryUri;
-    
-    // Add custom resource to handle ECR repository deletion
+
     new cr.AwsCustomResource(this, 'ECRRepoDeletion', {
       onDelete: {
         service: 'ECR',
@@ -43,50 +41,39 @@ export class ApplicationService extends Construct {
       },
       policy: cr.AwsCustomResourcePolicy.fromSdkCalls({ resources: [containerRepo.repositoryArn] }),
     });
-    
-    // Create source bucket for the service
+
+    // Source bucket packages the entire services/application-services/ directory
+    // CodeBuild accesses both application/ (Docker) and kubernetes/ (manifests)
     const sourceBucket = new SourceBucket(this, `${props.name}SourceBucket`, {
       assetDirectory: props.assetDirectory,
       name: props.name,
     });
 
-    // Create build project for the service
+    // =========================================================
+    // Initial build: Docker build + deploy to all tenant namespaces
+    // =========================================================
     const project = new codebuild.Project(this, `${id}EKSDeployProject`, {
-        projectName: `${props.name}`,
-        source: sourceBucket.source,
-        role: props.codebuildKubectlRole,
-        environment: {
-          buildImage: codebuild.LinuxBuildImage.STANDARD_7_0,
-          privileged: true,
-        },
-        environmentVariables: {
-          CLUSTER_NAME: {
-            value: `${props.eksClusterName}`,
-          },
-          ECR_REPO_URI: {
-            value: containerRepoUri,
-          },
-          AWS_REGION: {
-            value: Stack.of(this).region,
-          },
-          AWS_ACCOUNT: {
-            value: Stack.of(this).account,
-          },
-          SERVICE_IMAGE_NAME: {
-            value: props.ecrImageName,
-          },
-          SERVICE_URL_PREFIX: {
-            value: props.serviceUrlPrefix,
-          },
-        },
+      projectName: `${props.name}`,
+      source: sourceBucket.source,
+      role: props.codebuildKubectlRole,
+      environment: {
+        buildImage: codebuild.LinuxBuildImage.STANDARD_7_0,
+        privileged: true,
+      },
+      environmentVariables: {
+        CLUSTER_NAME: { value: `${props.eksClusterName}` },
+        ECR_REPO_URI: { value: containerRepoUri },
+        AWS_REGION: { value: Stack.of(this).region },
+        AWS_ACCOUNT: { value: Stack.of(this).account },
+        SERVICE_IMAGE_NAME: { value: props.ecrImageName },
+        SERVICE_URL_PREFIX: { value: props.serviceUrlPrefix },
+        DOCKERFILE_NAME: { value: props.dockerfileName },
+      },
       buildSpec: codebuild.BuildSpec.fromObject({
         version: '0.2',
         phases: {
           install: {
             commands: [
-              `export API_HOST=$(echo '${
-                props.internalApiDomain || ''
-              }' | awk '{print tolower($0)}')`,
               'KUBECTL_VERSION=$(curl -L -s https://api.github.com/repos/kubernetes/kubernetes/releases/latest | grep \'"tag_name":\' | cut -d\'"\' -f4)',
               'curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"',
               'chmod +x ./kubectl',
@@ -100,7 +87,8 @@ export class ApplicationService extends Construct {
           },
           build: {
             commands: [
-              'docker build -t $SERVICE_IMAGE_NAME:v1 .',
+              // Docker build from application/ directory using service-specific Dockerfile
+              'docker build -t $SERVICE_IMAGE_NAME:v1 -f application/$DOCKERFILE_NAME application/',
               'docker tag $SERVICE_IMAGE_NAME:v1 $ECR_REPO_URI:latest',
               'docker tag $SERVICE_IMAGE_NAME:v1 $ECR_REPO_URI:v1',
               'docker push $ECR_REPO_URI:latest',
@@ -110,41 +98,54 @@ export class ApplicationService extends Construct {
           post_build: {
             commands: [
               'aws eks --region $AWS_REGION update-kubeconfig --name $CLUSTER_NAME',
-              'echo "  newName: $ECR_REPO_URI" >> kubernetes/kustomization.yaml',
-              'echo "  newTag: v1" >> kubernetes/kustomization.yaml',
-              'echo "  value: $API_HOST" >> kubernetes/host-patch.yaml',
+              // Append image info to kustomization
+              'echo "  newName: $ECR_REPO_URI" >> kubernetes/$SERVICE_URL_PREFIX/kustomization.yaml',
+              'echo "  newTag: v1" >> kubernetes/$SERVICE_URL_PREFIX/kustomization.yaml',
+              // Save original service.yaml before sed modifications
+              'cp kubernetes/$SERVICE_URL_PREFIX/service.yaml kubernetes/$SERVICE_URL_PREFIX/service.yaml.orig',
+              // Deploy to all existing tenant namespaces
               'for res in `kubectl get ns -l saas/tenant=true -o jsonpath=\'{.items[*].metadata.name}\'`; do \
-                            cp kubernetes/svc-acc-patch-template.yaml kubernetes/svc-acc-patch.yaml && \
-                            cp kubernetes/path-patch-template.yaml kubernetes/path-patch.yaml && \
-                            echo "  value: $res-service-account" >> kubernetes/svc-acc-patch.yaml && \
-                            echo "  value: /$res/$SERVICE_URL_PREFIX" >> kubernetes/path-patch.yaml && \
-                            kubectl apply -k kubernetes/ -n $res && \
-                            rm kubernetes/path-patch.yaml && rm kubernetes/svc-acc-patch.yaml; done',
+                TENANT_DATA=$(aws dynamodb get-item --table-name Tenant --key \'{"TENANT_ID":{"S":"\'$res\'"}}\' --output json --region $AWS_REGION 2>/dev/null) && \
+                TENANT_PLAN=$(echo $TENANT_DATA | python3 -c "import sys,json; print(json.load(sys.stdin).get(\'Item\',{}).get(\'PLAN\',{}).get(\'S\',\'standard\'))" 2>/dev/null || echo "standard") && \
+                ABAC_ROLE=$(echo $TENANT_DATA | python3 -c "import sys,json; print(json.load(sys.stdin).get(\'Item\',{}).get(\'ABAC_ROLE_ARN\',{}).get(\'S\',\'\'))" 2>/dev/null || echo "") && \
+                USER_POOL_ID=$(echo $TENANT_DATA | python3 -c "import sys,json; print(json.load(sys.stdin).get(\'Item\',{}).get(\'USER_POOL_ID\',{}).get(\'S\',\'\'))" 2>/dev/null || echo "") && \
+                if [ "$TENANT_PLAN" = "basic" ]; then ORDER_TABLE="Order"; else ORDER_TABLE="Order-$res"; fi && \
+                TAG_KEYS_MAPPING=\'{"tenant":"custom:tenant-id"}\' && \
+                cp kubernetes/$SERVICE_URL_PREFIX/patches/svc-acc-patch-template.yaml kubernetes/$SERVICE_URL_PREFIX/patches/svc-acc-patch.yaml && \
+                echo "  value: $res-service-account" >> kubernetes/$SERVICE_URL_PREFIX/patches/svc-acc-patch.yaml && \
+                sed -i "s|KUSTOMIZE_ORDER_TABLE_NAME|$ORDER_TABLE|g" kubernetes/$SERVICE_URL_PREFIX/service.yaml && \
+                sed -i "s|KUSTOMIZE_AWS_REGION|$AWS_REGION|g" kubernetes/$SERVICE_URL_PREFIX/service.yaml && \
+                sed -i "s|KUSTOMIZE_TENANT_TIER|$TENANT_PLAN|g" kubernetes/$SERVICE_URL_PREFIX/service.yaml && \
+                sed -i "s|KUSTOMIZE_IAM_ROLE_ARN|$ABAC_ROLE|g" kubernetes/$SERVICE_URL_PREFIX/service.yaml && \
+                sed -i "s|KUSTOMIZE_TAG_KEYS_MAPPING|$TAG_KEYS_MAPPING|g" kubernetes/$SERVICE_URL_PREFIX/service.yaml && \
+                sed -i "s|KUSTOMIZE_COGNITO_USER_POOL_ID|$USER_POOL_ID|g" kubernetes/$SERVICE_URL_PREFIX/service.yaml && \
+                sed -i "s|KUSTOMIZE_TENANT_ID|$res|g" kubernetes/$SERVICE_URL_PREFIX/service.yaml && \
+                kubectl apply -k kubernetes/$SERVICE_URL_PREFIX/ -n $res && \
+                cp kubernetes/$SERVICE_URL_PREFIX/service.yaml.orig kubernetes/$SERVICE_URL_PREFIX/service.yaml && \
+                rm kubernetes/$SERVICE_URL_PREFIX/patches/svc-acc-patch.yaml; done',
             ],
           },
         },
       }),
     });
 
-    // Grant permissions to the build project
     containerRepo.grantPullPush(project.role!);
 
-    // Trigger the initial build when the repo is created
     const buildTriggerResource = new cr.AwsCustomResource(this, 'ApplicationSvcIntialBuild', {
-        onCreate: {
-          service: 'CodeBuild',
-          action: 'startBuild',
-          parameters: {
-            projectName: project.projectName,
-          },
-          physicalResourceId: cr.PhysicalResourceId.of(`InitialAppSvcDeploy-${props.name}`),
-          outputPaths: ['build.id', 'build.buildNumber'],
-        },
-        policy: cr.AwsCustomResourcePolicy.fromSdkCalls({ resources: [project.projectArn] }),
-      });
+      onCreate: {
+        service: 'CodeBuild',
+        action: 'startBuild',
+        parameters: { projectName: project.projectName },
+        physicalResourceId: cr.PhysicalResourceId.of(`InitialAppSvcDeploy-${props.name}`),
+        outputPaths: ['build.id', 'build.buildNumber'],
+      },
+      policy: cr.AwsCustomResourcePolicy.fromSdkCalls({ resources: [project.projectArn] }),
+    });
     buildTriggerResource.node.addDependency(project);
 
-    // Deployment project to tenant namespace on tenant onboarding
+    // =========================================================
+    // Tenant deploy: deploys to a specific tenant namespace
+    // =========================================================
     const tenantDeployProject = new codebuild.Project(this, `${id}EKSTenantDeployProject`, {
       projectName: `${props.name}TenantDeploy`,
       role: props.codebuildKubectlRole,
@@ -153,55 +154,53 @@ export class ApplicationService extends Construct {
         buildImage: codebuild.LinuxBuildImage.STANDARD_7_0,
       },
       environmentVariables: {
-        CLUSTER_NAME: {
-          value: `${props.eksClusterName}`,
-        },
-        ECR_REPO_URI: {
-          value: containerRepoUri,
-        },
-        AWS_REGION: {
-          value: Stack.of(this).region,
-        },
-        AWS_ACCOUNT: {
-          value: Stack.of(this).account,
-        },
-        SERVICE_IMAGE_NAME: {
-          value: props.ecrImageName,
-        },
-        SERVICE_URL_PREFIX: {
-          value: props.serviceUrlPrefix,
-        },
-        TENANT_ID: {
-          value: '',
-        },
+        CLUSTER_NAME: { value: `${props.eksClusterName}` },
+        ECR_REPO_URI: { value: containerRepoUri },
+        AWS_REGION: { value: Stack.of(this).region },
+        AWS_ACCOUNT: { value: Stack.of(this).account },
+        SERVICE_IMAGE_NAME: { value: props.ecrImageName },
+        SERVICE_URL_PREFIX: { value: props.serviceUrlPrefix },
+        TENANT_ID: { value: '' },
       },
       buildSpec: codebuild.BuildSpec.fromObject({
         version: '0.2',
         phases: {
           install: {
             commands: [
-              `export API_HOST=$(echo '${
-                props.internalApiDomain || ''
-              }' | awk '{print tolower($0)}')`,
               'KUBECTL_VERSION=$(curl -L -s https://api.github.com/repos/kubernetes/kubernetes/releases/latest | grep \'"tag_name":\' | cut -d\'"\' -f4)',
               'curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"',
               'chmod +x ./kubectl',
             ],
           },
           pre_build: {
-            commands: [],
+            commands: [
+              'TENANT_DATA=$(aws dynamodb get-item --table-name Tenant --key \'{"TENANT_ID":{"S":"\'$TENANT_ID\'"}}\' --output json --region $AWS_REGION 2>/dev/null)',
+              'TENANT_PLAN=$(echo $TENANT_DATA | python3 -c "import sys,json; print(json.load(sys.stdin).get(\'Item\',{}).get(\'PLAN\',{}).get(\'S\',\'standard\'))" 2>/dev/null || echo "standard")',
+              'ABAC_ROLE=$(echo $TENANT_DATA | python3 -c "import sys,json; print(json.load(sys.stdin).get(\'Item\',{}).get(\'ABAC_ROLE_ARN\',{}).get(\'S\',\'\'))" 2>/dev/null || echo "")',
+              'USER_POOL_ID=$(echo $TENANT_DATA | python3 -c "import sys,json; print(json.load(sys.stdin).get(\'Item\',{}).get(\'USER_POOL_ID\',{}).get(\'S\',\'\'))" 2>/dev/null || echo "")',
+              'if [ "$TENANT_PLAN" = "basic" ]; then ORDER_TABLE="Order"; else ORDER_TABLE="Order-$TENANT_ID"; fi',
+              'TAG_KEYS_MAPPING=\'{"tenant":"custom:tenant-id"}\'',
+              'echo "Tenant: $TENANT_ID, Plan: $TENANT_PLAN, OrderTable: $ORDER_TABLE, ABACRole: $ABAC_ROLE"',
+            ],
           },
           build: {
             commands: [
               'aws eks --region $AWS_REGION update-kubeconfig --name $CLUSTER_NAME',
-              'echo "  newName: $ECR_REPO_URI" >> kubernetes/kustomization.yaml',
-              'echo "  newTag: latest" >> kubernetes/kustomization.yaml',
-              'echo "  value: $API_HOST" >> kubernetes/host-patch.yaml',
-              'cp kubernetes/path-patch-template.yaml kubernetes/path-patch.yaml',
-              'echo "  value: /$TENANT_ID/$SERVICE_URL_PREFIX" >> kubernetes/path-patch.yaml',
-              'cp kubernetes/svc-acc-patch-template.yaml kubernetes/svc-acc-patch.yaml',
-              `echo "  value: $TENANT_ID-service-account" >> kubernetes/svc-acc-patch.yaml`,
-              'kubectl apply -k kubernetes/ -n $TENANT_ID',
+              'echo "  newName: $ECR_REPO_URI" >> kubernetes/$SERVICE_URL_PREFIX/kustomization.yaml',
+              'echo "  newTag: latest" >> kubernetes/$SERVICE_URL_PREFIX/kustomization.yaml',
+              // Patch ServiceAccount name
+              'cp kubernetes/$SERVICE_URL_PREFIX/patches/svc-acc-patch-template.yaml kubernetes/$SERVICE_URL_PREFIX/patches/svc-acc-patch.yaml',
+              'echo "  value: $TENANT_ID-service-account" >> kubernetes/$SERVICE_URL_PREFIX/patches/svc-acc-patch.yaml',
+              // Replace environment variable placeholders
+              'sed -i "s|KUSTOMIZE_ORDER_TABLE_NAME|$ORDER_TABLE|g" kubernetes/$SERVICE_URL_PREFIX/service.yaml',
+              'sed -i "s|KUSTOMIZE_AWS_REGION|$AWS_REGION|g" kubernetes/$SERVICE_URL_PREFIX/service.yaml',
+              'sed -i "s|KUSTOMIZE_TENANT_TIER|$TENANT_PLAN|g" kubernetes/$SERVICE_URL_PREFIX/service.yaml',
+              'sed -i "s|KUSTOMIZE_IAM_ROLE_ARN|$ABAC_ROLE|g" kubernetes/$SERVICE_URL_PREFIX/service.yaml',
+              'sed -i "s|KUSTOMIZE_TAG_KEYS_MAPPING|$TAG_KEYS_MAPPING|g" kubernetes/$SERVICE_URL_PREFIX/service.yaml',
+              'sed -i "s|KUSTOMIZE_COGNITO_USER_POOL_ID|$USER_POOL_ID|g" kubernetes/$SERVICE_URL_PREFIX/service.yaml',
+              'sed -i "s|KUSTOMIZE_TENANT_ID|$TENANT_ID|g" kubernetes/$SERVICE_URL_PREFIX/service.yaml',
+              // Apply to tenant namespace
+              'kubectl apply -k kubernetes/$SERVICE_URL_PREFIX/ -n $TENANT_ID',
             ],
           },
           post_build: {
@@ -211,7 +210,6 @@ export class ApplicationService extends Construct {
       }),
     });
 
-    // Grant pull permissions to the tenant deploy project
     containerRepo.grantPull(tenantDeployProject.role!);
   }
 }

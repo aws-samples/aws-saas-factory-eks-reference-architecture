@@ -1,0 +1,19 @@
+# =========================================================================
+# User Service Kustomization
+# =========================================================================
+commonLabels:
+  saas/tenant: "true"
+  saas/service: user
+resources:
+- service.yaml
+patchesJson6902:
+# Deployment ServiceAccount patch
+- path: patches/svc-acc-patch.yaml
+  target:
+    group: apps
+    version: v1
+    kind: Deployment
+    name: user
+
+images:
+- name: KUSTOMIZE_IMAGE

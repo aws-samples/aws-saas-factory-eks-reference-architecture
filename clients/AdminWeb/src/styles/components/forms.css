@@ -1,0 +1,55 @@
+/* Form Components */
+
+.form-section {
+  margin-bottom: var(--spacing-lg);
+}
+
+.form-label {
+  font-weight: var(--font-weight-medium);
+  color: rgba(0, 0, 0, 0.87);
+  margin-bottom: var(--spacing-sm);
+  display: block;
+  font-size: 0.875rem;
+}
+
+.required-asterisk {
+  color: var(--error-color);
+}
+
+/* Custom input styling for Material-UI TextField */
+.custom-input .MuiOutlinedInput-root {
+  background-color: var(--glass-background) !important;
+  border-radius: var(--border-radius-lg) !important;
+}
+
+.custom-input .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
+  border-color: var(--primary-color) !important;
+}
+
+.custom-input .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: var(--primary-color) !important;
+  border-width: 2px !important;
+}
+
+.custom-input .MuiOutlinedInput-input {
+  padding: 12px 14px !important;
+}
+
+/* Alert styling */
+.custom-alert {
+  margin-bottom: var(--spacing-lg);
+  border-radius: var(--border-radius-md);
+  background-color: rgba(244, 67, 54, 0.1);
+  border: 1px solid rgba(244, 67, 54, 0.2);
+}
+
+/* Federation section */
+.federation-section {
+  margin-top: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+}
+
+.federation-help-text {
+  margin-bottom: var(--spacing-lg);
+  display: block;
+}

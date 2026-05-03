@@ -6,17 +6,18 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
-    "cdk": "cdk"
+    "cdk": "npx cdk"
   },
   "devDependencies": {
-    "@types/node": "^10.17.60",
-    "aws-cdk": "2.133.0",
+    "@types/node": "^20.0.0",
     "js-yaml": "^4.1.0",
-    "ts-node": "^9.1.1",
+    "ts-node": "^10.9.2",
     "typescript": "~5.4.3"
   },
   "dependencies": {
-    "aws-cdk-lib": "2.133.0",
+    "@aws-cdk/lambda-layer-kubectl-v35": "^2.0.0",
+    "aws-cdk": "^2.195.1",
+    "aws-cdk-lib": "^2.195.1",
     "constructs": "^10.3.0",
     "source-map-support": "^0.5.21"
   }

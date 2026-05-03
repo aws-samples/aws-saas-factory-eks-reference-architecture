@@ -1,13 +1,9 @@
-import { KubectlV29Layer } from '@aws-cdk/lambda-layer-kubectl-v29';
+import { KubectlV35Layer } from '@aws-cdk/lambda-layer-kubectl-v35';
 import { Arn, CfnJson, CfnOutput, Stack, StackProps } from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as eks from 'aws-cdk-lib/aws-eks';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
-
-import * as fs from 'fs';
-import * as YAML from 'js-yaml';
-import * as path from 'path';
 
 export interface EKSClusterStackProps extends StackProps {
   readonly clusterName: string;
@@ -58,12 +54,19 @@ export class EKSClusterStack extends Stack {
     });
 
     ctrlPlaneSecurityGroup.addIngressRule(nodeSecurityGroup, ec2.Port.tcp(443));
-    ctrlPlaneSecurityGroup.addEgressRule(nodeSecurityGroup, ec2.Port.tcp(443)); // needed for nginx-ingress admission controller
+    ctrlPlaneSecurityGroup.addEgressRule(nodeSecurityGroup, ec2.Port.tcp(443)); // needed for istiod webhook
     ctrlPlaneSecurityGroup.addEgressRule(nodeSecurityGroup, ec2.Port.tcpRange(1025, 65535));
+    // Istio istiod webhook (15017) and xDS (15012) ports
+    ctrlPlaneSecurityGroup.addEgressRule(nodeSecurityGroup, ec2.Port.tcp(15017), 'Istio webhook');
+    ctrlPlaneSecurityGroup.addEgressRule(nodeSecurityGroup, ec2.Port.tcp(15012), 'Istio xDS');
 
     nodeSecurityGroup.addIngressRule(nodeSecurityGroup, ec2.Port.allTraffic());
     nodeSecurityGroup.addIngressRule(ctrlPlaneSecurityGroup, ec2.Port.tcp(443));
     nodeSecurityGroup.addIngressRule(ctrlPlaneSecurityGroup, ec2.Port.tcpRange(1025, 65535));
+    // Istio sidecar-to-sidecar communication and istiod connectivity
+    nodeSecurityGroup.addIngressRule(nodeSecurityGroup, ec2.Port.tcp(15012), 'Istio xDS');
+    nodeSecurityGroup.addIngressRule(nodeSecurityGroup, ec2.Port.tcp(15017), 'Istio webhook');
+    nodeSecurityGroup.addIngressRule(ctrlPlaneSecurityGroup, ec2.Port.tcp(15017), 'Istio webhook from control plane');
 
     nodeSecurityGroup.addIngressRule(
       ec2.Peer.ipv4(this.vpc.vpcCidrBlock),
@@ -78,10 +81,10 @@ export class EKSClusterStack extends Stack {
     const cluster = new eks.Cluster(this, 'SaaSCluster', {
       clusterName: props.clusterName,
       defaultCapacity: 0,
-      kubectlLayer: new KubectlV29Layer(this, 'kubectl'),
+      kubectlLayer: new KubectlV35Layer(this, 'kubectl'),
       mastersRole: clusterAdmin,
       securityGroup: ctrlPlaneSecurityGroup,
-      version: eks.KubernetesVersion.V1_29,
+      version: eks.KubernetesVersion.of('1.35'),
       vpc: this.vpc,
       vpcSubnets: [{ subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS }],
     });
@@ -104,6 +107,7 @@ export class EKSClusterStack extends Stack {
 
     const vpcCniPlugin = new eks.CfnAddon(this, 'VpcCniPlugin', {
       addonName: 'vpc-cni',
+      addonVersion: 'v1.21.1-eksbuild.3',
       clusterName: props.clusterName,
       resolveConflicts: 'OVERWRITE',
       serviceAccountRoleArn: vpcCniSvcAccountRole.roleArn,
@@ -119,13 +123,19 @@ export class EKSClusterStack extends Stack {
     });
 
     const nodegroup = cluster.addNodegroupCapacity('saas-mng', {
-      nodegroupName: 'saas-managed-nodegroup',
-      amiType: eks.NodegroupAmiType.AL2_X86_64,
+      nodegroupName: 'saas-managed-nodegroup-al2023',
+      amiType: eks.NodegroupAmiType.AL2023_X86_64_STANDARD,
       capacityType: eks.CapacityType.ON_DEMAND,
       nodeRole: nodeRole,
-      minSize: 1,
-      desiredSize: 2,
-      maxSize: 4,
+      // Capacity sized for multi-tenant workloads. Each onboarded tenant adds
+      // ~3 service Pods (order/product/user) plus Istio sidecars. Two nodes
+      // barely fit the system Pods (CoreDNS, istiod, ingress-gateway, etc).
+      // A Cluster Autoscaler / Karpenter rollout is tracked as a follow-up;
+      // until then these static bounds avoid `Insufficient cpu/memory`
+      // Pending Pods for small numbers of tenants.
+      minSize: 2,
+      desiredSize: 3,
+      maxSize: 8,
       instanceTypes: [new ec2.InstanceType('m5.large')],
       subnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
       launchTemplateSpec: {
@@ -133,6 +143,22 @@ export class EKSClusterStack extends Stack {
       },
     });
     nodegroup.node.addDependency(vpcCniPlugin);
+
+    const kubeProxyAddon = new eks.CfnAddon(this, 'KubeProxyAddon', {
+      addonName: 'kube-proxy',
+      addonVersion: 'v1.35.0-eksbuild.2',
+      clusterName: props.clusterName,
+      resolveConflicts: 'OVERWRITE',
+    });
+    kubeProxyAddon.node.addDependency(nodegroup);
+
+    const coreDnsAddon = new eks.CfnAddon(this, 'CoreDnsAddon', {
+      addonName: 'coredns',
+      addonVersion: 'v1.13.2-eksbuild.1',
+      clusterName: props.clusterName,
+      resolveConflicts: 'OVERWRITE',
+    });
+    coreDnsAddon.node.addDependency(nodegroup);
 
     const codebuildKubectlRole = new iam.Role(this, 'CodebuildKubectlRole', {
       assumedBy: new iam.CompositePrincipal(
@@ -170,73 +196,122 @@ export class EKSClusterStack extends Stack {
 
     this.addSharedServicesPermissions(cluster, props);
 
-    // // add nginx-ingress
-    // const nginxValues = fs.readFileSync(
-    //   path.join(__dirname, '..', 'resources', 'nginx-ingress-config.yaml'),
-    //   'utf8'
-    // );
-    // const nginxValuesAsRecord = YAML.load(nginxValues) as Record<string, any>;
+    // =========================================================================
+    // Install Istio Service Mesh (replaces Nginx Ingress)
+    // =========================================================================
+    // Istio consists of 3 Helm charts:
+    //   1) istio-base: Installs Istio CRDs (Gateway, VirtualService, RequestAuthentication, etc.)
+    //   2) istiod: Control plane (manages Envoy sidecars, applies traffic policies)
+    //   3) gateway: Istio Ingress Gateway (receives external traffic, creates NLB)
+    //
+    // Previous Nginx Ingress flow:
+    //   API GW -> NLB -> Nginx Ingress -> per-tenant Ingress(minion) -> Service
+    //
+    // New Istio flow:
+    //   API GW -> NLB -> Istio Ingress Gateway -> Gateway -> VirtualService -> Service
+    //   + RequestAuthentication for JWT validation & tenantId extraction
+    // =========================================================================
 
-    const nginxChart = cluster.addHelmChart('IngressController', {
-      chart: 'nginx-ingress',
-      repository: 'https://helm.nginx.com/stable',
-      release: props.ingressControllerName,
+    const istioNamespace = 'istio-system';
+
+    // 1) istio-base: Install CRDs
+    const istioBase = cluster.addHelmChart('IstioBase', {
+      chart: 'base',
+      repository: 'https://istio-release.storage.googleapis.com/charts',
+      release: 'istio-base',
+      namespace: istioNamespace,
+      createNamespace: true,
+      version: '1.29.0',
       values: {
-        controller: {
-          publishService: {
-            enabled: true,
-          },
-          service: {
-            annotations: {
-              'service.beta.kubernetes.io/aws-load-balancer-type': 'nlb',
-              'service.beta.kubernetes.io/aws-load-balancer-backend-protocol': 'http',
-              'service.beta.kubernetes.io/aws-load-balancer-ssl-ports': '443',
-              'service.beta.kubernetes.io/aws-load-balancer-connection-idle-timeout': '3600',
-            },
-            targetPorts: {
-              https: 'http',
-            },
+        defaultRevision: 'default',
+      },
+    });
+    istioBase.node.addDependency(nodegroup);
+
+    // 2) istiod: Control plane
+    const istiod = cluster.addHelmChart('Istiod', {
+      chart: 'istiod',
+      repository: 'https://istio-release.storage.googleapis.com/charts',
+      release: 'istiod',
+      namespace: istioNamespace,
+      version: '1.29.0',
+      values: {
+        meshConfig: {
+          // Enable access logging (for debugging)
+          accessLogFile: '/dev/stdout',
+          // Outbound traffic policy: ALLOW_ANY (default, allows external calls)
+          outboundTrafficPolicy: {
+            mode: 'ALLOW_ANY',
           },
         },
       },
     });
+    istiod.node.addDependency(istioBase);
 
-    nginxChart.node.addDependency(nodegroup);
+    // 3) Istio Ingress Gateway: External traffic entry point (creates NLB)
+    //    Replaces the role of the previous Nginx Ingress Controller
+    const istioGateway = cluster.addHelmChart('IstioIngressGateway', {
+      chart: 'gateway',
+      repository: 'https://istio-release.storage.googleapis.com/charts',
+      release: 'istio-ingressgateway',
+      namespace: istioNamespace,
+      version: '1.29.0',
+      values: {
+        service: {
+          type: 'LoadBalancer',
+          annotations: {
+            'service.beta.kubernetes.io/aws-load-balancer-type': 'nlb',
+            'service.beta.kubernetes.io/aws-load-balancer-backend-protocol': 'tcp',
+            'service.beta.kubernetes.io/aws-load-balancer-connection-idle-timeout': '3600',
+          },
+        },
+      },
+    });
+    istioGateway.node.addDependency(istiod);
 
+    // NLB domain: LoadBalancer address of the Istio Ingress Gateway Service
     this.nlbDomain = cluster.getServiceLoadBalancerAddress(
-      `${props.ingressControllerName}-nginx-ingress-controller`
+      'istio-ingressgateway',
+      { namespace: istioNamespace }
     );
 
-    // add primary mergable ingress (for host collision)
-    new eks.KubernetesManifest(this, 'PrimarySameHostMergableIngress', {
+    // =========================================================================
+    // Istio Gateway resource (replaces the previous Master Mergable Ingress)
+    // =========================================================================
+    // The Gateway binds to the Istio Ingress Gateway to receive external traffic.
+    // Accepts HTTP port 80 traffic from all hosts (*).
+    // API Gateway -> NLB -> Istio Ingress Gateway -> this Gateway -> VirtualService
+    // =========================================================================
+    const istioGatewayManifest = new eks.KubernetesManifest(this, 'IstioGatewayResource', {
       cluster: cluster,
       overwrite: true,
       manifest: [
         {
-          apiVersion: 'networking.k8s.io/v1',
-          kind: 'Ingress',
+          apiVersion: 'networking.istio.io/v1',
+          kind: 'Gateway',
           metadata: {
-            name: 'default-primary-mergable-ingress',
-            namespace: 'default',
-            annotations: {
-              'kubernetes.io/ingress.class': 'nginx',
-              'nginx.org/mergeable-ingress-type': 'master',
-            },
+            name: 'saas-gateway',
+            namespace: istioNamespace,
           },
           spec: {
-            rules: [
+            selector: {
+              istio: 'ingressgateway',
+            },
+            servers: [
               {
-                host: this.nlbDomain,
+                port: {
+                  number: 80,
+                  name: 'http',
+                  protocol: 'HTTP',
+                },
+                hosts: ['*'],
               },
             ],
           },
         },
       ],
     });
-
-    /* if (props.kubecostToken) {
-            this.installKubecost(cluster, nodegroup, props.kubecostToken!, this.nlbDomain);
-        } */
+    istioGatewayManifest.node.addDependency(istioGateway);
   }
 
   private addNodeIAMRolePolicies(eksNodeRole: iam.Role): void {
