@@ -123,11 +123,23 @@ export class TenantOnboarding extends Construct {
         TENANT_ID: {
           value: '',
         },
+        // PLAN (basic / standard / premium) is required by the TenantStack
+        // synth code — see services/tenant-onboarding/lib/tenant-onboarding-stack.ts
+        // which branches on `props.plan.toLowerCase() === 'basic'` to decide
+        // whether an ABAC role / per-tenant Order table was created. The same
+        // branches must evaluate the same way on destroy so CDK reconstructs
+        // the correct resource set; pass PLAN in both directions.
+        PLAN: {
+          value: '',
+        },
         AWS_ACCOUNT: {
           value: Stack.of(this).account,
         },
         AWS_REGION: {
           value: Stack.of(this).region,
+        },
+        EKS_CLUSTER_NAME: {
+          value: props.eksClusterName,
         },
       },
       buildSpec: codebuild.BuildSpec.fromObject({
@@ -137,10 +149,50 @@ export class TenantOnboarding extends Construct {
             'runtime-versions': {
               nodejs: '22',
             },
-            commands: ['npm i'],
+            commands: [
+              'npm i',
+              // kubectl installed so the pre_build phase can talk to the cluster.
+              // CodeBuild STANDARD_7_0 does not ship kubectl by default.
+              // `-f` makes curl return non-zero on HTTP errors so a 404 or
+              // redirect-to-html doesn't silently write garbage to the target
+              // path (which later fails with "Syntax error: newline
+              // unexpected" when shell tries to exec it).
+              'curl -fsSL -o /usr/local/bin/kubectl https://dl.k8s.io/release/v1.29.2/bin/linux/amd64/kubectl',
+              'chmod +x /usr/local/bin/kubectl',
+            ],
           },
           pre_build: {
-            commands: [],
+            // Delete the tenant namespace *before* `cdk destroy` runs. The
+            // TenantStack's CDK-managed manifests (Namespace, RequestAuth,
+            // AuthorizationPolicy, ServiceAccount) would be deleted by CFN
+            // anyway, but the *TenantDeploy CodeBuild projects also install
+            // service-level resources (Deployment, VirtualService, SA patches)
+            // into the same namespace that CFN does NOT know about. Without
+            // this pre-step CFN happily deletes its own manifests but the
+            // ownerless Deployments keep the namespace pinned in Terminating
+            // state, which (a) looks like `cdk destroy` is broken from the
+            // outside and (b) blocks a future onboarding that reuses the
+            // same tenantId.
+            //
+            // `kubectl delete namespace` cascades into everything in the
+            // namespace — NestJS Deployments/Services, Envoy sidecars,
+            // VirtualServices, SAs, the CDK-managed manifests — so we don't
+            // need separate `kubectl delete` lines for each kind.
+            commands: [
+              // CodeBuild already runs *as* codebuildKubectlRole, which is
+              // mapped to system:masters in aws-auth. Use the ambient
+              // identity — do NOT pass --role-arn. The role's trust policy
+              // does not list itself as a trusted principal, so assuming
+              // itself would fail with AccessDenied.
+              'aws eks update-kubeconfig --name "$EKS_CLUSTER_NAME" --region "$AWS_REGION"',
+              // --ignore-not-found so re-running the deletion after a partial
+              // teardown is idempotent.
+              // --wait=true (default) so CodeBuild blocks until the API
+              // server finishes removing the namespace; otherwise `cdk
+              // destroy` races the KubernetesManifest custom resources and
+              // we're back to square one.
+              'kubectl delete namespace "$TENANT_ID" --ignore-not-found --wait=true --timeout=5m',
+            ],
           },
           build: {
             commands: [

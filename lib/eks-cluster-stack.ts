@@ -105,9 +105,31 @@ export class EKSClusterStack extends Stack {
       iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEKS_CNI_Policy')
     );
 
+    // VPC CNI v1.16+ bundles the aws-network-policy-agent sidecar, which
+    // needs additional EC2 describe permissions for Network Policy evaluation.
+    // `AmazonEKS_CNI_Policy` does NOT include these, so without this inline
+    // policy the new aws-node pod fails readiness with MissingIAMPermissions:
+    //   "failed to call ec2:DescribeNetworkInterfaces due to missing permissions"
+    // Reference:
+    //   https://docs.aws.amazon.com/eks/latest/userguide/network_policies_tutorial.html
+    vpcCniSvcAccountRole.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'ec2:DescribeNetworkInterfaces',
+          'ec2:DescribeInstances',
+          'ec2:DescribeInstanceTypes',
+          'ec2:DescribeSubnets',
+          'ec2:DescribeTags',
+          'ec2:DescribeVpcs',
+        ],
+        resources: ['*'],
+      })
+    );
+
     const vpcCniPlugin = new eks.CfnAddon(this, 'VpcCniPlugin', {
       addonName: 'vpc-cni',
-      addonVersion: 'v1.21.1-eksbuild.3',
+      addonVersion: 'v1.21.1-eksbuild.8',
       clusterName: props.clusterName,
       resolveConflicts: 'OVERWRITE',
       serviceAccountRoleArn: vpcCniSvcAccountRole.roleArn,
@@ -146,7 +168,7 @@ export class EKSClusterStack extends Stack {
 
     const kubeProxyAddon = new eks.CfnAddon(this, 'KubeProxyAddon', {
       addonName: 'kube-proxy',
-      addonVersion: 'v1.35.0-eksbuild.2',
+      addonVersion: 'v1.35.3-eksbuild.5',
       clusterName: props.clusterName,
       resolveConflicts: 'OVERWRITE',
     });
@@ -154,7 +176,7 @@ export class EKSClusterStack extends Stack {
 
     const coreDnsAddon = new eks.CfnAddon(this, 'CoreDnsAddon', {
       addonName: 'coredns',
-      addonVersion: 'v1.13.2-eksbuild.1',
+      addonVersion: 'v1.13.2-eksbuild.7',
       clusterName: props.clusterName,
       resolveConflicts: 'OVERWRITE',
     });

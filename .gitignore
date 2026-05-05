@@ -21,3 +21,11 @@ refer/
 .kiro/
 aws/
 awscliv2.zip
+# Session scratch / notes — any markdown file whose name begins with `_`
+_*.md
+# CDK/CodeBuild deploy logs captured during interactive runs
+*.log
+# Ad-hoc debugging helpers that hard-code ControlPlane endpoint / client IDs.
+# Keep out of source control; regenerate per-session as needed.
+scripts/delete-tenant-once.sh
+scripts/inspect-tenants.sh

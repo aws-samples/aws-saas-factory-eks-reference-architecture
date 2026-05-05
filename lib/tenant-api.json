@@ -1,0 +1,547 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "{{version}}",
+    "title": "{{API_TITLE}}"
+  },
+  "basePath": "/{{stage}}",
+  "schemes": [
+    "https"
+  ],
+  "paths": {
+    "/products": {
+      "get": {
+        "parameters": [
+          { "name": "x-tenant-id",        "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-tier",      "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-name",      "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-user-role", "in": "header", "required": false, "type": "string" }
+        ],
+        "responses": {},
+        "security": [ { "sharedApigatewayTenantApiAuthorizer": [] } ],
+        "x-amazon-apigateway-integration": {
+          "type": "http_proxy",
+          "connectionId": "{{connection_id}}",
+          "httpMethod": "ANY",
+          "uri": "{{integration_uri}}/products",
+          "requestParameters": {
+            "integration.request.header.x-tenant-id":        "context.authorizer.tenantId",
+            "integration.request.header.x-tenant-tier":      "context.authorizer.tenantTier",
+            "integration.request.header.x-tenant-name":      "context.authorizer.tenantName",
+            "integration.request.header.x-tenant-user-role": "context.authorizer.userRole"
+          },
+          "connectionType": "VPC_LINK",
+          "passthroughBehavior": "when_no_match"
+        }
+      },
+      "post": {
+        "parameters": [
+          { "name": "x-tenant-id",        "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-tier",      "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-name",      "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-user-role", "in": "header", "required": false, "type": "string" }
+        ],
+        "responses": {},
+        "security": [ { "sharedApigatewayTenantApiAuthorizer": [] } ],
+        "x-amazon-apigateway-integration": {
+          "type": "http_proxy",
+          "connectionId": "{{connection_id}}",
+          "httpMethod": "ANY",
+          "uri": "{{integration_uri}}/products",
+          "requestParameters": {
+            "integration.request.header.x-tenant-id":        "context.authorizer.tenantId",
+            "integration.request.header.x-tenant-tier":      "context.authorizer.tenantTier",
+            "integration.request.header.x-tenant-name":      "context.authorizer.tenantName",
+            "integration.request.header.x-tenant-user-role": "context.authorizer.userRole"
+          },
+          "connectionType": "VPC_LINK",
+          "passthroughBehavior": "when_no_match"
+        }
+      },
+      "options": {
+        "consumes": [ "application/json" ],
+        "responses": {
+          "204": {
+            "description": "204 response",
+            "headers": {
+              "Access-Control-Allow-Origin":  { "type": "string" },
+              "Access-Control-Allow-Methods": { "type": "string" },
+              "Access-Control-Allow-Headers": { "type": "string" }
+            }
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "type": "mock",
+          "responses": {
+            "default": {
+              "statusCode": "204",
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,PATCH,DELETE,OPTIONS,HEAD'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'",
+                "method.response.header.Access-Control-Allow-Origin":  "'*'"
+              }
+            }
+          },
+          "requestTemplates": { "application/json": "{ statusCode: 200 }" },
+          "passthroughBehavior": "when_no_match"
+        }
+      }
+    },
+
+    "/products/{id}": {
+      "get": {
+        "parameters": [
+          { "name": "x-tenant-id",        "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-tier",      "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-name",      "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-user-role", "in": "header", "required": false, "type": "string" },
+          { "name": "id",                 "in": "path",   "required": true,  "type": "string" }
+        ],
+        "responses": {},
+        "security": [ { "sharedApigatewayTenantApiAuthorizer": [] } ],
+        "x-amazon-apigateway-integration": {
+          "type": "http_proxy",
+          "connectionId": "{{connection_id}}",
+          "httpMethod": "ANY",
+          "uri": "{{integration_uri}}/products/{id}",
+          "requestParameters": {
+            "integration.request.path.id":                   "method.request.path.id",
+            "integration.request.header.x-tenant-id":        "context.authorizer.tenantId",
+            "integration.request.header.x-tenant-tier":      "context.authorizer.tenantTier",
+            "integration.request.header.x-tenant-name":      "context.authorizer.tenantName",
+            "integration.request.header.x-tenant-user-role": "context.authorizer.userRole"
+          },
+          "connectionType": "VPC_LINK",
+          "passthroughBehavior": "when_no_match"
+        }
+      },
+      "put": {
+        "parameters": [
+          { "name": "x-tenant-id",        "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-tier",      "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-name",      "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-user-role", "in": "header", "required": false, "type": "string" },
+          { "name": "id",                 "in": "path",   "required": true,  "type": "string" }
+        ],
+        "responses": {},
+        "security": [ { "sharedApigatewayTenantApiAuthorizer": [] } ],
+        "x-amazon-apigateway-integration": {
+          "type": "http_proxy",
+          "connectionId": "{{connection_id}}",
+          "httpMethod": "ANY",
+          "uri": "{{integration_uri}}/products/{id}",
+          "requestParameters": {
+            "integration.request.path.id":                   "method.request.path.id",
+            "integration.request.header.x-tenant-id":        "context.authorizer.tenantId",
+            "integration.request.header.x-tenant-tier":      "context.authorizer.tenantTier",
+            "integration.request.header.x-tenant-name":      "context.authorizer.tenantName",
+            "integration.request.header.x-tenant-user-role": "context.authorizer.userRole"
+          },
+          "connectionType": "VPC_LINK",
+          "passthroughBehavior": "when_no_match"
+        }
+      },
+      "delete": {
+        "parameters": [
+          { "name": "x-tenant-id",        "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-tier",      "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-name",      "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-user-role", "in": "header", "required": false, "type": "string" },
+          { "name": "id",                 "in": "path",   "required": true,  "type": "string" }
+        ],
+        "responses": {},
+        "security": [ { "sharedApigatewayTenantApiAuthorizer": [] } ],
+        "x-amazon-apigateway-integration": {
+          "type": "http_proxy",
+          "connectionId": "{{connection_id}}",
+          "httpMethod": "ANY",
+          "uri": "{{integration_uri}}/products/{id}",
+          "requestParameters": {
+            "integration.request.path.id":                   "method.request.path.id",
+            "integration.request.header.x-tenant-id":        "context.authorizer.tenantId",
+            "integration.request.header.x-tenant-tier":      "context.authorizer.tenantTier",
+            "integration.request.header.x-tenant-name":      "context.authorizer.tenantName",
+            "integration.request.header.x-tenant-user-role": "context.authorizer.userRole"
+          },
+          "connectionType": "VPC_LINK",
+          "passthroughBehavior": "when_no_match"
+        }
+      },
+      "options": {
+        "consumes": [ "application/json" ],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "type": "string" }
+        ],
+        "responses": {
+          "204": {
+            "description": "204 response",
+            "headers": {
+              "Access-Control-Allow-Origin":  { "type": "string" },
+              "Access-Control-Allow-Methods": { "type": "string" },
+              "Access-Control-Allow-Headers": { "type": "string" }
+            }
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "type": "mock",
+          "responses": {
+            "default": {
+              "statusCode": "204",
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,PATCH,DELETE,OPTIONS,HEAD'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'",
+                "method.response.header.Access-Control-Allow-Origin":  "'*'"
+              }
+            }
+          },
+          "requestTemplates": { "application/json": "{ statusCode: 200 }" },
+          "passthroughBehavior": "when_no_match"
+        }
+      }
+    },
+
+    "/orders": {
+      "get": {
+        "parameters": [
+          { "name": "x-tenant-id",        "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-tier",      "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-name",      "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-user-role", "in": "header", "required": false, "type": "string" }
+        ],
+        "responses": {},
+        "security": [ { "sharedApigatewayTenantApiAuthorizer": [] } ],
+        "x-amazon-apigateway-integration": {
+          "type": "http_proxy",
+          "connectionId": "{{connection_id}}",
+          "httpMethod": "ANY",
+          "uri": "{{integration_uri}}/orders",
+          "requestParameters": {
+            "integration.request.header.x-tenant-id":        "context.authorizer.tenantId",
+            "integration.request.header.x-tenant-tier":      "context.authorizer.tenantTier",
+            "integration.request.header.x-tenant-name":      "context.authorizer.tenantName",
+            "integration.request.header.x-tenant-user-role": "context.authorizer.userRole"
+          },
+          "connectionType": "VPC_LINK",
+          "passthroughBehavior": "when_no_match"
+        }
+      },
+      "post": {
+        "parameters": [
+          { "name": "x-tenant-id",        "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-tier",      "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-name",      "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-user-role", "in": "header", "required": false, "type": "string" }
+        ],
+        "responses": {},
+        "security": [ { "sharedApigatewayTenantApiAuthorizer": [] } ],
+        "x-amazon-apigateway-integration": {
+          "type": "http_proxy",
+          "connectionId": "{{connection_id}}",
+          "httpMethod": "ANY",
+          "uri": "{{integration_uri}}/orders",
+          "requestParameters": {
+            "integration.request.header.x-tenant-id":        "context.authorizer.tenantId",
+            "integration.request.header.x-tenant-tier":      "context.authorizer.tenantTier",
+            "integration.request.header.x-tenant-name":      "context.authorizer.tenantName",
+            "integration.request.header.x-tenant-user-role": "context.authorizer.userRole"
+          },
+          "connectionType": "VPC_LINK",
+          "passthroughBehavior": "when_no_match"
+        }
+      },
+      "options": {
+        "consumes": [ "application/json" ],
+        "responses": {
+          "204": {
+            "description": "204 response",
+            "headers": {
+              "Access-Control-Allow-Origin":  { "type": "string" },
+              "Access-Control-Allow-Methods": { "type": "string" },
+              "Access-Control-Allow-Headers": { "type": "string" }
+            }
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "type": "mock",
+          "responses": {
+            "default": {
+              "statusCode": "204",
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,PATCH,DELETE,OPTIONS,HEAD'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'",
+                "method.response.header.Access-Control-Allow-Origin":  "'*'"
+              }
+            }
+          },
+          "requestTemplates": { "application/json": "{ statusCode: 200 }" },
+          "passthroughBehavior": "when_no_match"
+        }
+      }
+    },
+
+    "/orders/{id}": {
+      "get": {
+        "parameters": [
+          { "name": "x-tenant-id",        "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-tier",      "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-name",      "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-user-role", "in": "header", "required": false, "type": "string" },
+          { "name": "id",                 "in": "path",   "required": true,  "type": "string" }
+        ],
+        "responses": {},
+        "security": [ { "sharedApigatewayTenantApiAuthorizer": [] } ],
+        "x-amazon-apigateway-integration": {
+          "type": "http_proxy",
+          "connectionId": "{{connection_id}}",
+          "httpMethod": "ANY",
+          "uri": "{{integration_uri}}/orders/{id}",
+          "requestParameters": {
+            "integration.request.path.id":                   "method.request.path.id",
+            "integration.request.header.x-tenant-id":        "context.authorizer.tenantId",
+            "integration.request.header.x-tenant-tier":      "context.authorizer.tenantTier",
+            "integration.request.header.x-tenant-name":      "context.authorizer.tenantName",
+            "integration.request.header.x-tenant-user-role": "context.authorizer.userRole"
+          },
+          "connectionType": "VPC_LINK",
+          "passthroughBehavior": "when_no_match"
+        }
+      },
+      "options": {
+        "consumes": [ "application/json" ],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "type": "string" }
+        ],
+        "responses": {
+          "204": {
+            "description": "204 response",
+            "headers": {
+              "Access-Control-Allow-Origin":  { "type": "string" },
+              "Access-Control-Allow-Methods": { "type": "string" },
+              "Access-Control-Allow-Headers": { "type": "string" }
+            }
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "type": "mock",
+          "responses": {
+            "default": {
+              "statusCode": "204",
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,PATCH,DELETE,OPTIONS,HEAD'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'",
+                "method.response.header.Access-Control-Allow-Origin":  "'*'"
+              }
+            }
+          },
+          "requestTemplates": { "application/json": "{ statusCode: 200 }" },
+          "passthroughBehavior": "when_no_match"
+        }
+      }
+    },
+
+    "/users": {
+      "get": {
+        "parameters": [
+          { "name": "x-tenant-id",        "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-tier",      "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-name",      "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-user-role", "in": "header", "required": false, "type": "string" }
+        ],
+        "responses": {},
+        "security": [ { "sharedApigatewayTenantApiAuthorizer": [] } ],
+        "x-amazon-apigateway-integration": {
+          "type": "http_proxy",
+          "connectionId": "{{connection_id}}",
+          "httpMethod": "ANY",
+          "uri": "{{integration_uri}}/users",
+          "requestParameters": {
+            "integration.request.header.x-tenant-id":        "context.authorizer.tenantId",
+            "integration.request.header.x-tenant-tier":      "context.authorizer.tenantTier",
+            "integration.request.header.x-tenant-name":      "context.authorizer.tenantName",
+            "integration.request.header.x-tenant-user-role": "context.authorizer.userRole"
+          },
+          "connectionType": "VPC_LINK",
+          "passthroughBehavior": "when_no_match"
+        }
+      },
+      "post": {
+        "parameters": [
+          { "name": "x-tenant-id",        "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-tier",      "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-name",      "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-user-role", "in": "header", "required": false, "type": "string" }
+        ],
+        "responses": {},
+        "security": [ { "sharedApigatewayTenantApiAuthorizer": [] } ],
+        "x-amazon-apigateway-integration": {
+          "type": "http_proxy",
+          "connectionId": "{{connection_id}}",
+          "httpMethod": "ANY",
+          "uri": "{{integration_uri}}/users",
+          "requestParameters": {
+            "integration.request.header.x-tenant-id":        "context.authorizer.tenantId",
+            "integration.request.header.x-tenant-tier":      "context.authorizer.tenantTier",
+            "integration.request.header.x-tenant-name":      "context.authorizer.tenantName",
+            "integration.request.header.x-tenant-user-role": "context.authorizer.userRole"
+          },
+          "connectionType": "VPC_LINK",
+          "passthroughBehavior": "when_no_match"
+        }
+      },
+      "options": {
+        "consumes": [ "application/json" ],
+        "responses": {
+          "204": {
+            "description": "204 response",
+            "headers": {
+              "Access-Control-Allow-Origin":  { "type": "string" },
+              "Access-Control-Allow-Methods": { "type": "string" },
+              "Access-Control-Allow-Headers": { "type": "string" }
+            }
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "type": "mock",
+          "responses": {
+            "default": {
+              "statusCode": "204",
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,PATCH,DELETE,OPTIONS,HEAD'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'",
+                "method.response.header.Access-Control-Allow-Origin":  "'*'"
+              }
+            }
+          },
+          "requestTemplates": { "application/json": "{ statusCode: 200 }" },
+          "passthroughBehavior": "when_no_match"
+        }
+      }
+    },
+
+    "/users/{id}": {
+      "get": {
+        "parameters": [
+          { "name": "x-tenant-id",        "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-tier",      "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-name",      "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-user-role", "in": "header", "required": false, "type": "string" },
+          { "name": "id",                 "in": "path",   "required": true,  "type": "string" }
+        ],
+        "responses": {},
+        "security": [ { "sharedApigatewayTenantApiAuthorizer": [] } ],
+        "x-amazon-apigateway-integration": {
+          "type": "http_proxy",
+          "connectionId": "{{connection_id}}",
+          "httpMethod": "ANY",
+          "uri": "{{integration_uri}}/users/{id}",
+          "requestParameters": {
+            "integration.request.path.id":                   "method.request.path.id",
+            "integration.request.header.x-tenant-id":        "context.authorizer.tenantId",
+            "integration.request.header.x-tenant-tier":      "context.authorizer.tenantTier",
+            "integration.request.header.x-tenant-name":      "context.authorizer.tenantName",
+            "integration.request.header.x-tenant-user-role": "context.authorizer.userRole"
+          },
+          "connectionType": "VPC_LINK",
+          "passthroughBehavior": "when_no_match"
+        }
+      },
+      "put": {
+        "parameters": [
+          { "name": "x-tenant-id",        "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-tier",      "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-name",      "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-user-role", "in": "header", "required": false, "type": "string" },
+          { "name": "id",                 "in": "path",   "required": true,  "type": "string" }
+        ],
+        "responses": {},
+        "security": [ { "sharedApigatewayTenantApiAuthorizer": [] } ],
+        "x-amazon-apigateway-integration": {
+          "type": "http_proxy",
+          "connectionId": "{{connection_id}}",
+          "httpMethod": "ANY",
+          "uri": "{{integration_uri}}/users/{id}",
+          "requestParameters": {
+            "integration.request.path.id":                   "method.request.path.id",
+            "integration.request.header.x-tenant-id":        "context.authorizer.tenantId",
+            "integration.request.header.x-tenant-tier":      "context.authorizer.tenantTier",
+            "integration.request.header.x-tenant-name":      "context.authorizer.tenantName",
+            "integration.request.header.x-tenant-user-role": "context.authorizer.userRole"
+          },
+          "connectionType": "VPC_LINK",
+          "passthroughBehavior": "when_no_match"
+        }
+      },
+      "delete": {
+        "parameters": [
+          { "name": "x-tenant-id",        "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-tier",      "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-name",      "in": "header", "required": false, "type": "string" },
+          { "name": "x-tenant-user-role", "in": "header", "required": false, "type": "string" },
+          { "name": "id",                 "in": "path",   "required": true,  "type": "string" }
+        ],
+        "responses": {},
+        "security": [ { "sharedApigatewayTenantApiAuthorizer": [] } ],
+        "x-amazon-apigateway-integration": {
+          "type": "http_proxy",
+          "connectionId": "{{connection_id}}",
+          "httpMethod": "ANY",
+          "uri": "{{integration_uri}}/users/{id}",
+          "requestParameters": {
+            "integration.request.path.id":                   "method.request.path.id",
+            "integration.request.header.x-tenant-id":        "context.authorizer.tenantId",
+            "integration.request.header.x-tenant-tier":      "context.authorizer.tenantTier",
+            "integration.request.header.x-tenant-name":      "context.authorizer.tenantName",
+            "integration.request.header.x-tenant-user-role": "context.authorizer.userRole"
+          },
+          "connectionType": "VPC_LINK",
+          "passthroughBehavior": "when_no_match"
+        }
+      },
+      "options": {
+        "consumes": [ "application/json" ],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "type": "string" }
+        ],
+        "responses": {
+          "204": {
+            "description": "204 response",
+            "headers": {
+              "Access-Control-Allow-Origin":  { "type": "string" },
+              "Access-Control-Allow-Methods": { "type": "string" },
+              "Access-Control-Allow-Headers": { "type": "string" }
+            }
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "type": "mock",
+          "responses": {
+            "default": {
+              "statusCode": "204",
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,PATCH,DELETE,OPTIONS,HEAD'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'",
+                "method.response.header.Access-Control-Allow-Origin":  "'*'"
+              }
+            }
+          },
+          "requestTemplates": { "application/json": "{ statusCode: 200 }" },
+          "passthroughBehavior": "when_no_match"
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "sharedApigatewayTenantApiAuthorizer": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header",
+      "x-amazon-apigateway-authtype": "custom",
+      "x-amazon-apigateway-authorizer": {
+        "type": "request",
+        "authorizerUri": "arn:aws:apigateway:{{region}}:lambda:path/2015-03-31/functions/arn:aws:lambda:{{region}}:{{account_id}}:function:{{authorizer_function}}/invocations",
+        "authorizerResultTtlInSeconds": 300,
+        "identitySource": "method.request.header.Authorization"
+      }
+    }
+  }
+}

@@ -1,8 +1,11 @@
+import * as path from 'path';
+import * as fs from 'fs';
 import { Arn, CfnOutput, Duration, Fn, Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as elb from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as apigw from 'aws-cdk-lib/aws-apigateway';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
@@ -19,6 +22,24 @@ export interface ApiStackProps extends StackProps {
   readonly hostedZoneId?: string;
 }
 
+/**
+ * API Gateway for the EKS SaaS reference.
+ *
+ * The API surface is **data-driven from `lib/tenant-api.json`** (Swagger 2.0).
+ * At CDK synth time this stack loads the Swagger document, substitutes
+ * placeholders (`{{region}}`, `{{authorizer_function}}`, etc.) with live
+ * values, and instantiates an `apigw.SpecRestApi`. Adding a new microservice
+ * route is therefore a pure data change — edit `lib/tenant-api.json`, rerun
+ * `cdk deploy`, no TypeScript modification needed.
+ *
+ * See `.kiro/specs/spec-driven-api-gateway/design.md` for the full rationale,
+ * the list of placeholder tokens, and the ECS-sister-reference parity matrix.
+ *
+ * The previous `RestApi` + `root.addProxy('{proxy+}')` + `proxy.addMethod`
+ * implementation has been removed. The `TenantAuthorizer` construct from the
+ * previous feature is unchanged and attached to every non-OPTIONS method via
+ * the Swagger `securityDefinitions.sharedApigatewayTenantApiAuthorizer` block.
+ */
 export class ApiStack extends Stack {
   readonly apiUrl: string;
 
@@ -68,6 +89,51 @@ export class ApiStack extends Stack {
       vpcLinkName: 'eks-saas-vpc-link',
     });
 
+    // Access log group. Format deliberately excludes the Authorization header
+    // and any JWT content (preserved from previous feature).
+    const accessLogGroup = new logs.LogGroup(this, 'ApiAccessLogs', {
+      retention: logs.RetentionDays.ONE_MONTH,
+    });
+
+    // Tenant Authorizer (unchanged from api-gateway-lambda-authorizer feature).
+    // The Swagger document references this Lambda by function name via the
+    // `{{authorizer_function}}` placeholder.
+    const tenantAuthorizer = new TenantAuthorizer(this, 'TenantAuthorizer', {
+      resultsCacheTtl: Duration.seconds(300),
+    });
+
+    // --- Swagger load + placeholder substitution -----------------------------
+    // Keep the placeholder set and substitution loop structurally identical to
+    // refer/saas-ecs/server/lib/shared-infra/api-gateway.ts so the sbt-boost
+    // steering can reason about both references with a single rule.
+    const swaggerFilePath = path.join(__dirname, 'tenant-api.json');
+    let swaggerBody = fs.readFileSync(swaggerFilePath, 'utf-8');
+
+    const replacements: { [key: string]: string } = {
+      '{{version}}':             '1.0.0',
+      '{{API_TITLE}}':           'EksTenantAPI',
+      '{{stage}}':               'prod',
+      '{{connection_id}}':       vpcLink.vpcLinkId,
+      '{{integration_uri}}':     `http://${nlb.loadBalancerDnsName}`,
+      // NOTE: `{{integration_target}}` was intentionally dropped. It is an
+      // ECS-sister-reference artifact used with VPC Link v2 for ALB targets.
+      // This project uses classic (v1) VPC Link + NLB, where API Gateway
+      // derives the integration target from `connectionId` alone; supplying
+      // `integrationTarget` causes
+      //   "ConnectionId <id> is not valid for IntegrationTarget"
+      // on import. See `lib/tenant-api.json` — no occurrence remains there.
+      '{{region}}':              Stack.of(this).region,
+      '{{account_id}}':          Stack.of(this).account,
+      '{{authorizer_function}}': tenantAuthorizer.lambdaFunction.functionName,
+    };
+    for (const [placeholder, replacement] of Object.entries(replacements)) {
+      // Escape regex special chars in the placeholder (all current tokens are
+      // of the form {{name}} which already has regex-meta chars, so escaping
+      // is essential).
+      const escaped = placeholder.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+      swaggerBody = swaggerBody.replace(new RegExp(escaped, 'g'), replacement);
+    }
+
     const domainNameProps = useCustomDomain
       ? ({
           domainName: `api.${props.customDomain!}`,
@@ -75,17 +141,14 @@ export class ApiStack extends Stack {
         } as apigw.DomainNameProps)
       : undefined;
 
-    // Access log group. Format deliberately excludes the Authorization header
-    // and any JWT content (Requirement 9.5).
-    const accessLogGroup = new logs.LogGroup(this, 'ApiAccessLogs', {
-      retention: logs.RetentionDays.ONE_MONTH,
-    });
-
-    const api = new apigw.RestApi(this, 'EKSSaaSAPI', {
+    const api = new apigw.SpecRestApi(this, 'EKSSaaSAPI', {
       restApiName: 'EKSSaaSAPI',
+      apiDefinition: apigw.ApiDefinition.fromInline(JSON.parse(swaggerBody)),
       endpointTypes: [apigw.EndpointType.REGIONAL],
       domainName: domainNameProps,
+      cloudWatchRole: true,
       deployOptions: {
+        stageName: 'prod',
         tracingEnabled: true,
         accessLogDestination: new apigw.LogGroupLogDestination(accessLogGroup),
         accessLogFormat: apigw.AccessLogFormat.custom(
@@ -102,61 +165,13 @@ export class ApiStack extends Stack {
           })
         ),
       },
-      defaultMethodOptions: {
-        // Keep NONE here so CORS preflight (OPTIONS) stays unauthenticated.
-        // The proxy ANY method below overrides this to CUSTOM.
-        authorizationType: apigw.AuthorizationType.NONE,
-      },
     });
 
-    // Tenant Authorizer: validates the Cognito JWT and exposes tenant claims
-    // as authorizer context consumed by the integration-request static
-    // overrides below. See .kiro/specs/api-gateway-lambda-authorizer/design.md.
-    const tenantAuthorizer = new TenantAuthorizer(this, 'TenantAuthorizer', {
-      resultsCacheTtl: Duration.seconds(300),
-    });
-
-    const proxy = api.root.addProxy({
-      anyMethod: false,
-    });
-
-    proxy.addMethod(
-      'ANY',
-      new apigw.Integration({
-        type: apigw.IntegrationType.HTTP_PROXY,
-        options: {
-          connectionType: apigw.ConnectionType.VPC_LINK,
-          vpcLink: vpcLink,
-          requestParameters: {
-            'integration.request.path.proxy': 'method.request.path.proxy',
-            // Static overrides — client-sent x-tenant-* headers are ignored;
-            // values are authoritatively sourced from the authorizer context.
-            // Intentionally NO mapping for `Authorization` so the original
-            // bearer token passes through to downstream (TVM consumes it).
-            'integration.request.header.x-tenant-id':
-              'context.authorizer.tenantId',
-            'integration.request.header.x-tenant-tier':
-              'context.authorizer.tenantTier',
-            'integration.request.header.x-tenant-name':
-              'context.authorizer.tenantName',
-            'integration.request.header.x-tenant-user-role':
-              'context.authorizer.userRole',
-          },
-        },
-        integrationHttpMethod: 'ANY',
-        uri: `http://${nlb.loadBalancerDnsName}/{proxy}`,
-      }),
-      {
-        requestParameters: {
-          'method.request.path.proxy': true,
-        },
-        authorizer: tenantAuthorizer.authorizer,
-        authorizationType: apigw.AuthorizationType.CUSTOM,
-      }
-    );
-    proxy.addCorsPreflight({
-      allowOrigins: apigw.Cors.ALL_ORIGINS,
-      allowMethods: apigw.Cors.ALL_METHODS,
+    // SpecRestApi does not automatically grant lambda:InvokeFunction on the
+    // authorizer. Port the explicit permission the ECS reference adds.
+    tenantAuthorizer.lambdaFunction.addPermission('ApiGatewayInvoke', {
+      principal: new iam.ServicePrincipal('apigateway.amazonaws.com'),
+      sourceArn: `arn:aws:execute-api:${Stack.of(this).region}:${Stack.of(this).account}:${api.restApiId}/authorizers/*`,
     });
 
     if (useCustomDomain) {

@@ -16,7 +16,8 @@
 
 aws codebuild start-build --project-name TenantDeletionProject \
   --environment-variables-override \
-  name=TENANT_ID,value=$tenantId,type=PLAINTEXT
+  name=TENANT_ID,value=$tenantId,type=PLAINTEXT \
+  name=PLAN,value=$tier,type=PLAINTEXT
 
 STACK_NAME="TenantStack-$tenantId"
 
