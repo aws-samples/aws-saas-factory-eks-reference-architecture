@@ -1,0 +1,20 @@
+# =========================================================================
+# Product Service Kustomization — overlays/dynamodb
+# =========================================================================
+# DynamoDB backend overlay. The env-dynamodb.yaml strategic-merge patch
+# installs the canonical DynamoDB env-var set onto the base Deployment's
+# product container. No SharedDbStack output lookups required on this path.
+#
+# Canonical env-var set (Requirement 6.3, 7.3):
+#   TABLE_NAME
+#   AWS_REGION
+#   TENANT_TIER
+#   IAM_ROLE_ARN
+#   REQUEST_TAG_KEYS_MAPPING_ATTRIBUTES
+# (AWS_REGION and TENANT_TIER overlap with the postgresql overlay by
+#  design — they are not DB-specific.)
+# =========================================================================
+resources:
+  - ../../base
+patchesStrategicMerge:
+  - env-dynamodb.yaml

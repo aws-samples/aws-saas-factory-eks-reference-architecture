@@ -1,0 +1,34 @@
+# =========================================================================
+# Strategic-merge patch: DynamoDB env-var set for the product container
+# =========================================================================
+# Requirement 6.3 / 7.3 — canonical env-var set on the dynamodb path:
+#   TABLE_NAME, AWS_REGION, TENANT_TIER, IAM_ROLE_ARN,
+#   REQUEST_TAG_KEYS_MAPPING_ATTRIBUTES
+#
+# MUST NOT include IAM_ARN, PROXY_ENDPOINT, CLUSTER_ENDPOINT_RESOURCE,
+# or TENANT_NAME (those are postgresql-only).
+#
+# The KUSTOMIZE_* placeholders are substituted by the
+# ProductService / ProductServiceTenantDeploy CodeBuild projects via
+# `sed -i` before `kubectl apply -k`.
+# =========================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product
+spec:
+  template:
+    spec:
+      containers:
+        - name: product
+          env:
+            - name: TABLE_NAME
+              value: "Product"
+            - name: AWS_REGION
+              value: "KUSTOMIZE_AWS_REGION"
+            - name: TENANT_TIER
+              value: "KUSTOMIZE_TENANT_TIER"
+            - name: IAM_ROLE_ARN
+              value: "KUSTOMIZE_IAM_ROLE_ARN"
+            - name: REQUEST_TAG_KEYS_MAPPING_ATTRIBUTES
+              value: 'KUSTOMIZE_TAG_KEYS_MAPPING'

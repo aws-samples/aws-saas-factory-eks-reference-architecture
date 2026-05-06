@@ -84,6 +84,14 @@ export class TenantOnboarding extends Construct {
         APP_SITE_HOSTED_ZONE: {
           value: props.appSiteHostedZoneId ?? '',
         },
+        // Req 2.5: the per-tenant `cdk deploy TenantStack-$TENANT_ID` call
+        // synthesises inside this CodeBuild run, so it must see the same
+        // `process.env.CDK_USE_DB` the top-level synth saw — otherwise the
+        // per-tenant Schema_Provisioner_Lambda CustomResource branch would
+        // evaluate inconsistently with the core stack's Shared_Db_Stack.
+        CDK_USE_DB: {
+          value: process.env.CDK_USE_DB ?? 'dynamodb',
+        },
       },
       buildSpec: codebuild.BuildSpec.fromObject({
         version: '0.2',
@@ -140,6 +148,14 @@ export class TenantOnboarding extends Construct {
         },
         EKS_CLUSTER_NAME: {
           value: props.eksClusterName,
+        },
+        // Req 2.6: the per-tenant `cdk destroy TenantStack-$TENANT_ID` call
+        // synthesises inside this CodeBuild run, so it must see the same
+        // `process.env.CDK_USE_DB` that the original onboarding synth saw
+        // in order to reconstruct the same resource graph it is tearing
+        // down (mirrors Req 2.5 on the deletion side).
+        CDK_USE_DB: {
+          value: process.env.CDK_USE_DB ?? 'dynamodb',
         },
       },
       buildSpec: codebuild.BuildSpec.fromObject({

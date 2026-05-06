@@ -19,5 +19,14 @@
     "strictPropertyInitialization": false,
     "typeRoots": ["./node_modules/@types"]
   },
-  "exclude": ["clients", "node_modules", "cdk.out"]
+  "include": ["bin/**/*.ts", "lib/**/*.ts", "test/**/*.ts"],
+  "exclude": [
+    "clients",
+    "node_modules",
+    "cdk.out",
+    "refer",
+    "services",
+    "lib/lambda",
+    "aws"
+  ]
 }

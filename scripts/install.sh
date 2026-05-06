@@ -12,6 +12,25 @@ if [[ -z "$CDK_PARAM_SYSTEM_ADMIN_EMAIL" ]]; then
   exit 1
 fi
 
+# ---- DB type selection for the Product microservice ----------------------
+# Prompts the operator once, at install time, for the Product backend. The
+# selection is persisted to /tmp/db_type.env (the DB_Type_File) and threaded
+# into the rest of the install via $CDK_USE_DB. MySQL is intentionally not
+# offered (phase 1 supports DynamoDB and PostgreSQL only).
+# See .kiro/specs/product-db-selection/requirements.md §1 and design.md §2.
+select_db_type() {
+  echo "Select the database type for the Product microservice:"
+  echo "  1) DynamoDB"
+  echo "  2) PostgreSQL"
+  read -p "Enter [1 or 2, default 1]: " choice
+  case "$choice" in
+    2) DB_TYPE=postgresql ;;
+    *) DB_TYPE=dynamodb ;;
+  esac
+  echo "export DB_TYPE=$DB_TYPE" > /tmp/db_type.env
+  echo "Selected DB_TYPE: $DB_TYPE"
+}
+
 if [[ -z "$CLOUD_9_INSTALL" ]]; then
   echo "Setting region..."
   REGION=$(aws configure get region)
@@ -34,6 +53,48 @@ fi
 # fi
 # git push cc "$(git branch --show-current)":main -f --no-verify
 # export CDK_PARAM_COMMIT_ID=$(git log --format="%H" -n 1)
+
+# ---- Invoke DB selection prompt before any npm/cdk/AWS work --------------
+# Requirement 1.7: prompt must run BEFORE npm install / cdk bootstrap /
+# cdk deploy so a mis-selection aborts with zero AWS side effects.
+# Requirement 1.8: re-invocations always re-prompt — the function is called
+# unconditionally, regardless of whether /tmp/db_type.env already exists.
+select_db_type
+source /tmp/db_type.env
+export CDK_USE_DB="$DB_TYPE"
+
+# ---- One-way-door guard (Requirement 8.1, 8.2) ---------------------------
+# If a prior successful install wrote /eks-saas-ref/cdk-use-db to SSM and
+# the operator selected a different DB type this run, abort before any
+# CDK work. First install (parameter absent) is silent.
+EXISTING=$(aws ssm get-parameter --name /eks-saas-ref/cdk-use-db --query 'Parameter.Value' --output text 2>/dev/null || true)
+if [ -n "$EXISTING" ] && [ "$EXISTING" != "$CDK_USE_DB" ]; then
+  cat <<'EOF' >&2
+ERROR: Product-microservice DB type switch detected.
+
+  This EKS SaaS reference install was previously deployed with a different
+  CDK_USE_DB value than the one just selected. The current deployment
+  records its DB type in SSM at:
+
+      /eks-saas-ref/cdk-use-db
+
+  The parameter is written by the Services stack on first successful
+  deploy and owned by its lifecycle. Switching the Product backend
+  (DynamoDB <-> PostgreSQL) after install is a one-way door: there is
+  no data migration path, and Aurora / RDS-Proxy resources only exist
+  under the PostgreSQL branch.
+
+  To switch DB types, run:
+
+      scripts/cleanup.sh
+
+  first (this destroys every stack, including the SSM parameter), then
+  re-run scripts/install.sh and select the new DB type from the prompt.
+
+  Aborting before any CDK or npm work so no AWS side effects occur.
+EOF
+  exit 1
+fi
 
 npm install
 

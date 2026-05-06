@@ -1,4 +1,4 @@
-import { Arn, CfnOutput, CfnParameter, RemovalPolicy, Stack, StackProps } from 'aws-cdk-lib';
+import { Arn, CfnOutput, CfnParameter, CustomResource, Fn, RemovalPolicy, Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as cr from 'aws-cdk-lib/custom-resources';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
@@ -157,6 +157,19 @@ export class TenantOnboardingStack extends Stack {
     // Order table: per-tenant for Standard/Premium, shared for Basic
     // =========================================================================
     const isBasicTier = props.plan.toLowerCase() === 'basic';
+
+    // =========================================================================
+    // PostgreSQL eligibility gate (Requirement 5.1, 5.2, 5.3, 14.1, 14.2)
+    // =========================================================================
+    // `CDK_USE_DB` is threaded through the TenantOnboardingProject /
+    // TenantDeletionProject CodeBuild environment (see
+    // lib/constructs/tenant-onboarding.ts) so the value that was selected
+    // at install time is observable here. Basic tier stays on DynamoDB +
+    // ABAC regardless of CDK_USE_DB (Q1 / Requirement 14.1) — only
+    // Standard / Premium tenants get the per-tenant schema + IAM-auth
+    // database user under the shared Aurora cluster.
+    const useDb = (process.env.CDK_USE_DB ?? 'dynamodb').toLowerCase();
+    const pgEligible = useDb === 'postgresql' && !isBasicTier;
 
     // Standard/Premium: per-tenant order table
     // Basic: uses shared "Order" table with leading key isolation (ABAC)
@@ -473,6 +486,96 @@ export class TenantOnboardingStack extends Stack {
     );
 
     tenantServiceAccount.node.addDependency(ns);
+
+    // =========================================================================
+    // PostgreSQL per-tenant schema + IAM user (Standard/Premium only)
+    // =========================================================================
+    // When `CDK_USE_DB=postgresql` at synth time AND the tenant is not Basic,
+    // invoke the SharedDbStack's Schema_Provisioner_Lambda via a CFN
+    // CustomResource so the tenant's database, role, and Proxy Auth are in
+    // place before the Product Pod rolls out. Basic tier keeps its existing
+    // DynamoDB + ABAC path untouched (Q1 confirmed).
+    //
+    // `pgEligible` is already computed above alongside `useDb`.
+    // =========================================================================
+    if (pgEligible) {
+      // Grant IRSA role permission to AssumeRole into the shared STSRole.
+      // The session policy issued at runtime in product_postgresql narrows
+      // the effective permission to the tenant's own user_<tenantName>
+      // dbuser resource.
+      tenantServiceAccount.addToPrincipalPolicy(
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['sts:AssumeRole'],
+          resources: [Fn.importValue('STSRoleArn')],
+        })
+      );
+
+      // Fire the Schema_Provisioner_Lambda. On Create → create schema,
+      // role, per-tenant proxy auth. On Delete → the reverse. Idempotent
+      // on both sides (handler swallows duplicate / missing errors).
+      const tenantSchema = new CustomResource(this, 'TenantSchema', {
+        serviceToken: Fn.importValue('SchemeLambdaArn'),
+        properties: {
+          tenantName: companyName.valueAsString,
+        },
+      });
+
+      // Ensure the IRSA role is ready before the schema custom resource
+      // runs. For delete, the implicit reverse order (child deletes first)
+      // gives us schema-then-IRSA teardown, which is what we want so the
+      // DELETE step can still emit `sts:AssumeRole` tokens if needed.
+      tenantSchema.node.addDependency(tenantServiceAccount);
+    }
+
+    // =========================================================================
+    // PostgreSQL tenant-schema onboarding (Requirement 5.1, 5.4, 5.5, 5.8, 5.9)
+    // =========================================================================
+    // When `pgEligible` (CDK_USE_DB=postgresql AND not Basic tier), onboard
+    // the tenant to the shared Aurora cluster created by SharedDbStack:
+    //   - Grant the per-tenant IRSA role `sts:AssumeRole` on the shared
+    //     `SharedDb-TenantSessionRoleArn` (narrowed further at runtime by
+    //     an inline session policy to `user_<tenantName>` only).
+    //   - Invoke the Schema_Provisioner_Lambda CustomResource with the
+    //     tenant's company name to CREATE SCHEMA / CREATE USER / GRANT /
+    //     CREATE TABLE (idempotent DDL block).
+    //   - Order the Lambda invocation to run after the IRSA role exists
+    //     so it is present before the Pod that will assume it; on delete,
+    //     the schema is torn down before the IRSA role disappears.
+    //
+    // When `pgEligible === false` (Basic tier OR DynamoDB mode), NOTHING
+    // below is added. The stack behaves exactly as it did before this
+    // feature (Requirement 5.2, 5.3, 12.7, 14.1, 14.2).
+    if (pgEligible) {
+      const tenantSessionRoleArn = Fn.importValue('SharedDb-TenantSessionRoleArn');
+      const schemaProvisionerArn = Fn.importValue('SharedDb-SchemaProvisionerArn');
+
+      // 4.2 — IRSA role assumes the shared session role; session policy
+      // at call time narrows `rds-db:connect` to `user_<tenantName>`.
+      tenantServiceAccount.addToPrincipalPolicy(
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['sts:AssumeRole'],
+          resources: [tenantSessionRoleArn],
+        })
+      );
+
+      // 4.3 — Schema_Provisioner_Lambda CustomResource. `tenantName` is
+      // the CompanyName parameter (human-readable tenant identifier used
+      // for the PG identifier — see handler's TENANT_NAME_RE validation).
+      const tenantSchema = new CustomResource(this, 'TenantSchema', {
+        serviceToken: schemaProvisionerArn,
+        properties: {
+          tenantName: companyName.valueAsString,
+          plan: props.plan,
+        },
+      });
+
+      // 4.4 — Make the IRSA role exist before the schema-provisioner runs
+      // and disappear after the schema has been dropped on delete. This
+      // also keeps the delete path atomic (Requirement 5.9).
+      tenantSchema.node.addDependency(tenantServiceAccount);
+    }
   }
 
   private createKubernetesResources(cluster: eks.ICluster, tenantId: string, plan: string) {

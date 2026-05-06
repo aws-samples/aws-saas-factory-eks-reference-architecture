@@ -8,6 +8,7 @@ import { CommonResourcesStack } from '../lib/common-resources-stack';
 import { ApiStack } from '../lib/api-stack';
 import { ControlPlaneStack } from '../lib/control-plane-stack';
 import { AppPlaneStack } from '../lib/app-plane-stack';
+import { SharedDbStack } from '../lib/shared-db-stack';
 
 const env = {
   account: process.env.AWS_ACCOUNT,
@@ -84,6 +85,18 @@ const commonResource = new CommonResourcesStack(app, 'CommonResources', {
   env,
 });
 
+// SharedDbStack is synthesised ONLY when CDK_USE_DB=postgresql. On the
+// default DynamoDB path no Aurora / RDS Proxy / schema-provisioner Lambda
+// resources appear in the synth output at all (Req 4.1).
+const useDb = (process.env.CDK_USE_DB ?? 'dynamodb').toLowerCase();
+let sharedDbStack: SharedDbStack | undefined;
+if (useDb === 'postgresql') {
+  sharedDbStack = new SharedDbStack(app, 'SharedDb', {
+    env,
+    vpc: clusterStack.vpc,
+  });
+}
+
 const svcStack = new ServicesStack(app, 'Services', {
   env,
   internalNLBApiDomain: clusterStack.nlbDomain,
@@ -96,3 +109,11 @@ const svcStack = new ServicesStack(app, 'Services', {
   appHostedZoneId: hostedZoneId,
   customDomain: customDomain,
 });
+
+// Ensure SharedDbStack deploys before any tenant onboarding CodeBuild
+// project runs — otherwise the per-tenant `cdk deploy TenantStack-*`
+// call would fail to resolve the `SharedDb-*` Fn::ImportValue lookups
+// (Req 4.2, 5.8).
+if (sharedDbStack) {
+  svcStack.addDependency(sharedDbStack);
+}

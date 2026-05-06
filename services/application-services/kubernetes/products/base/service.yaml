@@ -33,17 +33,10 @@ spec:
           ports:
             - containerPort: 3010
               name: "http"
-          env:
-            - name: TABLE_NAME
-              value: "Product"
-            - name: AWS_REGION
-              value: "KUSTOMIZE_AWS_REGION"
-            - name: TENANT_TIER
-              value: "KUSTOMIZE_TENANT_TIER"
-            - name: IAM_ROLE_ARN
-              value: "KUSTOMIZE_IAM_ROLE_ARN"
-            - name: REQUEST_TAG_KEYS_MAPPING_ATTRIBUTES
-              value: 'KUSTOMIZE_TAG_KEYS_MAPPING'
+          # env: list is owned by the overlay (overlays/dynamodb/env-dynamodb.yaml
+          # or overlays/postgresql/env-postgresql.yaml) and merged in via
+          # patchesStrategicMerge. Keeping it absent here avoids doubly-defined
+          # env var names across base + overlay merges.
           resources:
             requests:
               cpu: 100m

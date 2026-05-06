@@ -8,6 +8,8 @@ node_modules
 # CDK asset staging directory
 .cdk.staging
 cdk.out
+cdk.out.dynamodb
+cdk.out.postgresql
 .idea/aws-saas-factory-eks-reference-architecture.iml
 .idea/modules.xml
 .idea/runConfigurations.xml
@@ -21,6 +23,8 @@ refer/
 .kiro/
 aws/
 awscliv2.zip
+# Session scratch — temporary Lambda stubs, test zips, etc.
+.tmp/
 # Session scratch / notes — any markdown file whose name begins with `_`
 _*.md
 # CDK/CodeBuild deploy logs captured during interactive runs
@@ -29,3 +33,10 @@ _*.md
 # Keep out of source control; regenerate per-session as needed.
 scripts/delete-tenant-once.sh
 scripts/inspect-tenants.sh
+# Session-managed debug harnesses under scripts/test/ — regenerate per-session.
+scripts/test/
+
+# Build-time Product microservice staging dir (populated by CodeBuild pre_build
+# from product_dynamodb/ or product_postgresql/). Ignore contents, keep dir.
+services/application-services/application/microservices/product/*
+!services/application-services/application/microservices/product/.gitkeep

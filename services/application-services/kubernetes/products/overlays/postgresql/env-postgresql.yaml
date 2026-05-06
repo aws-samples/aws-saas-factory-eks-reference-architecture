@@ -1,0 +1,48 @@
+# =========================================================================
+# Strategic-merge patch: PostgreSQL env-var set for the product container
+# =========================================================================
+# Requirement 6.1 / 6.2 / 6.4 / 7.4 — canonical env-var set on the
+# postgresql path:
+#   IAM_ARN, PROXY_ENDPOINT, CLUSTER_ENDPOINT_RESOURCE, TENANT_NAME,
+#   AWS_REGION, TENANT_TIER
+#
+# MUST NOT include TABLE_NAME (that's dynamodb-only).
+#
+# Placeholder substitution source:
+#   KUSTOMIZE_SHARED_DB_SESSION_ROLE_ARN
+#     <- describe-stacks SharedDb output SharedDb-TenantSessionRoleArn
+#        (Phase 5.6 — ProductService + ProductServiceTenantDeploy pre_build)
+#   KUSTOMIZE_SHARED_DB_PROXY_ENDPOINT
+#     <- describe-stacks SharedDb output SharedDb-ProxyEndpoint
+#   KUSTOMIZE_SHARED_DB_CLUSTER_ENDPOINT_RESOURCE
+#     <- derived at build time as
+#        arn:aws:rds-db:${AWS_REGION}:${AWS_ACCOUNT}:dbuser:${PROXY_NAME}/
+#        (trailing slash — runtime appends user_<tenantName>)
+#   KUSTOMIZE_TENANT_NAME
+#     <- per-tenant Tenant DynamoDB row's COMPANY_NAME
+#        (Phase 5.7 — ProductServiceTenantDeploy pre_build only)
+#   KUSTOMIZE_AWS_REGION, KUSTOMIZE_TENANT_TIER
+#     <- already substituted by existing buildspec sed blocks
+# =========================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product
+spec:
+  template:
+    spec:
+      containers:
+        - name: product
+          env:
+            - name: IAM_ARN
+              value: "KUSTOMIZE_SHARED_DB_SESSION_ROLE_ARN"
+            - name: PROXY_ENDPOINT
+              value: "KUSTOMIZE_SHARED_DB_PROXY_ENDPOINT"
+            - name: CLUSTER_ENDPOINT_RESOURCE
+              value: "KUSTOMIZE_SHARED_DB_CLUSTER_ENDPOINT_RESOURCE"
+            - name: TENANT_NAME
+              value: "KUSTOMIZE_TENANT_NAME"
+            - name: AWS_REGION
+              value: "KUSTOMIZE_AWS_REGION"
+            - name: TENANT_TIER
+              value: "KUSTOMIZE_TENANT_TIER"

@@ -1,0 +1,30 @@
+# =========================================================================
+# Product Service Kustomization — base
+# =========================================================================
+# Backend-agnostic manifests (Deployment shell + Service + VirtualService +
+# ServiceAccount JSON6902 patch). The `env:` list on the product container
+# is intentionally absent here — it's owned by the overlay layer
+# (overlays/dynamodb or overlays/postgresql) and merged in via
+# patchesStrategicMerge.
+#
+# The ServiceAccount patch stays under `patchesJson6902` (not
+# patchesStrategicMerge) because the underlying svc-acc-patch-template.yaml
+# is a JSON-pointer `op: replace` patch, not a strategic merge. This
+# preserves the byte-exact behaviour of the pre-Phase-5 top-level
+# kustomization.yaml.
+# =========================================================================
+commonLabels:
+  saas/tenant: "true"
+  saas/service: product
+resources:
+  - service.yaml
+patchesJson6902:
+  # Deployment ServiceAccount patch
+  - path: patches/svc-acc-patch.yaml
+    target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: product
+images:
+  - name: KUSTOMIZE_IMAGE

@@ -1,6 +1,7 @@
 import { CfnOutput, Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as ssm from 'aws-cdk-lib/aws-ssm';
 import * as path from 'path';
 import * as fs from 'fs';
 import { ApplicationService } from './constructs/application-service';
@@ -100,6 +101,10 @@ export class ServicesStack extends Stack {
         serviceUrlPrefix: service.serviceUrlPrefix,
         assetDirectory: service.assetDirectory,
         dockerfileName: service.dockerfileName,
+        // Req 2.4: only ProductService receives CDK_USE_DB + the per-backend
+        // pre_build `cp -r` step. OrderService / UserService keep their
+        // existing buildspec byte-identical (their backends are fixed).
+        productDbSwitching: service.name === 'ProductService',
       });
     });
 
@@ -118,6 +123,20 @@ export class ServicesStack extends Stack {
       appSiteHostedZoneId: props.appHostedZoneId,
       appSiteCustomDomain: props.customDomain ? `app.${props.customDomain!}` : undefined,
       assetDirectory: path.join(__dirname, '..', 'services', 'tenant-onboarding'),
+    });
+
+    // Req 8.3 — one-way-door guard for scripts/install.sh. The script
+    // reads this SSM parameter on subsequent runs and aborts if the
+    // operator selects a DB_TYPE different from what was recorded here.
+    // Owned by the Services stack so `cdk destroy` / scripts/cleanup.sh
+    // removes it automatically and the next install re-prompts without
+    // short-circuiting on a stale value.
+    new ssm.StringParameter(this, 'CdkUseDbParam', {
+      parameterName: '/eks-saas-ref/cdk-use-db',
+      stringValue: process.env.CDK_USE_DB ?? 'dynamodb',
+      description:
+        'One-way-door guard for install.sh — written by Services stack on first '
+        + 'deploy; cleanup.sh removes it so next install re-prompts.',
     });
   }
 }

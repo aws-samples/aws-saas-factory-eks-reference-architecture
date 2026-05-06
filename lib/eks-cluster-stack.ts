@@ -23,6 +23,11 @@ export class EKSClusterStack extends Stack {
   readonly vpc: ec2.Vpc;
   readonly openIdConnectProviderArn: string;
   readonly nlbDomain: string;
+  // Surfaced for the optional SharedDbStack (synthesised only when
+  // CDK_USE_DB=postgresql) so the Aurora cluster's security group can
+  // allow 5432 ingress from the EKS worker nodes. The SG's own ingress/
+  // egress rules are unchanged by this field — we only surface the ID.
+  public readonly nodeSecurityGroupId: string;
 
   constructor(scope: Construct, id: string, props: EKSClusterStackProps) {
     super(scope, id, props);
@@ -52,6 +57,7 @@ export class EKSClusterStack extends Stack {
       description:
         'EKS SaaS node group security group with recommended traffic rules + NLB target group health check access',
     });
+    this.nodeSecurityGroupId = nodeSecurityGroup.securityGroupId;
 
     ctrlPlaneSecurityGroup.addIngressRule(nodeSecurityGroup, ec2.Port.tcp(443));
     ctrlPlaneSecurityGroup.addEgressRule(nodeSecurityGroup, ec2.Port.tcp(443)); // needed for istiod webhook
