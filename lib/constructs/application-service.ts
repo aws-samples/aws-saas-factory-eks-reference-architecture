@@ -88,11 +88,17 @@ export class ApplicationService extends Construct {
     // `sed`-substitutes into `service.yaml` and `kubectl apply -k` the
     // service dir directly. This path is byte-identical to the
     // pre-Phase-5 buildspec.
-    const productInitialPostBuildLoop = [
+    // Wrap the whole loop in `bash -euo pipefail -c` so CodeBuild receives
+    // it as a single argv element. Without this wrapper, CodeBuild's
+    // command-string boundary can mangle embedded newlines (the `do\n ...`
+    // lines have been observed collapsing into `do && \TENANT_DATA=...`
+    // on some runners). `-e` aborts on first error — replaces the
+    // chain-of-`&&` pattern this file used to rely on.
+    const productLoopBody = [
       // Loop over every tenant namespace; TENANT_DATA / TENANT_PLAN /
       // ABAC_ROLE / USER_POOL_ID / ORDER_TABLE / TAG_KEYS_MAPPING are
       // resolved exactly once per tenant.
-      'for res in `kubectl get ns -l saas/tenant=true -o jsonpath=\'{.items[*].metadata.name}\'`; do',
+      'for res in $(kubectl get ns -l saas/tenant=true -o jsonpath=\'{.items[*].metadata.name}\'); do',
       '  TENANT_DATA=$(aws dynamodb get-item --table-name Tenant --key \'{"TENANT_ID":{"S":"\'$res\'"}}\' --output json --region $AWS_REGION 2>/dev/null)',
       '  TENANT_PLAN=$(echo $TENANT_DATA | python3 -c "import sys,json; print(json.load(sys.stdin).get(\'Item\',{}).get(\'PLAN\',{}).get(\'S\',\'standard\'))" 2>/dev/null || echo "standard")',
       '  ABAC_ROLE=$(echo $TENANT_DATA | python3 -c "import sys,json; print(json.load(sys.stdin).get(\'Item\',{}).get(\'ABAC_ROLE_ARN\',{}).get(\'S\',\'\'))" 2>/dev/null || echo "")',
@@ -100,39 +106,33 @@ export class ApplicationService extends Construct {
       '  TENANT_NAME=$(echo $TENANT_DATA | python3 -c "import sys,json; print(json.load(sys.stdin).get(\'Item\',{}).get(\'COMPANY_NAME\',{}).get(\'S\',\'\'))" 2>/dev/null || echo "")',
       '  if [ "$TENANT_PLAN" = "basic" ]; then ORDER_TABLE="Order"; else ORDER_TABLE="Order-$res"; fi',
       '  TAG_KEYS_MAPPING=\'{"tenant":"custom:tenant-id"}\'',
-      // Save + restore original files around sed so the loop is idempotent
-      // across tenants (each iteration starts from the committed contents).
+      // Per-tenant overlay decision (Req Q1): Basic tenants ALWAYS use
+      // DynamoDB overlay — even when `CDK_USE_DB=postgresql` at stack
+      // level — because Basic keeps the shared-`Product` DynamoDB table
+      // with ABAC isolation (see requirements.md §5.2, 14.2).
+      // Only Standard/Premium honour `CDK_USE_DB`.
+      '  if [ "$TENANT_PLAN" = "basic" ]; then',
+      '    TENANT_DB=dynamodb',
+      '  else',
+      '    TENANT_DB=$CDK_USE_DB',
+      '  fi',
       '  cp kubernetes/products/base/service.yaml kubernetes/products/base/service.yaml.orig',
       '  cp kubernetes/products/base/patches/svc-acc-patch-template.yaml kubernetes/products/base/patches/svc-acc-patch.yaml',
       '  echo "  value: $res-service-account" >> kubernetes/products/base/patches/svc-acc-patch.yaml',
-      // Placeholders that live on BOTH overlays (common in base/service.yaml):
-      //   KUSTOMIZE_IMAGE is set by the `newName` / `newTag` append below.
-      //   KUSTOMIZE_SVC_ACCOUNT_NAME is set by the JSON6902 patch file we just wrote.
-      //   KUSTOMIZE_TENANT_ID is the VirtualService route header.
       '  sed -i "s|KUSTOMIZE_TENANT_ID|$res|g" kubernetes/products/base/service.yaml',
-      // Placeholders that live on the selected OVERLAY. The `if/then/else/fi`
-      // block MUST be one shell command (one array element) because the
-      // outer `.join(' && \\\n              ')` would otherwise insert
-      // `&&` between `then` / `else` / `fi` keywords and produce a
-      // bash syntax error before any sed runs.
-      '  OVERLAY=kubernetes/products/overlays/$CDK_USE_DB',
-      '  cp $OVERLAY/env-$CDK_USE_DB.yaml $OVERLAY/env-$CDK_USE_DB.yaml.orig',
-      '  sed -i "s|KUSTOMIZE_AWS_REGION|$AWS_REGION|g" $OVERLAY/env-$CDK_USE_DB.yaml',
-      '  sed -i "s|KUSTOMIZE_TENANT_TIER|$TENANT_PLAN|g" $OVERLAY/env-$CDK_USE_DB.yaml',
-      [
-        '  if [ "$CDK_USE_DB" = "dynamodb" ]; then',
-        '    sed -i "s|KUSTOMIZE_IAM_ROLE_ARN|$ABAC_ROLE|g" $OVERLAY/env-dynamodb.yaml',
-        '    sed -i "s|KUSTOMIZE_TAG_KEYS_MAPPING|$TAG_KEYS_MAPPING|g" $OVERLAY/env-dynamodb.yaml',
-        '  else',
-        '    sed -i "s|KUSTOMIZE_SHARED_DB_SESSION_ROLE_ARN|$SHARED_DB_SESSION_ROLE_ARN|g" $OVERLAY/env-postgresql.yaml',
-        '    sed -i "s|KUSTOMIZE_SHARED_DB_PROXY_ENDPOINT|$SHARED_DB_PROXY_ENDPOINT|g" $OVERLAY/env-postgresql.yaml',
-        '    sed -i "s|KUSTOMIZE_SHARED_DB_CLUSTER_ENDPOINT_RESOURCE|$SHARED_DB_CLUSTER_ENDPOINT_RESOURCE|g" $OVERLAY/env-postgresql.yaml',
-        '    sed -i "s|KUSTOMIZE_TENANT_NAME|$TENANT_NAME|g" $OVERLAY/env-postgresql.yaml',
-        '  fi',
-      ].join('\n'),
-      // Set the image via the overlay's kustomization.yaml (Kustomize v4 `images:` replacement).
-      // Note: we append to the OVERLAY's kustomization.yaml (not base) so
-      // per-tenant image replacements stay out of the committed base.
+      '  OVERLAY=kubernetes/products/overlays/$TENANT_DB',
+      '  cp $OVERLAY/env-$TENANT_DB.yaml $OVERLAY/env-$TENANT_DB.yaml.orig',
+      '  sed -i "s|KUSTOMIZE_AWS_REGION|$AWS_REGION|g" $OVERLAY/env-$TENANT_DB.yaml',
+      '  sed -i "s|KUSTOMIZE_TENANT_TIER|$TENANT_PLAN|g" $OVERLAY/env-$TENANT_DB.yaml',
+      '  if [ "$TENANT_DB" = "dynamodb" ]; then',
+      '    sed -i "s|KUSTOMIZE_IAM_ROLE_ARN|$ABAC_ROLE|g" $OVERLAY/env-dynamodb.yaml',
+      '    sed -i "s|KUSTOMIZE_TAG_KEYS_MAPPING|$TAG_KEYS_MAPPING|g" $OVERLAY/env-dynamodb.yaml',
+      '  else',
+      '    sed -i "s|KUSTOMIZE_SHARED_DB_SESSION_ROLE_ARN|$SHARED_DB_SESSION_ROLE_ARN|g" $OVERLAY/env-postgresql.yaml',
+      '    sed -i "s|KUSTOMIZE_SHARED_DB_PROXY_ENDPOINT|$SHARED_DB_PROXY_ENDPOINT|g" $OVERLAY/env-postgresql.yaml',
+      '    sed -i "s|KUSTOMIZE_SHARED_DB_CLUSTER_ENDPOINT_RESOURCE|$SHARED_DB_CLUSTER_ENDPOINT_RESOURCE|g" $OVERLAY/env-postgresql.yaml',
+      '    sed -i "s|KUSTOMIZE_TENANT_NAME|$TENANT_NAME|g" $OVERLAY/env-postgresql.yaml',
+      '  fi',
       '  echo "images:" >> $OVERLAY/kustomization.yaml.tenant',
       '  echo "- name: KUSTOMIZE_IMAGE" >> $OVERLAY/kustomization.yaml.tenant',
       '  echo "  newName: $ECR_REPO_URI" >> $OVERLAY/kustomization.yaml.tenant',
@@ -140,15 +140,15 @@ export class ApplicationService extends Construct {
       '  cp $OVERLAY/kustomization.yaml $OVERLAY/kustomization.yaml.orig',
       '  cat $OVERLAY/kustomization.yaml.tenant >> $OVERLAY/kustomization.yaml',
       '  rm $OVERLAY/kustomization.yaml.tenant',
-      // Phase 5.8 — apply the selected overlay.
       '  kubectl apply -k $OVERLAY -n $res',
-      // Restore originals so the next tenant iteration (or a re-run) sees pristine files.
       '  mv kubernetes/products/base/service.yaml.orig kubernetes/products/base/service.yaml',
       '  rm kubernetes/products/base/patches/svc-acc-patch.yaml',
-      '  mv $OVERLAY/env-$CDK_USE_DB.yaml.orig $OVERLAY/env-$CDK_USE_DB.yaml',
+      '  mv $OVERLAY/env-$TENANT_DB.yaml.orig $OVERLAY/env-$TENANT_DB.yaml',
       '  mv $OVERLAY/kustomization.yaml.orig $OVERLAY/kustomization.yaml',
       'done',
-    ].join(' && \\\n              ');
+    ].join('\n');
+
+    const productInitialPostBuildLoop = `bash -euo pipefail -c ${JSON.stringify(productLoopBody)}`;
 
     // Phase 5.6 — resolve SharedDbStack exports once per CodeBuild run on
     // the postgresql branch. Runs in pre_build so the values are already
@@ -162,9 +162,12 @@ export class ApplicationService extends Construct {
             'if [ "$CDK_USE_DB" = "postgresql" ]; then',
             '  SHARED_DB_SESSION_ROLE_ARN=$(aws cloudformation describe-stacks --stack-name SharedDb --query "Stacks[0].Outputs[?OutputKey==\'STSRoleArn\'].OutputValue" --output text --region $AWS_REGION)',
             '  SHARED_DB_PROXY_ENDPOINT=$(aws cloudformation describe-stacks --stack-name SharedDb --query "Stacks[0].Outputs[?OutputKey==\'RdsProxyEndpoint\'].OutputValue" --output text --region $AWS_REGION)',
-            '  PROXY_NAME=$(aws cloudformation describe-stacks --stack-name SharedDb --query "Stacks[0].Outputs[?OutputKey==\'DbProxyName\'].OutputValue" --output text --region $AWS_REGION)',
+            // rds-db:connect IAM auth requires the proxy RESOURCE ID
+            // (prx-xxxxxxxxx), NOT the user-facing proxy name. Extract
+            // it from the proxy ARN ("...:db-proxy:prx-xxxxxxxxx").
+            '  PROXY_RESOURCE_ID=$(aws cloudformation describe-stacks --stack-name SharedDb --query "Stacks[0].Outputs[?OutputKey==\'DbProxyArn\'].OutputValue" --output text --region $AWS_REGION | sed -n "s|.*:db-proxy:\\(prx-[a-z0-9]*\\)|\\1|p")',
             // Trailing slash is intentional — runtime appends user_<tenantName>.
-            '  SHARED_DB_CLUSTER_ENDPOINT_RESOURCE="arn:aws:rds-db:${AWS_REGION}:${AWS_ACCOUNT}:dbuser:${PROXY_NAME}/"',
+            '  SHARED_DB_CLUSTER_ENDPOINT_RESOURCE="arn:aws:rds-db:${AWS_REGION}:${AWS_ACCOUNT}:dbuser:${PROXY_RESOURCE_ID}/"',
             '  export SHARED_DB_SESSION_ROLE_ARN SHARED_DB_PROXY_ENDPOINT SHARED_DB_CLUSTER_ENDPOINT_RESOURCE',
             'fi',
           ].join('\n'),
@@ -328,10 +331,13 @@ export class ApplicationService extends Construct {
           // because the Product Deployment never lands in the tenant
           // namespace).
           [
-            'OVERLAY=kubernetes/products/overlays/$CDK_USE_DB',
-            'sed -i "s|KUSTOMIZE_AWS_REGION|$AWS_REGION|g" $OVERLAY/env-$CDK_USE_DB.yaml',
-            'sed -i "s|KUSTOMIZE_TENANT_TIER|$TENANT_PLAN|g" $OVERLAY/env-$CDK_USE_DB.yaml',
-            'if [ "$CDK_USE_DB" = "dynamodb" ]; then',
+            // Per-tenant overlay decision: Basic tenants ALWAYS use the
+            // DynamoDB overlay even when `CDK_USE_DB=postgresql`.
+            'if [ "$TENANT_PLAN" = "basic" ]; then TENANT_DB=dynamodb; else TENANT_DB=$CDK_USE_DB; fi',
+            'OVERLAY=kubernetes/products/overlays/$TENANT_DB',
+            'sed -i "s|KUSTOMIZE_AWS_REGION|$AWS_REGION|g" $OVERLAY/env-$TENANT_DB.yaml',
+            'sed -i "s|KUSTOMIZE_TENANT_TIER|$TENANT_PLAN|g" $OVERLAY/env-$TENANT_DB.yaml',
+            'if [ "$TENANT_DB" = "dynamodb" ]; then',
             '  sed -i "s|KUSTOMIZE_IAM_ROLE_ARN|$ABAC_ROLE|g" $OVERLAY/env-dynamodb.yaml',
             '  sed -i "s|KUSTOMIZE_TAG_KEYS_MAPPING|$TAG_KEYS_MAPPING|g" $OVERLAY/env-dynamodb.yaml',
             'else',

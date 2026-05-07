@@ -30,6 +30,7 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as lambdaPython from '@aws-cdk/aws-lambda-python-alpha';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as cr from 'aws-cdk-lib/custom-resources';
 import { Construct } from 'constructs';
 import * as path from 'path';
 
@@ -53,19 +54,52 @@ export class SharedDbStack extends cdk.Stack {
     const account = Stack.of(this).account;
 
     // ------------------------------------------------------------------
-    // KMS key — the account's managed `aws/secretsmanager` alias.
+    // Pre-create the `AWSServiceRoleForRDS` service-linked role.
+    //
+    // Fresh accounts don't have this role until *any* RDS-adjacent
+    // resource requests it, and the first request can race with the
+    // resource that needs it (seen on RDS Proxy creation:
+    //   "RDS is not authorized to assume service-linked role
+    //   arn:aws:iam::<acct>:role/aws-service-role/rds.amazonaws.com/
+    //   AWSServiceRoleForRDS ... Status Code: 403").
+    //
+    // We create it explicitly via `iam:CreateServiceLinkedRole` and make
+    // cluster + proxy depend on it. `ignoreErrorCodesMatching:
+    // "InvalidInput"` handles reruns where the role already exists.
     // ------------------------------------------------------------------
-    const kmsKey = secretsmanager.Secret.fromSecretCompleteArn(
-      this,
-      'KmsKey',
-      `arn:aws:secretsmanager:${region}:${account}:secret:alias/aws/secretsmanager`,
-    ).encryptionKey;
+    const rdsSlrCreate = new cr.AwsCustomResource(this, 'EnsureRdsServiceLinkedRole', {
+      onCreate: {
+        service: 'IAM',
+        action: 'createServiceLinkedRole',
+        parameters: {
+          AWSServiceName: 'rds.amazonaws.com',
+          Description: 'Service-linked role for Amazon RDS',
+        },
+        physicalResourceId: cr.PhysicalResourceId.of(`${id}-rds-slr`),
+        // IAM returns InvalidInput if the SLR already exists for the
+        // account. Treat that as success so re-runs (or accounts where
+        // another stack already created it) don't fail.
+        ignoreErrorCodesMatching: 'InvalidInput',
+      },
+      policy: cr.AwsCustomResourcePolicy.fromStatements([
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['iam:CreateServiceLinkedRole'],
+          resources: [
+            `arn:${Aws.PARTITION}:iam::${account}:role/aws-service-role/rds.amazonaws.com/AWSServiceRoleForRDS`,
+          ],
+        }),
+      ]),
+      installLatestAwsSdk: false,
+    });
 
     // ------------------------------------------------------------------
     // Master credential. ECS reference uses `secretsmanager.Secret` with
     // `generateSecretString` rather than `rds.DatabaseSecret` so it can
     // pin `excludePunctuation: true` — RDS Proxy rejects several
-    // punctuation characters in IAM-auth tokens.
+    // punctuation characters in IAM-auth tokens. Encryption uses the
+    // account-default `aws/secretsmanager` managed key (no explicit
+    // `encryptionKey` — matches the ECS reference).
     // ------------------------------------------------------------------
     const dbSecret = new secretsmanager.Secret(this, 'DbSecret', {
       secretName: `DBsecret-${id}`,
@@ -75,7 +109,6 @@ export class SharedDbStack extends cdk.Stack {
         includeSpace: false,
         generateStringKey: 'password',
       },
-      encryptionKey: kmsKey,
     });
 
     // ------------------------------------------------------------------
@@ -136,11 +169,14 @@ export class SharedDbStack extends cdk.Stack {
         }),
       ],
       storageEncrypted: true,
-      storageEncryptionKey: kmsKey,
       iamAuthentication: true,
       removalPolicy: RemovalPolicy.DESTROY,
       deletionProtection: false,
     });
+    // Ensure the `AWSServiceRoleForRDS` service-linked role exists before
+    // the cluster is created. Without this, fresh accounts hit a 403 race
+    // on RDS Proxy creation.
+    cluster.node.addDependency(rdsSlrCreate);
 
     // ------------------------------------------------------------------
     // RDS Proxy.
@@ -195,6 +231,10 @@ export class SharedDbStack extends cdk.Stack {
       securityGroups: [securityGroup],
       requireTLS: true,
     });
+    // Explicit dependency on the SLR custom resource — `cluster` depends
+    // on it already, but the proxy is the resource that originally
+    // surfaced the 403, so we pin it here as well for defence-in-depth.
+    rdsProxy.node.addDependency(rdsSlrCreate);
 
     // ------------------------------------------------------------------
     // Schema_Provisioner_Lambda.
@@ -341,7 +381,23 @@ export class SharedDbStack extends cdk.Stack {
         principals: [new iam.AccountPrincipal(account)],
         conditions: {
           ArnLike: {
-            'aws:PrincipalArn': `arn:aws:iam::${account}:role/*-service-account-Role-*`,
+            // The ArnLike conditions must cover BOTH role-name patterns
+            // that assume this role:
+            //   - `*-service-account-Role-*` — the Basic pool
+            //     ServiceAccount role (explicitly named via
+            //     `cluster.addServiceAccount('service-account', ...)` in
+            //     `lib/basic-pool-stack.ts`).
+            //   - `TenantStack-*-EKSClusterTenantServiceAc-*` — the
+            //     per-tenant ServiceAccount role created by
+            //     `cluster.addServiceAccount('TenantServiceAccount', ...)`
+            //     in `services/tenant-onboarding/lib/tenant-onboarding-stack.ts`.
+            //     CDK names this role from the logical ID rather than
+            //     the SA name, so it never contains the `service-account`
+            //     substring.
+            'aws:PrincipalArn': [
+              `arn:aws:iam::${account}:role/*-service-account-Role-*`,
+              `arn:aws:iam::${account}:role/TenantStack-*-EKSClusterTenantServiceAc-*`,
+            ],
           },
         },
       }),

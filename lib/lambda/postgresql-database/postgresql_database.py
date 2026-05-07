@@ -39,6 +39,7 @@ import json
 import os
 import re
 import string
+import urllib.request
 from os import environ
 
 import boto3
@@ -121,13 +122,70 @@ def run_sql(conn, sql, params=None):
 # Handler
 # ----------------------------------------------------------------
 def lambda_handler(event, context):
-    tenant_name = event.get('tenantName')
+    """Entry point supporting BOTH invocation styles:
+      - CloudFormation CustomResource (event has `ResponseURL`): wrap
+        `_do_work` with cfn-response PUT so CFN doesn't wait the full
+        1-hour CustomResource timeout.
+      - Direct Lambda invoke (e.g., `aws lambda invoke` or the Step
+        Functions fallback): same logic, no ResponseURL send.
+    """
+    if 'ResponseURL' in event:
+        return _cfn_handler(event, context)
+    return _do_work(event)
+
+
+def _send_cfn_response(event, context, status, reason=''):
+    body = json.dumps({
+        'Status': status,
+        'Reason': reason or f'See CloudWatch Log Stream: {context.log_stream_name}',
+        'PhysicalResourceId': event.get('PhysicalResourceId', context.log_stream_name),
+        'StackId': event['StackId'],
+        'RequestId': event['RequestId'],
+        'LogicalResourceId': event['LogicalResourceId'],
+        'NoEcho': False,
+        'Data': {},
+    }).encode('utf-8')
+    req = urllib.request.Request(
+        event['ResponseURL'], data=body, method='PUT',
+        headers={'Content-Type': '', 'Content-Length': str(len(body))},
+    )
+    with urllib.request.urlopen(req) as resp:  # nosec B310 — CFN URL
+        resp.read()
+
+
+def _cfn_handler(event, context):
+    try:
+        _do_work(event)
+        _send_cfn_response(event, context, 'SUCCESS')
+    except Exception as exc:  # pylint: disable=broad-except
+        print(f'CFN handler error: {exc}')
+        # Always SUCCESS on Delete — failing a delete would leave the
+        # stack in DELETE_FAILED and block teardown. The delete helpers
+        # already swallow "not found" errors; anything further is best-
+        # effort.
+        status = 'SUCCESS' if event.get('RequestType') == 'Delete' else 'FAILED'
+        _send_cfn_response(event, context, status, str(exc))
+
+
+def _do_work(event):
+    # Support both direct invocation (`{"tenantName": "..."}`) and
+    # CloudFormation CustomResource events (tenantName lives under
+    # ResourceProperties).
+    props = event.get('ResourceProperties', event)
+    tenant_name = props.get('tenantName')
     if not tenant_name:
         raise ValueError('Tenant name is required')
     if not re.match(r'^[a-zA-Z0-9_-]+$', tenant_name):
         raise ValueError(f'Invalid tenant name: {tenant_name}')
 
-    action = event.get('action', 'create')
+    # For CFN CustomResource, map RequestType → action.
+    request_type = event.get('RequestType', '')
+    if request_type == 'Delete':
+        action = 'delete'
+    elif request_type in ('Create', 'Update'):
+        action = 'create'
+    else:
+        action = props.get('action', 'create')
     print(f'tenant_name: {tenant_name}')
     print(f'action: {action}')
 
