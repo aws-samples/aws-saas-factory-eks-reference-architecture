@@ -96,6 +96,12 @@ EOF
   exit 1
 fi
 
+# ---- Ensure required service-linked roles exist -------------------------
+for SLR_SERVICE in rds.amazonaws.com elasticloadbalancing.amazonaws.com eks.amazonaws.com; do
+  aws iam create-service-linked-role --aws-service-name "$SLR_SERVICE" 2>/dev/null || true
+done
+echo "Service-linked roles verified."
+
 npm install
 
 export CDK_PARAM_CONTROL_PLANE_SOURCE='sbt-control-plane-api'

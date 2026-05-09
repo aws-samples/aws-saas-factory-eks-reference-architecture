@@ -21,7 +21,7 @@ export interface StaticSiteProps {
   readonly allowedMethods: string[];
   readonly siteConfigurationGenerator: (
     siteDomain: string
-  ) => Record<string, string | number | boolean>;
+  ) => Record<string, string | number | boolean | string[]>;
 
   readonly customDomain?: string;
   readonly certDomain?: string;
@@ -158,7 +158,7 @@ export class StaticSite extends Construct {
     id: string,
     project: string,
     cloudfrontDistributionId: string,
-    siteConfig: Record<string, string | number | boolean>,
+    siteConfig: Record<string, string | number | boolean | string[]>,
     distroBucket: s3.Bucket,
     sourceBucket: SourceBucket
   ) {

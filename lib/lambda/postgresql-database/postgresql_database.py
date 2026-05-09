@@ -172,11 +172,6 @@ def _do_work(event):
     # CloudFormation CustomResource events (tenantName lives under
     # ResourceProperties).
     props = event.get('ResourceProperties', event)
-    tenant_name = props.get('tenantName')
-    if not tenant_name:
-        raise ValueError('Tenant name is required')
-    if not re.match(r'^[a-zA-Z0-9_-]+$', tenant_name):
-        raise ValueError(f'Invalid tenant name: {tenant_name}')
 
     # For CFN CustomResource, map RequestType → action.
     request_type = event.get('RequestType', '')
@@ -186,6 +181,38 @@ def _do_work(event):
         action = 'create'
     else:
         action = props.get('action', 'create')
+
+    # =====================================================================
+    # Basic-pool bootstrap branch (Shared_Db_Stack deploy time, NOT tenant
+    # onboarding). Trigger: `cr.AwsCustomResource` fires a Lambda invoke
+    # with `action=bootstrap_basic_pool` (create/update) or
+    # `action=teardown_basic_pool` (delete). Unlike the per-tenant branch
+    # below, there is no `tenantName` — this is a one-shot setup of the
+    # shared `basic_pool_db` + `basic_pool_user` + RLS-enforced table
+    # DDL. See requirements §5.10–11 of the product-db-selection spec.
+    # The Shared_Db_Stack's AwsCustomResource encodes these actions via
+    # `ResourceProperties.action`, so the RequestType→action mapping
+    # above is bypassed when props['action'] is one of the basic_pool
+    # keywords.
+    # =====================================================================
+    explicit_action = props.get('action')
+    if explicit_action == 'bootstrap_basic_pool':
+        print('Action: bootstrap_basic_pool')
+        bootstrap_basic_pool()
+        print('bootstrap_basic_pool: success')
+        return
+    if explicit_action == 'teardown_basic_pool':
+        print('Action: teardown_basic_pool')
+        teardown_basic_pool()
+        print('teardown_basic_pool: success')
+        return
+
+    tenant_name = props.get('tenantName')
+    if not tenant_name:
+        raise ValueError('Tenant name is required')
+    if not re.match(r'^[a-zA-Z0-9_-]+$', tenant_name):
+        raise ValueError(f'Invalid tenant name: {tenant_name}')
+
     print(f'tenant_name: {tenant_name}')
     print(f'action: {action}')
 
@@ -454,3 +481,212 @@ def generate_password(length):
     import secrets as sec
     characters = string.ascii_letters + string.digits
     return ''.join(sec.choice(characters) for _ in range(length))
+
+
+# ================================================================
+# Basic-pool bootstrap / teardown (Shared_Db_Stack deploy time)
+# ================================================================
+# Contract — requirements.md §5.10–11:
+#
+#   bootstrap_basic_pool  (onCreate / onUpdate)
+#     1. Create database `basic_pool_db` if missing.
+#     2. Create role `basic_pool_user` with LOGIN and `rds_iam` (but
+#        NOT BYPASSRLS). Idempotent.
+#     3. Connect to `basic_pool_db` and execute every .sql file in
+#        sql/basic_pool/ in lexicographic order. Each .sql is expected
+#        to be idempotent (`IF NOT EXISTS`, `DROP POLICY IF EXISTS`).
+#     4. Register `basic_pool_user` with RDS Proxy (IAM auth), creating
+#        a Secrets Manager secret dedicated to the pool user.
+#
+#   teardown_basic_pool  (onDelete)
+#     Fires only when Shared_Db_Stack itself is being destroyed. Not
+#     triggered by day-to-day tenant onboarding/offboarding.
+#     1. Remove the pool user's Proxy Auth entry from RDS Proxy.
+#     2. Drop database `basic_pool_db` (with connection termination).
+#     3. Drop role `basic_pool_user`.
+#     4. Delete the pool user's Secrets Manager secret.
+#
+# Both actions are idempotent and MUST NOT raise on "already exists"
+# (bootstrap) or "not found" (teardown) conditions — CFN may invoke
+# Update with identical properties and may retry Delete.
+
+BASIC_POOL_DB_NAME    = 'basic_pool_db'
+BASIC_POOL_USERNAME   = 'basic_pool_user'
+BASIC_POOL_SECRET_NAME = 'rds_proxy_multitenant/proxy_secret_for_user_basic_pool'
+
+
+# Basic-pool schema is now applied via the shared `execute_schema()` helper
+# — sql/ is a single flat tree used by both the per-tenant path and the
+# Basic pool path. `basic_pool_user` GRANTs inside the .sql files are
+# guarded by `IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname =
+# 'basic_pool_user')` so they are silently skipped on per-tenant DBs.
+
+
+def bootstrap_basic_pool():
+    # Step 1 + 2 (role + database) run against the master DB.
+    admin = get_admin_connection()
+    try:
+        # Create pool role (idempotent). NOLOGIN would break IAM auth, so
+        # we ensure LOGIN. Grant `rds_iam` so RDS Proxy IAM auth works.
+        rows = run_sql(admin, 'SELECT 1 FROM pg_roles WHERE rolname = %s',
+                       (BASIC_POOL_USERNAME,))
+        if not rows:
+            print(f'[basic_pool] Creating role {BASIC_POOL_USERNAME}')
+            # Use a random initial password; IAM auth bypasses it but the
+            # role still needs one to be set.
+            initial_pw = generate_password(32)
+            run_sql(admin,
+                    f'CREATE ROLE {BASIC_POOL_USERNAME} WITH LOGIN PASSWORD %s',
+                    (initial_pw,))
+        else:
+            print(f'[basic_pool] Role {BASIC_POOL_USERNAME} already exists — '
+                  f'rotating password for Secrets Manager sync')
+            initial_pw = generate_password(32)
+            run_sql(admin,
+                    f'ALTER ROLE {BASIC_POOL_USERNAME} WITH PASSWORD %s',
+                    (initial_pw,))
+
+        # rds_iam role membership is required for IAM auth on RDS.
+        # GRANT is idempotent.
+        try:
+            run_sql(admin, f'GRANT rds_iam TO {BASIC_POOL_USERNAME}')
+        except Exception as e:
+            # `rds_iam` may not exist on non-AWS PostgreSQL — tolerate it.
+            print(f'[basic_pool] GRANT rds_iam skipped: {e}')
+
+        # Admin membership on the pool role (PostgreSQL 16+ quirk —
+        # required before we can ALTER OWNER).
+        run_sql(admin, f'GRANT {BASIC_POOL_USERNAME} TO CURRENT_USER')
+
+        # Create the pool database (idempotent). We do NOT give OWNER =
+        # basic_pool_user; the admin owns the DB and basic_pool_user has
+        # only CONNECT + CRUD. This prevents `basic_pool_user` from
+        # altering table DDL at runtime.
+        rows = run_sql(admin, 'SELECT 1 FROM pg_database WHERE datname = %s',
+                       (BASIC_POOL_DB_NAME,))
+        if not rows:
+            print(f'[basic_pool] Creating database {BASIC_POOL_DB_NAME}')
+            run_sql(admin, f'CREATE DATABASE {BASIC_POOL_DB_NAME}')
+        else:
+            print(f'[basic_pool] Database {BASIC_POOL_DB_NAME} already exists')
+
+        run_sql(admin,
+                f'GRANT CONNECT ON DATABASE {BASIC_POOL_DB_NAME} TO {BASIC_POOL_USERNAME}')
+    finally:
+        admin.close()
+
+    # Step 3: connect to basic_pool_db and apply the RLS schema.
+    pool_admin = get_admin_connection(BASIC_POOL_DB_NAME)
+    try:
+        # public schema usage + default privileges for the pool user.
+        run_sql(pool_admin, f'GRANT USAGE ON SCHEMA public TO {BASIC_POOL_USERNAME}')
+        run_sql(pool_admin,
+                f'GRANT SELECT, INSERT, UPDATE, DELETE '
+                f'ON ALL TABLES IN SCHEMA public TO {BASIC_POOL_USERNAME}')
+        run_sql(pool_admin,
+                f'GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public '
+                f'TO {BASIC_POOL_USERNAME}')
+        run_sql(pool_admin,
+                f'ALTER DEFAULT PRIVILEGES IN SCHEMA public '
+                f'GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES '
+                f'TO {BASIC_POOL_USERNAME}')
+        run_sql(pool_admin,
+                f'ALTER DEFAULT PRIVILEGES IN SCHEMA public '
+                f'GRANT USAGE, SELECT ON SEQUENCES TO {BASIC_POOL_USERNAME}')
+
+        # Reuse the shared execute_schema() helper — same sql/ tree as
+        # per-tenant path. basic_pool_user GRANTs in the .sql files are
+        # guarded; per-tenant GRANTs are no-ops on the pool DB.
+        print('[basic_pool] Applying shared schema tree to basic_pool_db')
+        execute_schema(pool_admin)
+
+        tables = run_sql(pool_admin,
+                         "SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
+        print(f'[basic_pool] Tables in {BASIC_POOL_DB_NAME}: {tables}')
+
+        # Assert RLS is FORCED on every tenant-scoped table. Any table
+        # that has a `tenant_id` column is considered tenant-scoped.
+        rls_missing = run_sql(pool_admin, """
+            SELECT c.relname
+              FROM pg_class c
+              JOIN pg_namespace n ON n.oid = c.relnamespace
+              JOIN pg_attribute a ON a.attrelid = c.oid
+             WHERE n.nspname = 'public'
+               AND c.relkind = 'r'
+               AND a.attname = 'tenant_id'
+               AND NOT a.attisdropped
+               AND (NOT c.relrowsecurity OR NOT c.relforcerowsecurity)
+        """)
+        if rls_missing:
+            # Don't raise — just loudly warn. A broken schema SQL should
+            # fail at CREATE TABLE time, not here. But if someone forgot
+            # `FORCE ROW LEVEL SECURITY` on a new table, we want it in
+            # CloudWatch.
+            print(f'[basic_pool] WARNING: tables missing FORCE RLS: {rls_missing}')
+    finally:
+        pool_admin.close()
+
+    # Step 4: Secrets Manager + RDS Proxy Auth.
+    secret_string = {
+        'username':              BASIC_POOL_USERNAME,
+        'password':              initial_pw,
+        'engine':                'postgres',
+        'port':                  PORT,
+        'dbname':                BASIC_POOL_DB_NAME,
+        'dbClusterIdentifier':   'proxy',
+    }
+    try:
+        response = secrets_manager.create_secret(
+            Name=BASIC_POOL_SECRET_NAME,
+            Description='Proxy secret for the Basic-pool shared IAM user',
+            SecretString=json.dumps(secret_string),
+            Tags=[{'Key': 'Role', 'Value': 'basic-pool-shared'}],
+        )
+        secret_arn = response['ARN']
+    except secrets_manager.exceptions.ResourceExistsException:
+        print(f'[basic_pool] Secret {BASIC_POOL_SECRET_NAME} already exists, reusing')
+        response   = secrets_manager.describe_secret(SecretId=BASIC_POOL_SECRET_NAME)
+        secret_arn = response['ARN']
+        secrets_manager.update_secret(
+            SecretId=BASIC_POOL_SECRET_NAME,
+            SecretString=json.dumps(secret_string),
+        )
+
+    update_rds_proxy({'SecretArn': secret_arn, 'IAMAuth': 'REQUIRED'})
+
+
+def teardown_basic_pool():
+    # Step 1: remove Proxy Auth entry for the pool user's secret.
+    try:
+        remove_proxy_auth('basic_pool', BASIC_POOL_SECRET_NAME)
+    except Exception as e:
+        print(f'[basic_pool] Error removing Proxy Auth: {e}')
+
+    # Step 2 + 3: drop database and role.
+    admin = get_admin_connection()
+    try:
+        run_sql(admin, f"""
+            SELECT pg_terminate_backend(pid)
+            FROM pg_stat_activity
+            WHERE datname = '{BASIC_POOL_DB_NAME}' AND pid <> pg_backend_pid()
+        """)
+        run_sql(admin, f'DROP DATABASE IF EXISTS {BASIC_POOL_DB_NAME}')
+        print(f'[basic_pool] Dropped database {BASIC_POOL_DB_NAME}')
+        run_sql(admin, f'DROP ROLE IF EXISTS {BASIC_POOL_USERNAME}')
+        print(f'[basic_pool] Dropped role {BASIC_POOL_USERNAME}')
+    except Exception as e:
+        print(f'[basic_pool] Error dropping DB/role: {e}')
+    finally:
+        admin.close()
+
+    # Step 4: delete Secrets Manager secret.
+    try:
+        secrets_manager.delete_secret(
+            SecretId=BASIC_POOL_SECRET_NAME,
+            ForceDeleteWithoutRecovery=True,
+        )
+        print(f'[basic_pool] Deleted secret {BASIC_POOL_SECRET_NAME}')
+    except secrets_manager.exceptions.ResourceNotFoundException:
+        print(f'[basic_pool] Secret not found (already deleted): {BASIC_POOL_SECRET_NAME}')
+    except Exception as e:
+        print(f'[basic_pool] Error deleting secret: {e}')

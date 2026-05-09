@@ -353,6 +353,86 @@ export class SharedDbStack extends cdk.Stack {
     dbSecret.grantWrite(schemeLambda);
 
     // ------------------------------------------------------------------
+    // Basic-pool bootstrap CustomResource.
+    //
+    // Fires once at SharedDbStack deploy time (NOT per tenant) to:
+    //   1. Create database `basic_pool_db`.
+    //   2. Create IAM user `basic_pool_user` (LOGIN + rds_iam, no
+    //      BYPASSRLS) + Secrets Manager secret for RDS Proxy Auth.
+    //   3. Apply RLS-enforced schema DDL from
+    //      `lib/lambda/postgresql-database/sql/basic_pool/*.sql`.
+    //   4. Register the pool user with RDS Proxy.
+    //
+    // The Lambda side (`bootstrap_basic_pool` / `teardown_basic_pool`
+    // actions) is idempotent — `cr.AwsCustomResource` calls `onUpdate`
+    // on every stack update, so the DDL is re-applied as new `.sql`
+    // files are added to the `basic_pool/` tree without needing a
+    // stack recreate. `onDelete` fires only when SharedDbStack itself
+    // is destroyed; day-to-day tenant onboarding/offboarding does not
+    // touch this resource.
+    //
+    // `parameters.timestamp` is set to `Date.now()` on every synth so
+    // `onUpdate` is actually invoked when the Lambda handler or the
+    // `basic_pool/*.sql` DDL changes (otherwise CFN sees identical
+    // parameters and skips the Update).
+    // ------------------------------------------------------------------
+    const basicPoolBootstrap = new cr.AwsCustomResource(this, 'BasicPoolBootstrap', {
+      onCreate: {
+        service: 'Lambda',
+        action: 'invoke',
+        parameters: {
+          FunctionName: schemeLambda.functionName,
+          InvocationType: 'RequestResponse',
+          Payload: JSON.stringify({ action: 'bootstrap_basic_pool' }),
+        },
+        physicalResourceId: cr.PhysicalResourceId.of(`${id}-basic-pool-bootstrap`),
+      },
+      onUpdate: {
+        service: 'Lambda',
+        action: 'invoke',
+        parameters: {
+          FunctionName: schemeLambda.functionName,
+          InvocationType: 'RequestResponse',
+          Payload: JSON.stringify({
+            action: 'bootstrap_basic_pool',
+            // Force re-invoke on every stack update so DDL changes land.
+            timestamp: Date.now(),
+          }),
+        },
+        physicalResourceId: cr.PhysicalResourceId.of(`${id}-basic-pool-bootstrap`),
+      },
+      onDelete: {
+        service: 'Lambda',
+        action: 'invoke',
+        parameters: {
+          FunctionName: schemeLambda.functionName,
+          InvocationType: 'RequestResponse',
+          Payload: JSON.stringify({ action: 'teardown_basic_pool' }),
+        },
+        // Treat teardown errors as success — SharedDbStack deletion
+        // must not be blocked by cleanup failures. The cluster itself
+        // is dropped by CDK regardless, which takes the DB with it.
+        ignoreErrorCodesMatching: '.*',
+      },
+      policy: cr.AwsCustomResourcePolicy.fromStatements([
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['lambda:InvokeFunction'],
+          resources: [schemeLambda.functionArn],
+        }),
+      ]),
+      // Keep the CustomResource Lambda's timeout well under the
+      // invoked Lambda's 15-minute ceiling — bootstrap reads a few SQL
+      // files, creates a DB, applies DDL; it should finish in 1–3 min.
+      timeout: Duration.minutes(10),
+      installLatestAwsSdk: false,
+    });
+    // Must run after the proxy is ready — the Lambda calls
+    // `rds:ModifyDBProxy` to register the pool user's secret.
+    basicPoolBootstrap.node.addDependency(rdsProxy);
+    basicPoolBootstrap.node.addDependency(schemeLambda);
+
+    // ------------------------------------------------------------------
     // STSRole — the single shared role per-tenant IRSA roles assume to
     // narrow `rds-db:connect` to their own dbuser. ECS reference trusts
     // `ecs-tasks.amazonaws.com` + a per-tenant TaskRole; EKS substitutes

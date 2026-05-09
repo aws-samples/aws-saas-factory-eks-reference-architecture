@@ -16,6 +16,13 @@ interface ServiceDefinition {
   serviceUrlPrefix: string;
   assetDirectory: string;
   dockerfileName: string;
+  /**
+   * Optional map of service-specific env vars (ECS parity: sbt-04
+   * `environment` map). Values support the `<APP_SITE_URL>` placeholder
+   * which is resolved at CodeBuild pre_build time from the StaticSites
+   * stack's `ApplicationSiteUrl` output.
+   */
+  environment?: Record<string, string>;
 }
 
 export interface ServicesStackProps extends StackProps {
@@ -83,6 +90,7 @@ export class ServicesStack extends Stack {
               serviceUrlPrefix: service.serviceUrlPrefix,
               assetDirectory: path.join(__dirname, '..', service.assetDirectory),
               dockerfileName: service.dockerfileName || `Dockerfile.${service.serviceUrlPrefix}`,
+              environment: service.environment,
             });
           });
         }
@@ -105,12 +113,18 @@ export class ServicesStack extends Stack {
         // pre_build `cp -r` step. OrderService / UserService keep their
         // existing buildspec byte-identical (their backends are fixed).
         productDbSwitching: service.name === 'ProductService',
+        environment: service.environment,
       });
     });
 
-    // Get service names for tenant onboarding from the collected definitions
-    const serviceNames = serviceDefinitions.map(service => service.name);
-    
+    // ================================================================
+    // TenantOnboarding wires each service's per-tenant deploy CodeBuild
+    // into the SBT ApplicationPlane event flow. The service name list
+    // drives the `${ServiceName}TenantDeploy` loop inside
+    // `TenantOnboardingProject`.
+    // ================================================================
+    const serviceNames = serviceDefinitions.map((service) => service.name);
+
     new TenantOnboarding(this, 'TenantOnboarding', {
       appSiteCloudFrontDomain: props.appSiteCloudFrontDomain,
       appSiteDistributionId: props.appSiteDistributionId,

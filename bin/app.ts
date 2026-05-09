@@ -117,3 +117,13 @@ const svcStack = new ServicesStack(app, 'Services', {
 if (sharedDbStack) {
   svcStack.addDependency(sharedDbStack);
 }
+
+// Any SSR microservice that reads StaticSites outputs at CodeBuild
+// pre_build time (e.g. to derive a CDN_URL or an SPA origin for logout
+// redirects) must run AFTER StaticSites. Services are consumers of
+// StaticSites' `ApplicationSiteDomain` / `ApplicationSiteBucketName` /
+// `ApplicationSiteUrl` outputs — wire the dependency explicitly so
+// the intent is visible in code even when the value flow looks indirect
+// (`aws cloudformation describe-stacks` inside a buildspec, rather than
+// a constructor prop).
+svcStack.addDependency(sitesStack);

@@ -1,10 +1,12 @@
 # =========================================================================
-# Strategic-merge patch: PostgreSQL env-var set for the product container
+# Strategic-merge patch: PostgreSQL env vars for product container (ALL tiers)
 # =========================================================================
-# Requirement 6.1 / 6.2 / 6.4 / 7.4 — canonical env-var set on the
-# postgresql path:
-#   IAM_ARN, PROXY_ENDPOINT, CLUSTER_ENDPOINT_RESOURCE, TENANT_NAME,
-#   AWS_REGION, TENANT_TIER
+# Single overlay — used by Basic / Standard / Premium alike. Tier
+# branching happens at app runtime inside ProductsService based on the
+# presence of TENANT_NAME:
+#
+#   · TENANT_NAME empty   → Basic pool mode (basic_pool_db + RLS)
+#   · TENANT_NAME present → per-tenant DB (tenant_<name>_db / user_<name>)
 #
 # MUST NOT include TABLE_NAME (that's dynamodb-only).
 #
@@ -17,10 +19,10 @@
 #   KUSTOMIZE_SHARED_DB_CLUSTER_ENDPOINT_RESOURCE
 #     <- derived at build time as
 #        arn:aws:rds-db:${AWS_REGION}:${AWS_ACCOUNT}:dbuser:${PROXY_NAME}/
-#        (trailing slash — runtime appends user_<tenantName>)
+#        (trailing slash — runtime appends dbUser)
 #   KUSTOMIZE_TENANT_NAME
-#     <- per-tenant Tenant DynamoDB row's COMPANY_NAME
-#        (Phase 5.7 — ProductServiceTenantDeploy pre_build only)
+#     <- Basic: empty string (triggers pool mode)
+#        Standard/Premium: Tenant DynamoDB row's COMPANY_NAME
 #   KUSTOMIZE_AWS_REGION, KUSTOMIZE_TENANT_TIER
 #     <- already substituted by existing buildspec sed blocks
 # =========================================================================

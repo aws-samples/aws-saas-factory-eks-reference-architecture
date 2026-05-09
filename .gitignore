@@ -40,7 +40,27 @@ scripts/inspect-tenants.sh
 # Session-managed debug harnesses under scripts/test/ — regenerate per-session.
 scripts/test/
 
+# Test harnesses are session-local, not part of the reference. Generated
+# JS/D.TS compile artifacts are already excluded by the top-of-file rules.
+test/
+
+# Operator-local service registry override. `services-template.json` is
+# tracked in the reference; `services.json` (if present) takes
+# precedence (see lib/services-stack.ts + lib/static-sites-stack.ts
+# resolveRegisteredServiceNames). Ignored so consumer repos can layer
+# their own service list without forking the reference.
+services.json
+
 # Build-time Product microservice staging dir (populated by CodeBuild pre_build
 # from product_dynamodb/ or product_postgresql/). Ignore contents, keep dir.
 services/application-services/application/microservices/product/*
 !services/application-services/application/microservices/product/.gitkeep
+
+# Customer-specific microservices are out of scope for this reference. Any
+# file or directory whose basename contains "colonova" is automatically
+# excluded (sources, K8s manifests, SQL seed, CDK constructs, tests —
+# everything). The reference repo is DB-style agnostic; customer-specific
+# files live in a consumer repo and are dropped into this tree via
+# `services.json` (itself ignored) without needing any further
+# `.gitignore` edits.
+*colonova*
