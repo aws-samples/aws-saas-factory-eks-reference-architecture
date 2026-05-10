@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Grid,
   Card,
@@ -8,6 +8,8 @@ import {
   Paper,
   Button,
   Stack,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import {
   Inventory as InventoryIcon,
@@ -15,6 +17,7 @@ import {
   TrendingUp as TrendingUpIcon,
   People as PeopleIcon,
   OpenInNew as OpenInNewIcon,
+  Science as ScienceIcon,
 } from '@mui/icons-material';
 import { useAuth } from 'react-oidc-context';
 import { useTenant } from '../../contexts/TenantContext';
@@ -31,12 +34,22 @@ import { environment } from '../../config/environment';
  * Dashboard edits required.
  *
  * Path convention (enforced by CDK + Istio VirtualService):
- *   SSO entry:  {apiUrl}/<service-name>/sso-entry?_jwt=<id_token>
- *   Page:       {apiUrl}/<service-name>/<page>
+ *   SSO entry:   {apiUrl}/<service-name>/sso-entry?_jwt=<id_token>
+ *   Page:        {apiUrl}/<service-name>/<page>
+ *   Admin API:   {apiUrl}/<service-name>/admin/<op>  (Authorization: Bearer)
  */
 const Dashboard: React.FC = () => {
   const { tenant } = useTenant();
   const auth = useAuth();
+
+  // Seed-demo button state — tracked per service so multiple cards can
+  // operate independently without blocking each other.
+  const [seedingService, setSeedingService] = useState<string | null>(null);
+  const [toast, setToast] = useState<{
+    open: boolean;
+    severity: 'success' | 'error';
+    message: string;
+  }>({ open: false, severity: 'success', message: '' });
 
   const openService = (serviceName: string): void => {
     const token = auth.user?.id_token;
@@ -83,6 +96,69 @@ const Dashboard: React.FC = () => {
     // cross-origin SSO flows and block the cookie from being sent, so
     // leave the features argument empty as well.
     window.open(url, '_blank');
+  };
+
+  // "Seed demo" button — POST to `{apiUrl}/<service>/admin/seed` with the
+  // Cognito id_token in the Authorization header (same path the API
+  // Gateway `sharedApigatewayTenantApiAuthorizer` expects). The service
+  // pulls the tenant out of Istio-projected headers and uses it to bind
+  // `SELECT set_config('app.tenant_id', …, true)` before running the
+  // seed template. Idempotent — re-clicks land zeros via
+  // `ON CONFLICT DO NOTHING`.
+  const seedDemo = async (serviceName: string): Promise<void> => {
+    const token = auth.user?.id_token;
+    if (!token) {
+      setToast({
+        open: true,
+        severity: 'error',
+        message: 'No auth token found. Please log in again.',
+      });
+      return;
+    }
+
+    const base = environment.apiUrl.replace(/\/$/, '');
+    const url = `${base}/${serviceName}/admin/seed`;
+
+    setSeedingService(serviceName);
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        throw new Error(`${res.status} ${res.statusText}${body ? `: ${body}` : ''}`);
+      }
+      const result: { tenant: string; inserted: Record<string, number> } = await res.json();
+      const inserted = result.inserted || {};
+      const keys = Object.keys(inserted);
+      let total = 0;
+      const parts: string[] = [];
+      keys.forEach((k) => {
+        const v = inserted[k];
+        total += v;
+        parts.push(`${k}:${v}`);
+      });
+      const detail = parts.join(', ');
+      setToast({
+        open: true,
+        severity: 'success',
+        message: total === 0
+          ? `${serviceName}: demo data already present (${detail})`
+          : `${serviceName}: seeded ${total} rows (${detail})`,
+      });
+    } catch (err) {
+      setToast({
+        open: true,
+        severity: 'error',
+        message: `${serviceName}: ${err instanceof Error ? err.message : String(err)}`,
+      });
+    } finally {
+      setSeedingService(null);
+    }
   };
 
   const stats = [
@@ -165,14 +241,23 @@ const Dashboard: React.FC = () => {
                     Open {name} with single sign-on in a new tab
                   </Typography>
                 </Box>
-                <Button
-                  variant="contained"
-                  startIcon={<OpenInNewIcon />}
-                  onClick={() => openService(name)}
-                  sx={{ whiteSpace: 'nowrap' }}
-                >
-                  Open
-                </Button>
+                <Stack direction="row" spacing={1} sx={{ whiteSpace: 'nowrap' }}>
+                  <Button
+                    variant="outlined"
+                    startIcon={<ScienceIcon />}
+                    onClick={() => seedDemo(name)}
+                    disabled={seedingService === name}
+                  >
+                    {seedingService === name ? 'Seeding…' : 'Seed demo'}
+                  </Button>
+                  <Button
+                    variant="contained"
+                    startIcon={<OpenInNewIcon />}
+                    onClick={() => openService(name)}
+                  >
+                    Open
+                  </Button>
+                </Stack>
               </Paper>
             ))}
           </Stack>
@@ -192,6 +277,22 @@ const Dashboard: React.FC = () => {
           </Paper>
         </Box>
       )}
+
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={6000}
+        onClose={() => setToast({ ...toast, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setToast({ ...toast, open: false })}
+          severity={toast.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {toast.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
