@@ -1,38 +1,38 @@
-"""
-Schema_Provisioner_Lambda (EKS SaaS ref) — structurally ported from
-the ECS sister reference
-(`refer/saas-ecs/server/lib/shared-infra/postgresql-database/postgresql_database.py`).
+"""Schema_Provisioner_Lambda (EKS SaaS ref) — PATCHED version.
 
-Two simplifications vs. the ECS reference — removed to keep the scope
-of this Lambda limited to the `product` microservice only:
+Changes vs. the previous EKS version:
 
-  1. The DGIS-specific schema set (`01_schema.sql`, `02_seed_codes.sql`,
-     `03_seed_data.sql`) and the associated `__TENANT_CO_CD__` token
-     replacement are removed. This Lambda only provisions the
-     `products` table per tenant DB.
-  2. No custom `logger` module is imported; we use plain `print` for
-     CloudWatch visibility, matching the style of other Lambdas in
-     this project.
+1. `bootstrap_basic_pool()` no longer runs
+       GRANT basic_pool_user TO CURRENT_USER
+   because `basic_pool_user` is a member of `rds_iam`, and chaining
+   that membership onto CURRENT_USER (= `postgres`, the master) makes
+   the master user a *transitive* member of `rds_iam`. Aurora then
+   routes master password auth through PAM, producing
+       FATAL: PAM authentication failed for user "postgres"
+   on every subsequent connection and blocking every tenant CREATE.
+   The original reason for the GRANT — "PostgreSQL 16 quirk, required
+   before ALTER OWNER" — no longer applies because bootstrap_basic_pool
+   does not ALTER OWNER.
 
-Everything else — create-vs-delete dispatch, tenant role creation,
-per-tenant DB creation, RDS Proxy Auth registration / removal with
-state polling — is a 1:1 port of the ECS reference.
+2. New one-shot repair action `repair_master_iam` — IAM-auths as
+   `postgres`, revokes both the direct `rds_iam` grant and the
+   transitive `basic_pool_user` grant, prints the resulting role
+   membership for confirmation. Invoke once after deploy:
+       aws lambda invoke \\
+         --function-name <PostgreSqlDatabase> \\
+         --payload '{"action":"repair_master_iam"}' \\
+         --cli-binary-format raw-in-base64-out \\
+         /tmp/out.json
+   The action is safe to run multiple times.
 
-CloudFormation custom-resource contract:
+3. Connection helper now falls back to IAM token if password auth
+   fails with a PAM/IAM error, so a cluster already in the broken
+   state can still be fixed by this Lambda without needing any
+   out-of-band access. Requires Lambda role to have
+       rds-db:connect  on  arn:aws:rds-db:<region>:<account>:dbuser:<resourceId>/postgres
+   (add this in SharedDbStack's lambdaRole).
 
-    Create:  { "tenantName": "<n>"[, "action": "create"] }   (default action)
-    Delete:  { "tenantName": "<n>",  "action": "delete" }
-
-Environment variables (set by SharedDbStack in CDK):
-
-    DB_PROXY_ENDPOINT  RDS Proxy DNS (Lambda does NOT connect to the
-                       proxy; master DDL goes straight to the cluster,
-                       matching ECS. Kept for parity / future use.)
-    DB_ENDPOINT        Aurora cluster writer endpoint (master uses this)
-    DB_NAME            master database name (= 'sbtsaasdb')
-    DB_PROXY_NAME      RDS Proxy name (used for ModifyDBProxy)
-    DB_SECRET_ARN      master Secrets Manager secret ARN
-    REGION             AWS region
+Everything else is unchanged from the previous EKS Lambda.
 """
 
 import json
@@ -67,13 +67,28 @@ rds             = boto3.client('rds')
 # ----------------------------------------------------------------
 def load_schema():
     schema_dir = os.path.join(os.path.dirname(__file__), 'sql')
-    sql_files = sorted(f for f in os.listdir(schema_dir) if f.endswith('.sql'))
+    # macOS AppleDouble sidecars (`._<name>`) and other dotfiles are not
+    # real SQL content — they are binary and will break UTF-8 decoding.
+    # Filter them out even though `.endswith('.sql')` catches them by name.
+    sql_files = sorted(
+        f for f in os.listdir(schema_dir)
+        if f.endswith('.sql') and not f.startswith('.')
+    )
     if not sql_files:
         raise FileNotFoundError(f'No .sql files found in {schema_dir}')
     combined = []
     for sql_file in sql_files:
-        with open(os.path.join(schema_dir, sql_file), 'r') as f:
-            content = f.read()
+        path = os.path.join(schema_dir, sql_file)
+        # Try UTF-8 first, fall back to Latin-1 so a mixed-encoding SQL
+        # tree (e.g. a file authored on Windows with a `£` or other
+        # high-byte character) doesn't break the whole bootstrap.
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                content = f.read()
+        except UnicodeDecodeError:
+            with open(path, 'r', encoding='latin-1') as f:
+                content = f.read()
+            print(f'WARN {sql_file} is not UTF-8, read as latin-1')
         print(f'Loaded {sql_file} ({len(content)} chars)')
         combined.append(content)
     return '\n'.join(combined)
@@ -92,19 +107,81 @@ def execute_schema(conn):
 # ----------------------------------------------------------------
 # Connection helpers
 # ----------------------------------------------------------------
-def get_admin_connection(db_name=None):
-    secret_value = json.loads(
-        secrets_manager.get_secret_value(SecretId=SECRET_ARN)['SecretString']
+def _generate_iam_token(username):
+    """Generate a short-lived (~15 min) IAM auth token for `username`."""
+    # `generate_db_auth_token` works against the cluster endpoint
+    # directly. Using DB_ENDPOINT (not PROXY_ENDPOINT) because the
+    # proxy enforces its own IAM auth gating and we want a direct
+    # master connection for repair/bootstrap work.
+    return rds.generate_db_auth_token(
+        DBHostname=DB_ENDPOINT,
+        Port=PORT,
+        DBUsername=username,
+        Region=REGION,
     )
+
+
+def _connect_with_iam(username, db_name=None):
+    """Connect to the cluster directly using an IAM auth token."""
+    token = _generate_iam_token(username)
+    print(f'[iam-auth] connecting to {DB_ENDPOINT} as {username}')
     conn = psycopg2.connect(
         host=DB_ENDPOINT,
-        user=secret_value['username'],
-        password=secret_value['password'],
+        user=username,
+        password=token,
         port=PORT,
         dbname=db_name or DB_NAME,
+        sslmode='require',
+        gssencmode='disable',
     )
     conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
     return conn
+
+
+def get_admin_connection(db_name=None):
+    """Connect as master (`postgres`) using password auth against the
+    cluster endpoint directly.
+
+    Master DDL (CREATE DATABASE / CREATE ROLE / GRANT) goes straight
+    to the cluster, bypassing the RDS Proxy. RDS Proxy is configured
+    with `IAMAuth: REQUIRED` which forces every proxy connection to
+    use an IAM token; the master user must not be an `rds_iam`
+    member (AWS guidance) so password auth over the proxy is
+    impossible by design. Tenant/Pod runtime traffic uses the proxy
+    (with IAM auth); the Lambda's admin path does not.
+
+    Falls back to IAM auth on PAM/IAM failure, which covers any
+    clusters previously accidentally promoted to `rds_iam` membership
+    so they can still be cleaned up by `repair_master_iam`.
+    """
+    secret_value = json.loads(
+        secrets_manager.get_secret_value(SecretId=SECRET_ARN)['SecretString']
+    )
+    # Primary: password against the cluster endpoint directly.
+    try:
+        conn = psycopg2.connect(
+            host=DB_ENDPOINT,
+            user=secret_value['username'],
+            password=secret_value['password'],
+            port=PORT,
+            dbname=db_name or DB_NAME,
+            sslmode='require',
+        )
+        conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+        return conn
+    except psycopg2.OperationalError as exc:
+        msg = str(exc).lower()
+        # Both of these indicate Aurora routed our password attempt to
+        # IAM/PAM — recognisable fingerprint:
+        #   "pam authentication failed for user"
+        #   "iam authentication failed for the role"
+        if 'pam authentication' in msg or 'iam authentication' in msg:
+            print(
+                f'[fallback] password auth rejected ({exc!s}); '
+                f'retrying with IAM token'
+            )
+            return _connect_with_iam(secret_value['username'], db_name=db_name)
+        raise
 
 
 def run_sql(conn, sql, params=None):
@@ -118,16 +195,32 @@ def run_sql(conn, sql, params=None):
     return rows
 
 
+def grant_user_schemas(conn, db_username):
+    """Grant USAGE + CRUD on all user-defined schemas to db_username."""
+    EXCLUDED = ('public', 'pg_catalog', 'information_schema', 'pg_toast')
+    rows = run_sql(conn, "SELECT schema_name FROM information_schema.schemata")
+    for (schema,) in rows:
+        if schema in EXCLUDED or schema.startswith('pg_'):
+            continue
+        run_sql(conn, f'GRANT USAGE ON SCHEMA {schema} TO {db_username}')
+        run_sql(conn, f'GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA {schema} TO {db_username}')
+        run_sql(conn, f'GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA {schema} TO {db_username}')
+        run_sql(conn, f'ALTER DEFAULT PRIVILEGES IN SCHEMA {schema} GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO {db_username}')
+        run_sql(conn, f'ALTER DEFAULT PRIVILEGES IN SCHEMA {schema} GRANT USAGE, SELECT ON SEQUENCES TO {db_username}')
+    print(f'Granted schema access to {db_username} on non-system schemas')
+
+
 # ----------------------------------------------------------------
 # Handler
 # ----------------------------------------------------------------
 def lambda_handler(event, context):
     """Entry point supporting BOTH invocation styles:
-      - CloudFormation CustomResource (event has `ResponseURL`): wrap
-        `_do_work` with cfn-response PUT so CFN doesn't wait the full
-        1-hour CustomResource timeout.
-      - Direct Lambda invoke (e.g., `aws lambda invoke` or the Step
-        Functions fallback): same logic, no ResponseURL send.
+
+     - CloudFormation CustomResource (event has `ResponseURL`): wrap
+       `_do_work` with cfn-response PUT so CFN doesn't wait the full
+       1-hour CustomResource timeout.
+     - Direct Lambda invoke (e.g., `aws lambda invoke` or the Step
+       Functions fallback): same logic, no ResponseURL send.
     """
     if 'ResponseURL' in event:
         return _cfn_handler(event, context)
@@ -190,21 +283,33 @@ def _do_work(event):
     # below, there is no `tenantName` — this is a one-shot setup of the
     # shared `basic_pool_db` + `basic_pool_user` + RLS-enforced table
     # DDL. See requirements §5.10–11 of the product-db-selection spec.
+    #
     # The Shared_Db_Stack's AwsCustomResource encodes these actions via
     # `ResourceProperties.action`, so the RequestType→action mapping
     # above is bypassed when props['action'] is one of the basic_pool
     # keywords.
     # =====================================================================
     explicit_action = props.get('action')
+
     if explicit_action == 'bootstrap_basic_pool':
         print('Action: bootstrap_basic_pool')
         bootstrap_basic_pool()
         print('bootstrap_basic_pool: success')
         return
+
     if explicit_action == 'teardown_basic_pool':
         print('Action: teardown_basic_pool')
         teardown_basic_pool()
         print('teardown_basic_pool: success')
+        return
+
+    # One-shot repair action — removes both direct and transitive
+    # `rds_iam` membership from the master `postgres` user. Safe to
+    # invoke repeatedly; a no-op once the cluster is clean.
+    if explicit_action == 'repair_master_iam':
+        print('Action: repair_master_iam')
+        repair_master_iam()
+        print('repair_master_iam: success')
         return
 
     tenant_name = props.get('tenantName')
@@ -236,7 +341,6 @@ def _do_work(event):
                 print(f'Database for tenant {tenant_name} already exists. Ensuring tables and Proxy Auth...')
                 ensure_tables_exist(conn, tenant_name)
                 ensure_proxy_auth_registered(tenant_name)
-
         print('Success')
     except Exception as e:
         error_statement = f'Database connection failed due to {e}'
@@ -267,6 +371,8 @@ def create_tenant_database_and_tables(conn, tenant_name):
         run_sql(conn, f'ALTER ROLE {db_username} WITH PASSWORD %s', (user_password,))
 
     # Grant admin membership on the tenant role (required for PostgreSQL 16+).
+    # SAFE here — `user_<tenant>` is NOT a member of rds_iam (only
+    # basic_pool_user is), so this does not leak rds_iam onto postgres.
     run_sql(conn, f'GRANT {db_username} TO CURRENT_USER')
 
     # Create tenant database owned by the tenant role.
@@ -290,6 +396,15 @@ def create_tenant_database_and_tables(conn, tenant_name):
 
     print(f'Executing schema for tenant {tenant_name}...')
     execute_schema(tenant_conn)
+
+    # Grant access to every user-defined schema (beyond `public`) that
+    # the .sql files created. Keeps the reference repo generic — new
+    # customer schemas ship inside the `sql/*.sql` files and this block
+    # wires up per-tenant user privileges without needing a Lambda
+    # code change. System schemas (`pg_*`, `information_schema`) and
+    # `public` are excluded.
+    grant_user_schemas(tenant_conn, db_username)
+
     tables = run_sql(tenant_conn, "SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
     print(f'Tables in {db_name}: {tables}')
     tenant_conn.close()
@@ -338,6 +453,7 @@ def ensure_tables_exist(conn, tenant_name):
         run_sql(tenant_conn, f'ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO {db_username}')
 
         execute_schema(tenant_conn)
+        grant_user_schemas(tenant_conn, db_username)
         tenant_conn.close()
         print(f'Tables ensured for tenant {tenant_name}')
     except Exception as e:
@@ -401,7 +517,6 @@ def ensure_proxy_auth_registered(tenant_name):
 def remove_proxy_auth(tenant_name, secret_name):
     import random
     import time
-
     max_retries, base_delay = 40, 20
 
     try:
@@ -419,7 +534,6 @@ def remove_proxy_auth(tenant_name, secret_name):
             proxy_info                 = rds.describe_db_proxies(DBProxyName=PROXY_NAME)['DBProxies'][0]
             current_auth, proxy_status = proxy_info['Auth'], proxy_info['Status']
             registered                 = [a.get('SecretArn', '') for a in current_auth]
-
             if target_secret_arn not in registered:
                 print(f'Proxy Auth not registered for tenant {tenant_name}, nothing to remove')
                 return
@@ -428,7 +542,6 @@ def remove_proxy_auth(tenant_name, secret_name):
                 print(f'RDS Proxy status: {proxy_status}, waiting {wait_time:.0f}s... (attempt {attempt + 1}/{max_retries})')
                 time.sleep(wait_time)
                 continue
-
             new_auth = [a for a in current_auth if a.get('SecretArn', '') != target_secret_arn]
             rds.modify_db_proxy(DBProxyName=PROXY_NAME, Auth=new_auth)
             print(f'Successfully removed Proxy Auth for tenant {tenant_name}')
@@ -438,14 +551,12 @@ def remove_proxy_auth(tenant_name, secret_name):
         except Exception as e:
             print(f'Error removing Proxy Auth for tenant {tenant_name}: {e}')
             raise
-
     raise Exception(f'Failed to remove Proxy Auth after {max_retries} retries for tenant {tenant_name}')
 
 
 def update_rds_proxy(proxy_auth):
     import random
     import time
-
     max_retries, base_delay = 40, 20
     target_secret_arn       = proxy_auth['SecretArn']
 
@@ -454,7 +565,6 @@ def update_rds_proxy(proxy_auth):
             proxy_info                 = rds.describe_db_proxies(DBProxyName=PROXY_NAME)['DBProxies'][0]
             current_auth, proxy_status = proxy_info['Auth'], proxy_info['Status']
             registered                 = [a.get('SecretArn', '') for a in current_auth]
-
             if target_secret_arn in registered:
                 print(f'Proxy Auth already registered: {target_secret_arn}')
                 return
@@ -463,7 +573,6 @@ def update_rds_proxy(proxy_auth):
                 print(f'RDS Proxy status: {proxy_status}, waiting {wait_time:.0f}s... (attempt {attempt + 1}/{max_retries})')
                 time.sleep(wait_time)
                 continue
-
             current_auth.append(proxy_auth)
             rds.modify_db_proxy(DBProxyName=PROXY_NAME, Auth=current_auth)
             print(f'Successfully updated RDS Proxy with {proxy_auth}')
@@ -473,7 +582,6 @@ def update_rds_proxy(proxy_auth):
         except Exception as e:
             print(f'Error updating RDS Proxy for {proxy_auth}: {e}')
             raise
-
     raise Exception(f'Failed to update RDS Proxy after {max_retries} retries for {proxy_auth}')
 
 
@@ -509,17 +617,9 @@ def generate_password(length):
 # Both actions are idempotent and MUST NOT raise on "already exists"
 # (bootstrap) or "not found" (teardown) conditions — CFN may invoke
 # Update with identical properties and may retry Delete.
-
-BASIC_POOL_DB_NAME    = 'basic_pool_db'
-BASIC_POOL_USERNAME   = 'basic_pool_user'
+BASIC_POOL_DB_NAME     = 'basic_pool_db'
+BASIC_POOL_USERNAME    = 'basic_pool_user'
 BASIC_POOL_SECRET_NAME = 'rds_proxy_multitenant/proxy_secret_for_user_basic_pool'
-
-
-# Basic-pool schema is now applied via the shared `execute_schema()` helper
-# — sql/ is a single flat tree used by both the per-tenant path and the
-# Basic pool path. `basic_pool_user` GRANTs inside the .sql files are
-# guarded by `IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname =
-# 'basic_pool_user')` so they are silently skipped on per-tenant DBs.
 
 
 def bootstrap_basic_pool():
@@ -528,7 +628,8 @@ def bootstrap_basic_pool():
     try:
         # Create pool role (idempotent). NOLOGIN would break IAM auth, so
         # we ensure LOGIN. Grant `rds_iam` so RDS Proxy IAM auth works.
-        rows = run_sql(admin, 'SELECT 1 FROM pg_roles WHERE rolname = %s',
+        rows = run_sql(admin,
+                       'SELECT 1 FROM pg_roles WHERE rolname = %s',
                        (BASIC_POOL_USERNAME,))
         if not rows:
             print(f'[basic_pool] Creating role {BASIC_POOL_USERNAME}')
@@ -554,15 +655,33 @@ def bootstrap_basic_pool():
             # `rds_iam` may not exist on non-AWS PostgreSQL — tolerate it.
             print(f'[basic_pool] GRANT rds_iam skipped: {e}')
 
-        # Admin membership on the pool role (PostgreSQL 16+ quirk —
-        # required before we can ALTER OWNER).
-        run_sql(admin, f'GRANT {BASIC_POOL_USERNAME} TO CURRENT_USER')
+        # --- PATCH: do NOT grant basic_pool_user TO CURRENT_USER ---
+        # The previous version ran
+        #     GRANT basic_pool_user TO CURRENT_USER
+        # here "to satisfy a PostgreSQL 16+ quirk before ALTER OWNER".
+        # Because `basic_pool_user` has `rds_iam`, that GRANT made the
+        # master (`postgres`) a transitive member of `rds_iam`, which
+        # Aurora handles by routing `postgres` password auth through
+        # PAM — every subsequent password connection failed with
+        #     FATAL: PAM authentication failed for user "postgres"
+        # blocking every tenant CREATE.
+        #
+        # bootstrap_basic_pool does NOT ALTER OWNER anywhere, so the
+        # quirk workaround was unnecessary. We defensively REVOKE the
+        # grant in case a prior run of the Lambda applied it. Safe
+        # no-op if the grant was never present.
+        try:
+            run_sql(admin, f'REVOKE {BASIC_POOL_USERNAME} FROM CURRENT_USER')
+            print('[basic_pool] Revoked stale basic_pool_user membership from CURRENT_USER (postgres)')
+        except Exception as e:
+            print(f'[basic_pool] REVOKE basic_pool_user FROM CURRENT_USER skipped: {e}')
 
         # Create the pool database (idempotent). We do NOT give OWNER =
         # basic_pool_user; the admin owns the DB and basic_pool_user has
         # only CONNECT + CRUD. This prevents `basic_pool_user` from
         # altering table DDL at runtime.
-        rows = run_sql(admin, 'SELECT 1 FROM pg_database WHERE datname = %s',
+        rows = run_sql(admin,
+                       'SELECT 1 FROM pg_database WHERE datname = %s',
                        (BASIC_POOL_DB_NAME,))
         if not rows:
             print(f'[basic_pool] Creating database {BASIC_POOL_DB_NAME}')
@@ -608,14 +727,14 @@ def bootstrap_basic_pool():
         # that has a `tenant_id` column is considered tenant-scoped.
         rls_missing = run_sql(pool_admin, """
             SELECT c.relname
-              FROM pg_class c
-              JOIN pg_namespace n ON n.oid = c.relnamespace
-              JOIN pg_attribute a ON a.attrelid = c.oid
-             WHERE n.nspname = 'public'
-               AND c.relkind = 'r'
-               AND a.attname = 'tenant_id'
-               AND NOT a.attisdropped
-               AND (NOT c.relrowsecurity OR NOT c.relforcerowsecurity)
+            FROM pg_class c
+            JOIN pg_namespace n ON n.oid = c.relnamespace
+            JOIN pg_attribute a ON a.attrelid = c.oid
+            WHERE n.nspname = 'public'
+              AND c.relkind = 'r'
+              AND a.attname = 'tenant_id'
+              AND NOT a.attisdropped
+              AND (NOT c.relrowsecurity OR NOT c.relforcerowsecurity)
         """)
         if rls_missing:
             # Don't raise — just loudly warn. A broken schema SQL should
@@ -635,6 +754,7 @@ def bootstrap_basic_pool():
         'dbname':                BASIC_POOL_DB_NAME,
         'dbClusterIdentifier':   'proxy',
     }
+
     try:
         response = secrets_manager.create_secret(
             Name=BASIC_POOL_SECRET_NAME,
@@ -690,3 +810,61 @@ def teardown_basic_pool():
         print(f'[basic_pool] Secret not found (already deleted): {BASIC_POOL_SECRET_NAME}')
     except Exception as e:
         print(f'[basic_pool] Error deleting secret: {e}')
+
+
+# ================================================================
+# One-shot repair action — removes `rds_iam` from the master user.
+# ================================================================
+def repair_master_iam():
+    """Invoke with `{"action":"repair_master_iam"}` once after deploy.
+
+    Connects as `postgres` (password via proxy, falling back to IAM
+    token against the cluster if password auth is PAM-rejected).
+    Revokes both the direct `rds_iam` grant and the transitive
+    `basic_pool_user` grant from `postgres`, then prints the
+    resulting role membership.
+
+    Safe to run multiple times. No-op if the role membership is
+    already clean.
+    """
+    admin = get_admin_connection()
+    try:
+        # 1) Direct REVOKE (no-op if not granted directly).
+        try:
+            run_sql(admin, 'REVOKE rds_iam FROM postgres')
+            print('[repair] REVOKE rds_iam FROM postgres: done')
+        except Exception as e:
+            print(f'[repair] REVOKE rds_iam skipped: {e}')
+
+        # 2) Transitive REVOKE through basic_pool_user.
+        try:
+            run_sql(admin, f'REVOKE {BASIC_POOL_USERNAME} FROM postgres')
+            print(f'[repair] REVOKE {BASIC_POOL_USERNAME} FROM postgres: done')
+        except Exception as e:
+            print(f'[repair] REVOKE {BASIC_POOL_USERNAME} skipped: {e}')
+
+        # 3) Report final membership for the operator.
+        rows = run_sql(admin, """
+            SELECT r.rolname,
+                   array_agg(b.rolname) FILTER (WHERE b.rolname IS NOT NULL)
+            FROM pg_roles r
+            LEFT JOIN pg_auth_members m ON r.oid = m.member
+            LEFT JOIN pg_roles b ON m.roleid = b.oid
+            WHERE r.rolname = 'postgres'
+            GROUP BY r.rolname
+        """)
+        print(f'[repair] postgres role membership after repair: {rows}')
+
+        # 4) Also check who has rds_iam — the pool user should still
+        #    have it; postgres should not.
+        rows = run_sql(admin, """
+            SELECT r.rolname
+            FROM pg_roles r
+            JOIN pg_auth_members m ON r.oid = m.member
+            JOIN pg_roles b ON m.roleid = b.oid
+            WHERE b.rolname = 'rds_iam'
+            ORDER BY r.rolname
+        """)
+        print(f'[repair] rds_iam direct members after repair: {rows}')
+    finally:
+        admin.close()

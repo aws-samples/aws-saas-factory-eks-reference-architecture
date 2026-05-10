@@ -273,6 +273,7 @@ export class SharedDbStack extends cdk.Stack {
           'secretsmanager:DeleteSecret',
           'secretsmanager:TagResource',
           'secretsmanager:DescribeSecret',
+          'secretsmanager:UpdateSecret',
         ],
         resources: [
           `arn:aws:secretsmanager:${region}:${account}:secret:rds_proxy_multitenant/proxy_secret_for_user*`,
@@ -293,6 +294,16 @@ export class SharedDbStack extends cdk.Stack {
         resources: [`arn:aws:rds:${region}:${account}:db-proxy:*`],
       }),
     );
+    lambdaRole.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['rds-db:connect'],
+        resources: [
+        // Narrow to postgres master on this cluster only
+        `arn:aws:rds-db:${region}:${account}:dbuser:${cluster.clusterResourceIdentifier}/postgres`,],
+      }),
+    );
+
 
     const lambdaSecurityGroup = new ec2.SecurityGroup(this, 'LambdaSecurityGroup', {
       vpc: props.vpc,

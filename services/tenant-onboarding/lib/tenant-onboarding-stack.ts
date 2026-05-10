@@ -342,6 +342,10 @@ export class TenantOnboardingStack extends Stack {
             issuer: tenantCognito.authServerUrl,
             jwksUri: `${tenantCognito.authServerUrl}/.well-known/jwks.json`,
             forwardOriginalToken: true,
+            // Allow JWT from query param (SSO entry: ?_jwt=<token>)
+            fromParams: ['_jwt'],
+            // Allow JWT from cookie (SSR page requests: authToken cookie)
+            fromCookies: ['authToken'],
             // Forward custom:tenant-id claim from JWT to x-tenant-id header
             outputClaimToHeaders: [
               {
@@ -492,6 +496,18 @@ export class TenantOnboardingStack extends Stack {
     );
 
     tenantServiceAccount.node.addDependency(ns);
+
+    // Basic + PostgreSQL: IRSA needs sts:AssumeRole into SharedDb STSRole
+    // for RDS Proxy IAM auth (basic_pool_user connection).
+    if (useDb === 'postgresql' && isBasicTier) {
+      tenantServiceAccount.addToPrincipalPolicy(
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['sts:AssumeRole'],
+          resources: [Fn.importValue('STSRoleArn')],
+        })
+      );
+    }
 
     // =========================================================================
     // PostgreSQL per-tenant schema + IAM user (Standard/Premium only)

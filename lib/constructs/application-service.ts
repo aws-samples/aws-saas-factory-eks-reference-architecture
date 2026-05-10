@@ -126,14 +126,13 @@ export class ApplicationService extends Construct {
         // Strip trailing slash so values like `<APP_SITE_URL>/<service>`
         // don't end up as `https://d1234.cloudfront.net//<service>`.
         'APPLICATION_SITE_URL="${APPLICATION_SITE_URL%/}"',
-        // In-place substitution of the placeholder within the env var
-        // itself. Bash parameter expansion — `//` replaces all
-        // occurrences.
-        'EXTRA_ENV_YAML="${EXTRA_ENV_YAML//<APP_SITE_URL>/${APPLICATION_SITE_URL}}"',
-        // Write to a file so sed `r` can splice it into K8s manifests
-        // at the `# KUSTOMIZE_EXTRA_ENV_ANCHOR` line. Written once per
-        // CodeBuild run; reused by every per-tenant iteration.
+        // Write EXTRA_ENV_YAML to file first, then use sed to replace
+        // the placeholder. Bash parameter expansion (`${var//pat/rep}`)
+        // breaks when the variable value contains double-quotes that
+        // collide with the assignment's outer quoting (exit status 2).
         'printf "%s\\n" "$EXTRA_ENV_YAML" > /tmp/extra-env.yaml',
+        'sed -i "s|<APP_SITE_URL>|${APPLICATION_SITE_URL}|g" /tmp/extra-env.yaml',
+        'EXTRA_ENV_YAML=$(cat /tmp/extra-env.yaml)',
         'export EXTRA_ENV_YAML APPLICATION_SITE_URL',
       ].join('\n'),
     ];
