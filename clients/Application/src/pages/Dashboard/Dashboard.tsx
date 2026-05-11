@@ -171,7 +171,7 @@ const Dashboard: React.FC = () => {
   // Filter out the reverse-proxy entry (ECS legacy) and any falsy values.
   // EKS doesn't use rproxy, but the filter is harmless and keeps parity
   // with the ECS reference.
-  const services = (environment.services ?? []).filter((s) => s && s !== 'rproxy');
+  const services = (environment.services ?? []).filter((s) => s && !['rproxy', 'products', 'orders', 'users'].includes(s));
 
   return (
     <Box>

@@ -1145,6 +1145,12 @@
             "in": "path",
             "required": true,
             "type": "string"
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "type": "string"
           }
         ],
         "responses": {},
@@ -1163,7 +1169,8 @@
             "integration.request.header.x-tenant-id": "context.authorizer.tenantId",
             "integration.request.header.x-tenant-tier": "context.authorizer.tenantTier",
             "integration.request.header.x-tenant-name": "context.authorizer.tenantName",
-            "integration.request.header.x-tenant-user-role": "context.authorizer.userRole"
+            "integration.request.header.x-tenant-user-role": "context.authorizer.userRole",
+            "integration.request.header.Authorization": "method.request.header.Authorization"
           },
           "connectionType": "VPC_LINK",
           "passthroughBehavior": "when_no_match"

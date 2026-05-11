@@ -346,6 +346,8 @@ export class TenantOnboardingStack extends Stack {
             fromParams: ['_jwt'],
             // Allow JWT from cookie (SSR page requests: authToken cookie)
             fromCookies: ['authToken'],
+            // Explicit Authorization header (default disabled when fromParams/fromCookies set)
+            fromHeaders: [{ name: 'Authorization', prefix: 'Bearer ' }],
             // Forward custom:tenant-id claim from JWT to x-tenant-id header
             outputClaimToHeaders: [
               {
