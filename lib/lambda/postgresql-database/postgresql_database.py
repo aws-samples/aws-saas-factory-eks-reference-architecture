@@ -647,13 +647,16 @@ def bootstrap_basic_pool():
                     f'ALTER ROLE {BASIC_POOL_USERNAME} WITH PASSWORD %s',
                     (initial_pw,))
 
-        # rds_iam role membership is required for IAM auth on RDS.
-        # GRANT is idempotent.
+        # rds_iam role membership is NOT required for RDS Proxy IAM auth.
+        # Proxy validates the IAM token itself, then connects to Aurora
+        # using the Secrets Manager password. If the DB user has rds_iam,
+        # Aurora disables password auth for that user, which breaks the
+        # Proxy's backend connection. REVOKE it defensively.
         try:
-            run_sql(admin, f'GRANT rds_iam TO {BASIC_POOL_USERNAME}')
+            run_sql(admin, f'REVOKE rds_iam FROM {BASIC_POOL_USERNAME}')
+            print(f'[basic_pool] REVOKE rds_iam FROM {BASIC_POOL_USERNAME}: done')
         except Exception as e:
-            # `rds_iam` may not exist on non-AWS PostgreSQL — tolerate it.
-            print(f'[basic_pool] GRANT rds_iam skipped: {e}')
+            print(f'[basic_pool] REVOKE rds_iam skipped: {e}')
 
         # --- PATCH: do NOT grant basic_pool_user TO CURRENT_USER ---
         # The previous version ran
