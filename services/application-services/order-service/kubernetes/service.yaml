@@ -20,6 +20,18 @@ spec:
           ports:
             - containerPort: 5001
               name: "http"
+          env:
+            # The issuer and app client id this deployment will accept tokens
+            # from. These are substituted at deploy time from the tenant's own
+            # Cognito pool, so the service never has to infer them from a token.
+            - name: COM_AMAZONAWS_SAAS_EKS_ISSUER
+              value: "KUSTOMIZE_TOKEN_ISSUER"
+            - name: COM_AMAZONAWS_SAAS_EKS_AUDIENCE
+              value: "KUSTOMIZE_TOKEN_AUDIENCE"
+            - name: COM_AMAZONAWS_SAAS_EKS_TENANTID
+              value: "KUSTOMIZE_TENANT_ID"
+            - name: COM_AMAZONAWS_SAAS_EKS_REGION
+              value: "KUSTOMIZE_AWS_REGION"
 ---
 apiVersion: v1
 kind: Service
