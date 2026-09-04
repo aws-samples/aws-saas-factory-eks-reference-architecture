@@ -26,6 +26,16 @@ public class JwtConfig {
 	private String identityPoolId;
 	private String jwkUrl;
 	private String region;
+	/**
+	 * The one issuer this deployment trusts, e.g.
+	 * https://cognito-idp.&lt;region&gt;.amazonaws.com/&lt;userPoolId&gt;.
+	 * Supplied by configuration so it is never taken from the token itself.
+	 */
+	private String issuer;
+	/** The app client id tokens must be addressed to (the `aud` claim). */
+	private String audience;
+	/** The tenant this deployment serves; tokens for other tenants are refused. */
+	private String tenantId;
 	private String userNameField = "cognito:username";
 	private int connectionTimeout = 2000;
 	private int readTimeout = 2000;
@@ -35,9 +45,50 @@ public class JwtConfig {
 	}
 
 	public String getJwkUrl() {
-		return this.jwkUrl != null && !this.jwkUrl.isEmpty() ? this.jwkUrl
-				: String.format("https://cognito-idp.%s.amazonaws.com/%s/.well-known/jwks.json", this.region,
-						this.userPoolId);
+		if (this.jwkUrl != null && !this.jwkUrl.isEmpty()) {
+			return this.jwkUrl;
+		}
+		// Prefer the configured issuer: it is the value the token is pinned
+		// against, so the keys must come from the same place.
+		if (this.issuer != null && !this.issuer.isEmpty()) {
+			return this.issuer.replaceAll("/+$", "") + "/.well-known/jwks.json";
+		}
+		return String.format("https://cognito-idp.%s.amazonaws.com/%s/.well-known/jwks.json", this.region,
+				this.userPoolId);
+	}
+
+	/**
+	 * The issuer this deployment trusts. Falls back to the value implied by
+	 * region + userPoolId so an existing configuration keeps working.
+	 */
+	public String getIssuer() {
+		if (this.issuer != null && !this.issuer.isEmpty()) {
+			return this.issuer;
+		}
+		if (this.region != null && this.userPoolId != null) {
+			return String.format("https://cognito-idp.%s.amazonaws.com/%s", this.region, this.userPoolId);
+		}
+		return null;
+	}
+
+	public void setIssuer(String issuer) {
+		this.issuer = issuer;
+	}
+
+	public String getAudience() {
+		return audience;
+	}
+
+	public void setAudience(String audience) {
+		this.audience = audience;
+	}
+
+	public String getTenantId() {
+		return tenantId;
+	}
+
+	public void setTenantId(String tenantId) {
+		this.tenantId = tenantId;
 	}
 
 	public String getCognitoIdentityPoolUrl() {

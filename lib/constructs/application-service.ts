@@ -1,4 +1,4 @@
-import { RemovalPolicy, Stack } from 'aws-cdk-lib';
+import { Arn, RemovalPolicy, Stack } from 'aws-cdk-lib';
 import * as codebuild from 'aws-cdk-lib/aws-codebuild';
 import * as ecr from 'aws-cdk-lib/aws-ecr';
 import * as iam from 'aws-cdk-lib/aws-iam';
@@ -110,6 +110,20 @@ export class ApplicationService extends Construct {
           post_build: {
             commands: [
               'aws eks --region $AWS_REGION update-kubeconfig --name $CLUSTER_NAME',
+              // Resolve the tenant's own Cognito issuer and app client id, so the
+              // service can pin them instead of trusting whatever a token claims.
+              'TENANT_RECORD=$(aws dynamodb get-item --region $AWS_REGION --table-name Tenant' +
+                ' --key "{\\"TENANT_ID\\":{\\"S\\":\\"$TENANT_ID\\"}}")',
+              'TOKEN_ISSUER=$(echo "$TENANT_RECORD" | jq -r ".Item.AUTH_SERVER.S // empty")',
+              'TOKEN_AUDIENCE=$(echo "$TENANT_RECORD" | jq -r ".Item.AUTH_CLIENT_ID.S // empty")',
+              // Fail the deploy loudly rather than shipping a service that would
+              // reject every request because it has nothing to pin against.
+              'if [ -z "$TOKEN_ISSUER" ] || [ -z "$TOKEN_AUDIENCE" ]; then' +
+                ' echo "ERROR: could not resolve AUTH_SERVER/AUTH_CLIENT_ID for tenant $TENANT_ID"; exit 1; fi',
+              'sed -i "s|KUSTOMIZE_TOKEN_ISSUER|$TOKEN_ISSUER|g;' +
+                ' s|KUSTOMIZE_TOKEN_AUDIENCE|$TOKEN_AUDIENCE|g;' +
+                ' s|KUSTOMIZE_TENANT_ID|$TENANT_ID|g;' +
+                ' s|KUSTOMIZE_AWS_REGION|$AWS_REGION|g" kubernetes/service.yaml',
               'echo "  newName: $ECR_REPO_URI" >> kubernetes/kustomization.yaml',
               'echo "  newTag: v1" >> kubernetes/kustomization.yaml',
               'echo "  value: $API_HOST" >> kubernetes/host-patch.yaml',
@@ -210,6 +224,18 @@ export class ApplicationService extends Construct {
         },
       }),
     });
+
+    // The deploy project reads the tenant's Cognito issuer/client id from the
+    // tenant registry so it can pin them into the deployment.
+    tenantDeployProject.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['dynamodb:GetItem'],
+        resources: [
+          Arn.format({ service: 'dynamodb', resource: 'table', resourceName: 'Tenant' }, Stack.of(this)),
+        ],
+      })
+    );
 
     // Grant pull permissions to the tenant deploy project
     containerRepo.grantPull(tenantDeployProject.role!);

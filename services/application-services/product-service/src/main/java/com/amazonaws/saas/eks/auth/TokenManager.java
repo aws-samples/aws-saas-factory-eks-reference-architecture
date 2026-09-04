@@ -16,14 +16,28 @@
  */
 package com.amazonaws.saas.eks.auth;
 
+import java.text.ParseException;
+
 import javax.servlet.http.HttpServletRequest;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
 
+import com.nimbusds.jwt.JWTClaimsSet;
+
+/**
+ * Supplies the tenant id that repository queries are keyed on.
+ *
+ * The tenant is read from the claims of the token that {@link TokenProcessor}
+ * already verified, taken off the populated security context. It is deliberately
+ * not obtained by re-parsing the Authorization header: parsing a token proves
+ * nothing about it, so reading the tenant that way would trust a value the caller
+ * chose and let them select which tenant's data to operate on.
+ */
 @Component
 public class TokenManager {
 	private static final Logger logger = LogManager.getLogger(TokenManager.class);
@@ -32,28 +46,41 @@ public class TokenManager {
 	@Autowired
 	private JwtConfig jwtConfiguration;
 
+	/**
+	 * @param request retained for signature compatibility with existing callers;
+	 *                the tenant comes from the verified security context.
+	 * @return the caller's tenant id
+	 * @throws IllegalStateException if the request was not authenticated, or the
+	 *                               verified token carries no usable tenant
+	 */
 	public String getTenantId(HttpServletRequest request) throws Exception {
-		String idToken = request.getHeader(this.jwtConfiguration.getHttpHeader());
-
-		if (idToken != null) {
-			SignedJWT signedJWT = null;
-
-			try {
-			    signedJWT = SignedJWT.parse(this.getBearerToken(idToken));
-			} catch (java.text.ParseException e) {
-			    logger.error(e);
-			}
-
-			JWTClaimsSet claimsSet = signedJWT.getJWTClaimsSet();			
-			String tenantId = claimsSet.getStringClaim(CUSTOM_TENANT_ID);
-			logger.info("tenantId: " + tenantId);
-
-			return tenantId;
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		if (!(authentication instanceof JwtAuth) || !authentication.isAuthenticated()) {
+			// Reached only if a route is exposed without authentication; refuse
+			// rather than fall back to reading the unverified header.
+			throw new IllegalStateException("No verified token is present on this request");
 		}
-		return null;
-	}
 
-	private String getBearerToken(String token) {
-		return token.startsWith("Bearer ") ? token.substring("Bearer ".length()) : token;
+		JWTClaimsSet claims = ((JwtAuth) authentication).getJwtClaimsSet();
+		String tenantId;
+		try {
+			tenantId = claims.getStringClaim(CUSTOM_TENANT_ID);
+		} catch (ParseException e) {
+			throw new IllegalStateException("Verified token has an unreadable tenant claim");
+		}
+
+		if (tenantId == null || tenantId.trim().isEmpty()) {
+			throw new IllegalStateException("Verified token carries no tenant claim");
+		}
+
+		// Defence in depth: TokenProcessor already refuses a token whose tenant
+		// is not this deployment's, so a mismatch here means the two have drifted.
+		String configuredTenant = this.jwtConfiguration.getTenantId();
+		if (configuredTenant != null && !configuredTenant.trim().isEmpty()
+				&& !configuredTenant.equals(tenantId)) {
+			throw new IllegalStateException("Verified token's tenant does not match this deployment's tenant");
+		}
+
+		return tenantId;
 	}
 }
